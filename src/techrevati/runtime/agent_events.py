@@ -10,13 +10,14 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field, replace
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
 
 class AgentEventName(str, Enum):
     """Typed event names for agent and phase lifecycle."""
+
     # Agent lifecycle
     AGENT_STARTED = "agent.started"
     AGENT_READY = "agent.ready"
@@ -44,6 +45,7 @@ class AgentEventName(str, Enum):
 
 class AgentEventStatus(str, Enum):
     """Current status at time of event emission."""
+
     RUNNING = "running"
     READY = "ready"
     BLOCKED = "blocked"
@@ -55,6 +57,7 @@ class AgentEventStatus(str, Enum):
 
 class AgentFailureClass(str, Enum):
     """Failure taxonomy for structured error classification."""
+
     LLM_TIMEOUT = "llm_timeout"
     LLM_ERROR = "llm_error"
     TOOL_ERROR = "tool_error"
@@ -68,12 +71,13 @@ class AgentFailureClass(str, Enum):
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 @dataclass(frozen=True)
 class AgentEvent:
     """A typed lifecycle event for agent orchestration."""
+
     event: AgentEventName
     status: AgentEventStatus
     emitted_at: str = field(default_factory=_now_iso)
@@ -205,28 +209,28 @@ class AgentEvent:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> AgentEvent:
         """Reconstruct AgentEvent from dict. Handles enum conversions."""
-        # Parse event (required)
-        event_str = data.get("event")
-        if isinstance(event_str, str):
-            event = AgentEventName(event_str)
+        event_raw = data.get("event")
+        if isinstance(event_raw, AgentEventName):
+            event = event_raw
+        elif isinstance(event_raw, str):
+            event = AgentEventName(event_raw)
         else:
-            event = event_str
+            raise ValueError(f"event field missing or invalid: {event_raw!r}")
 
-        # Parse status (required)
-        status_str = data.get("status")
-        if isinstance(status_str, str):
-            status = AgentEventStatus(status_str)
+        status_raw = data.get("status")
+        if isinstance(status_raw, AgentEventStatus):
+            status = status_raw
+        elif isinstance(status_raw, str):
+            status = AgentEventStatus(status_raw)
         else:
-            status = status_str
+            raise ValueError(f"status field missing or invalid: {status_raw!r}")
 
-        # Parse failure_class (optional)
-        failure_class = None
-        fc_str = data.get("failure_class")
-        if fc_str is not None:
-            if isinstance(fc_str, str):
-                failure_class = AgentFailureClass(fc_str)
-            else:
-                failure_class = fc_str
+        failure_class: AgentFailureClass | None = None
+        fc_raw = data.get("failure_class")
+        if isinstance(fc_raw, AgentFailureClass):
+            failure_class = fc_raw
+        elif isinstance(fc_raw, str):
+            failure_class = AgentFailureClass(fc_raw)
 
         return cls(
             event=event,

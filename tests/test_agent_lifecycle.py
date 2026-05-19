@@ -1,9 +1,14 @@
 """Tests for agent_patterns.agent_lifecycle"""
 
 import threading
+
 import pytest
+
 from techrevati.runtime.agent_lifecycle import (
-    AgentStatus, AgentWorker, AgentRegistry, InvalidTransitionError,
+    AgentRegistry,
+    AgentStatus,
+    AgentWorker,
+    InvalidTransitionError,
 )
 
 
@@ -44,8 +49,12 @@ def test_terminal_state_blocks_transitions():
 
 
 def test_any_state_can_fail():
-    for start in [AgentStatus.IDLE, AgentStatus.INITIALIZING,
-                  AgentStatus.WAITING_FOR_INPUT, AgentStatus.RUNNING]:
+    for start in [
+        AgentStatus.IDLE,
+        AgentStatus.INITIALIZING,
+        AgentStatus.WAITING_FOR_INPUT,
+        AgentStatus.RUNNING,
+    ]:
         w = AgentWorker(worker_id="test", role="writer", phase="f", status=start)
         w.transition(AgentStatus.FAILED, "error")
         assert w.status == AgentStatus.FAILED
@@ -84,7 +93,9 @@ def test_registry_thread_safe():
         except Exception as e:
             errors.append(e)
 
-    threads = [threading.Thread(target=create_worker, args=(f"R{i}",)) for i in range(10)]
+    threads = [
+        threading.Thread(target=create_worker, args=(f"R{i}",)) for i in range(10)
+    ]
     for t in threads:
         t.start()
     for t in threads:
@@ -113,7 +124,11 @@ def test_worker_to_dict():
 
 
 def test_is_terminal():
-    w = AgentWorker(worker_id="t", role="writer", phase="f", status=AgentStatus.COMPLETED)
+    w = AgentWorker(
+        worker_id="t", role="writer", phase="f", status=AgentStatus.COMPLETED
+    )
     assert w.is_terminal is True
-    w2 = AgentWorker(worker_id="t2", role="writer", phase="f", status=AgentStatus.RUNNING)
+    w2 = AgentWorker(
+        worker_id="t2", role="writer", phase="f", status=AgentStatus.RUNNING
+    )
     assert w2.is_terminal is False

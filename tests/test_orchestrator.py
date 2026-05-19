@@ -28,7 +28,9 @@ from techrevati.runtime.policy_engine import And, PhaseCompleted, QualityAt
 @pytest.fixture(autouse=True)
 def _model_pricing_for_cost_assertions():
     """Register a known-priced model so cost assertions are not flaky."""
-    register_pricing("test-model", ModelPricing(input_per_million=3.0, output_per_million=15.0))
+    register_pricing(
+        "test-model", ModelPricing(input_per_million=3.0, output_per_million=15.0)
+    )
 
 
 def test_session_happy_path_completes_worker():
@@ -58,10 +60,14 @@ def test_session_failure_path_marks_worker_failed():
 
 
 def test_permission_denied_blocks_run_tool():
-    enforcer = PermissionEnforcer(PermissionPolicy(
-        role_configs={"reader": RolePermissionConfig("reader", PermissionMode.READ_ONLY)},
-        tool_requirements={"expand_features": PermissionMode.FULL_ACCESS},
-    ))
+    enforcer = PermissionEnforcer(
+        PermissionPolicy(
+            role_configs={
+                "reader": RolePermissionConfig("reader", PermissionMode.READ_ONLY)
+            },
+            tool_requirements={"expand_features": PermissionMode.FULL_ACCESS},
+        )
+    )
     orch = Orchestrator(role="reader", phase="draft", permissions=enforcer)
     with orch.session() as session:
         with pytest.raises(PermissionDeniedError):
@@ -69,10 +75,14 @@ def test_permission_denied_blocks_run_tool():
 
 
 def test_run_tool_passes_when_allowed():
-    enforcer = PermissionEnforcer(PermissionPolicy(
-        role_configs={"writer": RolePermissionConfig("writer", PermissionMode.FULL_ACCESS)},
-        tool_requirements={"expand_features": PermissionMode.FULL_ACCESS},
-    ))
+    enforcer = PermissionEnforcer(
+        PermissionPolicy(
+            role_configs={
+                "writer": RolePermissionConfig("writer", PermissionMode.FULL_ACCESS)
+            },
+            tool_requirements={"expand_features": PermissionMode.FULL_ACCESS},
+        )
+    )
     orch = Orchestrator(role="writer", phase="draft", permissions=enforcer)
     with orch.session() as session:
         result = session.run_tool("expand_features", lambda: "result")

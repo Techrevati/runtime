@@ -12,18 +12,20 @@ from __future__ import annotations
 
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, TypeVar
+from typing import Any, TypeVar
 
 T = TypeVar("T")
 
 
 class CircuitState(str, Enum):
     """Circuit breaker lifecycle states."""
-    CLOSED = "closed"          # Normal operation; requests pass through
-    OPEN = "open"              # Failed; requests blocked immediately
-    HALF_OPEN = "half_open"    # Testing; one request allowed to probe
+
+    CLOSED = "closed"  # Normal operation; requests pass through
+    OPEN = "open"  # Failed; requests blocked immediately
+    HALF_OPEN = "half_open"  # Testing; one request allowed to probe
 
 
 class CircuitOpenError(Exception):
@@ -37,6 +39,7 @@ class CircuitOpenError(Exception):
 @dataclass
 class CircuitBreaker:
     """Stateful circuit breaker with thread-safe transitions."""
+
     name: str
     failure_threshold: int = 5
     recovery_timeout_seconds: float = 60.0
@@ -44,10 +47,12 @@ class CircuitBreaker:
     _state: CircuitState = field(default=CircuitState.CLOSED, init=False, repr=False)
     _failure_count: int = field(default=0, init=False, repr=False)
     _last_failure_time: float | None = field(default=None, init=False, repr=False)
-    _lock: threading.Lock = field(default_factory=threading.Lock, init=False, repr=False)
+    _lock: threading.Lock = field(
+        default_factory=threading.Lock, init=False, repr=False
+    )
 
     def call(self, fn: Callable[..., T], *args: Any, **kwargs: Any) -> T:
-        """Execute fn with circuit breaker protection. Raises CircuitOpenError if open."""
+        """Execute fn with breaker protection. Raises CircuitOpenError if open."""
         with self._lock:
             if self._state == CircuitState.OPEN:
                 if self._should_attempt_reset():

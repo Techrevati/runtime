@@ -7,8 +7,12 @@ import tempfile
 import pytest
 
 from techrevati.runtime.usage_tracking import (
-    UsageTracker, UsageSnapshot, ModelPricing, PRICING_TABLE,
-    register_pricing, load_pricing_from_file,
+    PRICING_TABLE,
+    ModelPricing,
+    UsageSnapshot,
+    UsageTracker,
+    load_pricing_from_file,
+    register_pricing,
 )
 
 
@@ -28,7 +32,9 @@ def test_pricing_table_starts_empty():
 
 
 def test_register_pricing_adds_entry():
-    register_pricing("model-x", ModelPricing(input_per_million=2.0, output_per_million=8.0))
+    register_pricing(
+        "model-x", ModelPricing(input_per_million=2.0, output_per_million=8.0)
+    )
     assert "model-x" in PRICING_TABLE
     assert PRICING_TABLE["model-x"].input_per_million == 2.0
 
@@ -70,14 +76,21 @@ def test_load_pricing_from_file():
 
 def test_unknown_model_falls_back_to_zero_cost():
     tracker = UsageTracker()
-    tracker.record_turn("never-registered", UsageSnapshot(input_tokens=1_000_000, output_tokens=1_000_000))
+    tracker.record_turn(
+        "never-registered",
+        UsageSnapshot(input_tokens=1_000_000, output_tokens=1_000_000),
+    )
     assert tracker.total_cost() == 0.0
 
 
 def test_cost_calculation_with_registered_model():
-    register_pricing("priced", ModelPricing(input_per_million=3.0, output_per_million=15.0))
+    register_pricing(
+        "priced", ModelPricing(input_per_million=3.0, output_per_million=15.0)
+    )
     tracker = UsageTracker()
-    tracker.record_turn("priced", UsageSnapshot(input_tokens=1_000_000, output_tokens=0))
+    tracker.record_turn(
+        "priced", UsageSnapshot(input_tokens=1_000_000, output_tokens=0)
+    )
     assert abs(tracker.total_cost() - 3.0) < 1e-9
 
 
@@ -93,7 +106,9 @@ def test_cumulative_tracking():
 def test_budget_remaining():
     register_pricing("cheap", ModelPricing(0.15, 0.60))
     tracker = UsageTracker()
-    tracker.record_turn("cheap", UsageSnapshot(input_tokens=100_000, output_tokens=50_000))
+    tracker.record_turn(
+        "cheap", UsageSnapshot(input_tokens=100_000, output_tokens=50_000)
+    )
     remaining = tracker.budget_remaining(1.0)
     assert remaining > 0
     assert remaining < 1.0
@@ -102,7 +117,9 @@ def test_budget_remaining():
 def test_is_over_budget():
     register_pricing("premium", ModelPricing(15.0, 75.0))
     tracker = UsageTracker()
-    tracker.record_turn("premium", UsageSnapshot(input_tokens=1_000_000, output_tokens=0))
+    tracker.record_turn(
+        "premium", UsageSnapshot(input_tokens=1_000_000, output_tokens=0)
+    )
     assert tracker.is_over_budget(1.0) is True
     assert tracker.is_over_budget(100.0) is False
 
@@ -117,7 +134,9 @@ def test_prefix_model_matching():
     """Dated variants resolve to the most specific family entry."""
     register_pricing("family", ModelPricing(3.0, 15.0))
     tracker = UsageTracker()
-    tracker.record_turn("family-20260514", UsageSnapshot(input_tokens=1_000_000, output_tokens=0))
+    tracker.record_turn(
+        "family-20260514", UsageSnapshot(input_tokens=1_000_000, output_tokens=0)
+    )
     assert tracker.total_cost() > 0
 
 
@@ -131,7 +150,12 @@ def test_summary_shape():
 
 
 def test_usage_snapshot_dict_roundtrip():
-    orig = UsageSnapshot(input_tokens=1000, output_tokens=500, cache_write_tokens=200, cache_read_tokens=50)
+    orig = UsageSnapshot(
+        input_tokens=1000,
+        output_tokens=500,
+        cache_write_tokens=200,
+        cache_read_tokens=50,
+    )
     restored = UsageSnapshot.from_dict(orig.to_dict())
     assert restored == orig
 

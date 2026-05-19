@@ -1,15 +1,22 @@
 """Tests for agent_patterns.agent_events"""
 
 import json
+
 from techrevati.runtime.agent_events import (
-    AgentEvent, AgentEventName, AgentEventStatus, AgentFailureClass,
+    AgentEvent,
+    AgentEventName,
+    AgentEventStatus,
+    AgentFailureClass,
 )
 
 
 def test_event_names_serialize():
     assert AgentEventName.AGENT_STARTED.value == "agent.started"
     assert AgentEventName.PHASE_GATE_FAILED.value == "phase.gate_failed"
-    assert AgentEventName.RECOVERY_PROVIDER_SWITCHED.value == "agent.recovery.provider_switched"
+    assert (
+        AgentEventName.RECOVERY_PROVIDER_SWITCHED.value
+        == "agent.recovery.provider_switched"
+    )
 
 
 def test_failure_classes_complete():
@@ -40,11 +47,13 @@ def test_completed_constructor():
 
 
 def test_builder_pattern():
-    e = (AgentEvent.started("writer", "draft")
-         .with_failure_class(AgentFailureClass.TOOL_ERROR)
-         .with_detail("file not found")
-         .with_data({"file": "main.py"})
-         .with_project(42))
+    e = (
+        AgentEvent.started("writer", "draft")
+        .with_failure_class(AgentFailureClass.TOOL_ERROR)
+        .with_detail("file not found")
+        .with_data({"file": "main.py"})
+        .with_project(42)
+    )
     assert e.failure_class == AgentFailureClass.TOOL_ERROR
     assert e.detail == "file not found"
     assert e.data == {"file": "main.py"}
@@ -55,7 +64,7 @@ def test_to_dict_backward_compat():
     e = AgentEvent.started("writer", "draft")
     d = e.to_dict()
     assert "event" in d  # new format
-    assert "type" in d   # backward compat
+    assert "type" in d  # backward compat
     assert d["event"] == "agent.started"
     assert d["type"] == "started"
 
@@ -108,9 +117,11 @@ def test_from_dict_roundtrip_with_failure():
 
 def test_from_json_roundtrip():
     """Test JSON serialization round-trip."""
-    orig = (AgentEvent.started("reviewer", "review")
-            .with_failure_class(AgentFailureClass.CONTEXT_OVERFLOW)
-            .with_data({"tokens_used": 128000}))
+    orig = (
+        AgentEvent.started("reviewer", "review")
+        .with_failure_class(AgentFailureClass.CONTEXT_OVERFLOW)
+        .with_data({"tokens_used": 128000})
+    )
     json_str = orig.to_json()
     restored = AgentEvent.from_json(json_str)
     assert restored.event == orig.event
@@ -172,7 +183,9 @@ def test_to_otel_attributes_basic():
 
 def test_to_otel_attributes_with_failure():
     """Test OTEL attributes for failed event."""
-    e = AgentEvent.failed("writer", "release", AgentFailureClass.LLM_TIMEOUT, "30 second timeout")
+    e = AgentEvent.failed(
+        "writer", "release", AgentFailureClass.LLM_TIMEOUT, "30 second timeout"
+    )
     attrs = e.to_otel_attributes()
     assert attrs["agent.event"] == "agent.failed"
     assert attrs["agent.event.status"] == "failed"

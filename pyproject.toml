@@ -61,3 +61,6 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "B", "C4", "UP", "N"]
+# UP042: pyupgrade wants StrEnum (3.11+); we keep `(str, Enum)` for stable
+#        str() / json semantics across consumers.
+ignore = ["UP042"]

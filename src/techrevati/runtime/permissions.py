@@ -11,13 +11,15 @@ own RolePermissionConfig and tool_requirements.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import IntEnum
-from typing import Any, Callable
+from typing import Any
 
 
 class PermissionMode(IntEnum):
     """Ordered permission levels. Higher grants more access."""
+
     READ_ONLY = 1
     WORKSPACE_WRITE = 2
     FULL_ACCESS = 3
@@ -26,6 +28,7 @@ class PermissionMode(IntEnum):
 @dataclass(frozen=True)
 class PermissionOutcome:
     """Result of a permission check."""
+
     allowed: bool
     reason: str | None = None
     active_mode: str = ""
@@ -45,6 +48,7 @@ class PermissionOutcome:
 @dataclass
 class RolePermissionConfig:
     """Permission configuration for a single role."""
+
     role: str
     mode: PermissionMode
     allowed_tools: list[str] | None = None  # None = all at mode level
@@ -86,7 +90,10 @@ class PermissionPolicy:
         if config.mode < required:
             return PermissionOutcome(
                 allowed=False,
-                reason=f"role '{role}' has {config.mode.name} but tool requires {required.name}",
+                reason=(
+                    f"role '{role}' has {config.mode.name} "
+                    f"but tool requires {required.name}"
+                ),
                 active_mode=config.mode.name,
                 required_mode=required.name,
             )
@@ -126,8 +133,7 @@ class PermissionEnforcer:
     ) -> list[Callable[..., Any]]:
         """Return only tools the role is permitted to use."""
         return [
-            t for t in tools
+            t
+            for t in tools
             if self._policy.authorize(role, getattr(t, "__name__", str(t))).allowed
         ]
-
-

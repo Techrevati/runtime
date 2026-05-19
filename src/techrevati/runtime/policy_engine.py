@@ -22,6 +22,7 @@ logger.addHandler(logging.NullHandler())
 
 # -- Conditions --
 
+
 class PolicyCondition:
     """Base class for policy conditions. Override matches()."""
 
@@ -161,8 +162,10 @@ class CostExceeded(PolicyCondition):
 
 # -- Actions --
 
+
 class PolicyAction(str, Enum):
     """Actions a rule can recommend. The caller is responsible for dispatch."""
+
     ADVANCE_PHASE = "advance_phase"
     RETRY_AGENT = "retry_agent"
     RETRY_PHASE = "retry_phase"
@@ -177,6 +180,7 @@ class PolicyAction(str, Enum):
 @dataclass(frozen=True)
 class PolicyActionData:
     """Action with optional parameters."""
+
     action: PolicyAction
     params: dict[str, Any] | None = None
 
@@ -190,6 +194,7 @@ class PolicyActionData:
 @dataclass(frozen=True)
 class PolicyRule:
     """A named rule with condition, action(s), and priority."""
+
     name: str
     condition: PolicyCondition
     actions: list[PolicyActionData]
@@ -198,9 +203,11 @@ class PolicyRule:
 
 # -- Context --
 
+
 @dataclass
 class PhaseContext:
     """Input to policy evaluation. Captures current phase state."""
+
     phase: str = ""
     quality_level: QualityLevel | None = None
     gate_score: float = 0.0
@@ -215,6 +222,7 @@ class PhaseContext:
 
 
 # -- Engine --
+
 
 class PolicyEngine:
     """Evaluates rules against a PhaseContext."""

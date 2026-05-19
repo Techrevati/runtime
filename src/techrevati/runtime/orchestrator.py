@@ -21,9 +21,10 @@ Example:
 
 from __future__ import annotations
 
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from typing import Any, Callable, Iterator, TypeVar
+from typing import Any, TypeVar
 
 from techrevati.runtime.agent_events import AgentEvent, AgentFailureClass
 from techrevati.runtime.agent_lifecycle import (

@@ -15,7 +15,7 @@ import json
 import logging
 import random
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, Literal
 
@@ -25,6 +25,7 @@ logger.addHandler(logging.NullHandler())
 
 class FailureScenario(str, Enum):
     """Failure types that can be automatically recovered."""
+
     LLM_TIMEOUT = "llm_timeout"
     LLM_ERROR = "llm_error"
     TOOL_EXECUTION_ERROR = "tool_execution_error"
@@ -36,6 +37,7 @@ class FailureScenario(str, Enum):
 
 class RecoveryStep(str, Enum):
     """Actions that can be taken to recover from failure."""
+
     RETRY_WITH_BACKOFF = "retry_with_backoff"
     RETRY_WITH_SMALLER_CONTEXT = "retry_with_smaller_context"
     SWITCH_PROVIDER = "switch_provider"
@@ -47,6 +49,7 @@ class RecoveryStep(str, Enum):
 
 class EscalationPolicy(str, Enum):
     """What to do when max recovery attempts are exhausted."""
+
     ALERT_HUMAN = "alert_human"
     LOG_AND_CONTINUE = "log_and_continue"
     ABORT = "abort"
@@ -55,6 +58,7 @@ class EscalationPolicy(str, Enum):
 @dataclass(frozen=True)
 class RecoveryRecipe:
     """Recovery plan for a failure scenario."""
+
     scenario: FailureScenario
     steps: list[RecoveryStep]
     max_attempts: int
@@ -64,6 +68,7 @@ class RecoveryRecipe:
 @dataclass
 class RecoveryResult:
     """Outcome of a recovery attempt."""
+
     outcome: Literal["recovered", "partial_recovery", "escalation_required"]
     steps_taken: int = 0
     recovered_steps: list[str] = field(default_factory=list)
@@ -83,6 +88,7 @@ class RecoveryResult:
 @dataclass(frozen=True)
 class RecoveryEvent:
     """Structured record of a recovery action."""
+
     event_type: str  # attempted, succeeded, failed, escalated
     scenario: str
     recipe_steps: list[str]
@@ -170,15 +176,22 @@ class RecoveryContext:
         """Override in test subclasses to simulate partial recovery."""
         return None
 
-    def _emit(self, event_type: str, scenario: FailureScenario,
-              recipe: RecoveryRecipe, result: RecoveryResult) -> None:
-        self._events.append(RecoveryEvent(
-            event_type=event_type,
-            scenario=scenario.value,
-            recipe_steps=[s.value for s in recipe.steps],
-            result=result.to_dict(),
-            timestamp=datetime.now(timezone.utc).isoformat(),
-        ))
+    def _emit(
+        self,
+        event_type: str,
+        scenario: FailureScenario,
+        recipe: RecoveryRecipe,
+        result: RecoveryResult,
+    ) -> None:
+        self._events.append(
+            RecoveryEvent(
+                event_type=event_type,
+                scenario=scenario.value,
+                recipe_steps=[s.value for s in recipe.steps],
+                result=result.to_dict(),
+                timestamp=datetime.now(UTC).isoformat(),
+            )
+        )
 
 
 def attempt_recovery(
@@ -197,7 +210,9 @@ def attempt_recovery(
     if current >= recipe.max_attempts:
         result = RecoveryResult(
             outcome="escalation_required",
-            reason=f"max attempts ({recipe.max_attempts}) exhausted for {scenario.value}",
+            reason=(
+                f"max attempts ({recipe.max_attempts}) exhausted for {scenario.value}"
+            ),
         )
         ctx._emit("escalated", scenario, recipe, result)
         return result
@@ -234,9 +249,10 @@ def attempt_recovery(
 
 # -- Step handlers (actual implementations) --
 
+
 def backoff_delay(attempt: int, base: float = 2.0, jitter: bool = True) -> float:
     """Calculate backoff delay in seconds with optional jitter."""
-    delay = base ** attempt
+    delay = base**attempt
     if jitter:
         delay += random.uniform(0, delay * 0.25)
     return delay
@@ -258,6 +274,7 @@ def smaller_context_budget(current_chars: int, reduction: float = 0.75) -> int:
 
 # -- Exception classifier --
 
+
 def classify_exception(error: Exception) -> FailureScenario:
     """Map a Python exception to a FailureScenario for recovery."""
     error_str = str(error).lower()
@@ -269,14 +286,24 @@ def classify_exception(error: Exception) -> FailureScenario:
         return FailureScenario.LLM_TIMEOUT
 
     # Rate limits
-    if "rate limit" in error_str or "429" in error_str or "too many requests" in error_str:
+    if (
+        "rate limit" in error_str
+        or "429" in error_str
+        or "too many requests" in error_str
+    ):
         return FailureScenario.LLM_ERROR
 
     # Context overflow
-    if any(kw in error_str for kw in [
-        "context length", "token limit", "maximum context",
-        "too many tokens", "context_length_exceeded",
-    ]):
+    if any(
+        kw in error_str
+        for kw in [
+            "context length",
+            "token limit",
+            "maximum context",
+            "too many tokens",
+            "context_length_exceeded",
+        ]
+    ):
         return FailureScenario.CONTEXT_OVERFLOW
 
     # Memory corruption
@@ -286,16 +313,29 @@ def classify_exception(error: Exception) -> FailureScenario:
         return FailureScenario.MEMORY_CORRUPTION
 
     # Connection / provider failures
-    if isinstance(error, (ConnectionError, ConnectionRefusedError, ConnectionResetError)):
+    if isinstance(
+        error, (ConnectionError, ConnectionRefusedError, ConnectionResetError)
+    ):
         return FailureScenario.PROVIDER_FAILURE
-    if any(kw in error_str for kw in [
-        "connection refused", "connection reset", "503", "502",
-        "service unavailable", "bad gateway",
-    ]):
+    if any(
+        kw in error_str
+        for kw in [
+            "connection refused",
+            "connection reset",
+            "503",
+            "502",
+            "service unavailable",
+            "bad gateway",
+        ]
+    ):
         return FailureScenario.PROVIDER_FAILURE
 
     # Authentication errors
-    if "401" in error_str or "unauthorized" in error_str or "authentication" in error_str:
+    if (
+        "401" in error_str
+        or "unauthorized" in error_str
+        or "authentication" in error_str
+    ):
         return FailureScenario.PROVIDER_FAILURE
 
     # Tool errors
@@ -303,10 +343,17 @@ def classify_exception(error: Exception) -> FailureScenario:
         return FailureScenario.TOOL_EXECUTION_ERROR
 
     # Dependency/downstream timeouts
-    if any(kw in error_str for kw in [
-        "dependency", "downstream", "upstream", "external service",
-        "dependent", "dependency timeout",
-    ]):
+    if any(
+        kw in error_str
+        for kw in [
+            "dependency",
+            "downstream",
+            "upstream",
+            "external service",
+            "dependent",
+            "dependency timeout",
+        ]
+    ):
         return FailureScenario.DEPENDENCY_TIMEOUT
 
     # Default to LLM error

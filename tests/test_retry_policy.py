@@ -1,12 +1,18 @@
 """Tests for agent_patterns.recovery_recipes"""
 
-import asyncio
 import json
-import pytest
+
 from techrevati.runtime.retry_policy import (
-    FailureScenario, RecoveryStep, EscalationPolicy,
-    RecoveryContext, RecoveryResult, recipe_for, attempt_recovery,
-    classify_exception, backoff_delay, next_provider, smaller_context_budget,
+    EscalationPolicy,
+    FailureScenario,
+    RecoveryContext,
+    RecoveryResult,
+    attempt_recovery,
+    backoff_delay,
+    classify_exception,
+    next_provider,
+    recipe_for,
+    smaller_context_budget,
 )
 
 
@@ -72,27 +78,47 @@ def test_context_tracks_per_scenario():
 
 
 def test_classify_timeout():
-    assert classify_exception(asyncio.TimeoutError()) == FailureScenario.LLM_TIMEOUT
+    assert classify_exception(TimeoutError()) == FailureScenario.LLM_TIMEOUT
     assert classify_exception(TimeoutError()) == FailureScenario.LLM_TIMEOUT
 
 
 def test_classify_rate_limit():
-    assert classify_exception(Exception("429 Too Many Requests")) == FailureScenario.LLM_ERROR
-    assert classify_exception(Exception("rate limit exceeded")) == FailureScenario.LLM_ERROR
+    assert (
+        classify_exception(Exception("429 Too Many Requests"))
+        == FailureScenario.LLM_ERROR
+    )
+    assert (
+        classify_exception(Exception("rate limit exceeded"))
+        == FailureScenario.LLM_ERROR
+    )
 
 
 def test_classify_context_overflow():
-    assert classify_exception(Exception("context_length_exceeded")) == FailureScenario.CONTEXT_OVERFLOW
-    assert classify_exception(Exception("too many tokens")) == FailureScenario.CONTEXT_OVERFLOW
+    assert (
+        classify_exception(Exception("context_length_exceeded"))
+        == FailureScenario.CONTEXT_OVERFLOW
+    )
+    assert (
+        classify_exception(Exception("too many tokens"))
+        == FailureScenario.CONTEXT_OVERFLOW
+    )
 
 
 def test_classify_memory_corruption():
-    assert classify_exception(json.JSONDecodeError("x", "y", 0)) == FailureScenario.MEMORY_CORRUPTION
+    assert (
+        classify_exception(json.JSONDecodeError("x", "y", 0))
+        == FailureScenario.MEMORY_CORRUPTION
+    )
 
 
 def test_classify_connection_error():
-    assert classify_exception(ConnectionRefusedError()) == FailureScenario.PROVIDER_FAILURE
-    assert classify_exception(Exception("503 service unavailable")) == FailureScenario.PROVIDER_FAILURE
+    assert (
+        classify_exception(ConnectionRefusedError()) == FailureScenario.PROVIDER_FAILURE
+    )
+    assert (
+        classify_exception(Exception("503 service unavailable"))
+        == FailureScenario.PROVIDER_FAILURE
+    )
 
 
 def test_classify_default():
@@ -126,7 +152,9 @@ def test_escalation_policies():
 
 
 def test_result_to_dict():
-    result = RecoveryResult(outcome="recovered", steps_taken=2, recovered_steps=["a", "b"])
+    result = RecoveryResult(
+        outcome="recovered", steps_taken=2, recovered_steps=["a", "b"]
+    )
     d = result.to_dict()
     assert d["outcome"] == "recovered"
     assert d["steps_taken"] == 2

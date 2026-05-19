@@ -17,6 +17,7 @@ from typing import Any
 
 class QualityLevel(IntEnum):
     """Ordered quality levels. Higher is stricter."""
+
     MINIMAL = 1
     STANDARD = 2
     STRICT = 3
@@ -30,6 +31,7 @@ class QualityLevel(IntEnum):
 @dataclass(frozen=True)
 class QualityGateOutcome:
     """Result of evaluating a QualityGate."""
+
     satisfied: bool
     required_level: QualityLevel
     observed_level: QualityLevel | None
@@ -48,6 +50,7 @@ class QualityGateOutcome:
 @dataclass(frozen=True)
 class QualityGate:
     """Gate requiring a minimum QualityLevel."""
+
     required_level: QualityLevel
 
     def evaluate(self, observed: QualityLevel | None) -> QualityGateOutcome:

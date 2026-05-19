@@ -18,6 +18,7 @@ from typing import Any
 @dataclass(frozen=True)
 class ModelPricing:
     """Per-million-token pricing for a model."""
+
     input_per_million: float
     output_per_million: float
     cache_write_per_million: float = 0.0
@@ -93,6 +94,7 @@ def _resolve_pricing(model: str) -> ModelPricing:
 @dataclass(frozen=True)
 class UsageSnapshot:
     """Token usage for a single turn."""
+
     input_tokens: int = 0
     output_tokens: int = 0
     cache_write_tokens: int = 0
@@ -126,8 +128,11 @@ class UsageSnapshot:
 @dataclass
 class UsageTracker:
     """Cumulative usage tracking with cost estimation."""
+
     turns: list[tuple[str, UsageSnapshot]] = field(default_factory=list)
-    _lock: threading.Lock = field(default_factory=threading.Lock, init=False, repr=False)
+    _lock: threading.Lock = field(
+        default_factory=threading.Lock, init=False, repr=False
+    )
 
     def record_turn(self, model: str, usage: UsageSnapshot) -> None:
         with self._lock:

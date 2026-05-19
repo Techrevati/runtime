@@ -1,7 +1,9 @@
 """Tests for techrevati.runtime.quality_gate"""
 
 from techrevati.runtime.quality_gate import (
-    QualityLevel, QualityGate, QualityGateOutcome,
+    QualityGate,
+    QualityGateOutcome,
+    QualityLevel,
 )
 
 

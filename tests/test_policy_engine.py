@@ -1,25 +1,37 @@
 """Tests for techrevati.runtime.policy_engine"""
 
 from techrevati.runtime.policy_engine import (
-    PolicyEngine, PolicyRule, PolicyAction, PolicyActionData,
-    PhaseContext, And, Or, QualityAt, PhaseCompleted, AgentFailed,
-    GateBelow, RetryExhausted, TimedOut, AllAgentsComplete, CostExceeded,
+    AgentFailed,
+    AllAgentsComplete,
+    And,
+    CostExceeded,
+    GateBelow,
+    Or,
+    PhaseCompleted,
+    PhaseContext,
+    PolicyAction,
+    PolicyActionData,
+    PolicyEngine,
+    PolicyRule,
+    QualityAt,
+    RetryExhausted,
+    TimedOut,
 )
 from techrevati.runtime.quality_gate import QualityLevel
 
 
 def _ctx(**kwargs) -> PhaseContext:
-    defaults = dict(
-        phase="draft",
-        quality_level=QualityLevel.STANDARD,
-        gate_score=85.0,
-        gate_threshold=82.0,
-        completed_roles={"writer", "reviewer"},
-        failed_roles=set(),
-        all_roles={"writer", "reviewer"},
-        elapsed_seconds=100,
-        phase_completed=True,
-    )
+    defaults = {
+        "phase": "draft",
+        "quality_level": QualityLevel.STANDARD,
+        "gate_score": 85.0,
+        "gate_threshold": 82.0,
+        "completed_roles": {"writer", "reviewer"},
+        "failed_roles": set(),
+        "all_roles": {"writer", "reviewer"},
+        "elapsed_seconds": 100,
+        "phase_completed": True,
+    }
     defaults.update(kwargs)
     return PhaseContext(**defaults)
 
@@ -126,8 +138,18 @@ def test_abort_on_budget():
 
 def test_rules_sorted_by_priority():
     rules = [
-        PolicyRule("low", PhaseCompleted(), [PolicyActionData(PolicyAction.NOTIFY)], priority=99),
-        PolicyRule("high", PhaseCompleted(), [PolicyActionData(PolicyAction.ADVANCE_PHASE)], priority=1),
+        PolicyRule(
+            "low",
+            PhaseCompleted(),
+            [PolicyActionData(PolicyAction.NOTIFY)],
+            priority=99,
+        ),
+        PolicyRule(
+            "high",
+            PhaseCompleted(),
+            [PolicyActionData(PolicyAction.ADVANCE_PHASE)],
+            priority=1,
+        ),
     ]
     engine = PolicyEngine(rules)
     assert engine.rules[0].name == "high"
@@ -156,7 +178,11 @@ def test_empty_or_is_false():
 
 def test_no_match_returns_empty():
     rules = [
-        PolicyRule("never", AgentFailed("NONEXISTENT"), [PolicyActionData(PolicyAction.ESCALATE)]),
+        PolicyRule(
+            "never",
+            AgentFailed("NONEXISTENT"),
+            [PolicyActionData(PolicyAction.ESCALATE)],
+        ),
     ]
     engine = PolicyEngine(rules)
     assert engine.evaluate(_ctx()) == []
@@ -170,9 +196,15 @@ def test_cost_exceeded_condition():
 
 def test_all_agents_complete():
     cond = AllAgentsComplete()
-    ctx = _ctx(completed_roles={"writer", "reviewer"}, failed_roles=set(), all_roles={"writer", "reviewer"})
+    ctx = _ctx(
+        completed_roles={"writer", "reviewer"},
+        failed_roles=set(),
+        all_roles={"writer", "reviewer"},
+    )
     assert cond.matches(ctx) is True
-    ctx2 = _ctx(completed_roles={"writer"}, failed_roles=set(), all_roles={"writer", "reviewer"})
+    ctx2 = _ctx(
+        completed_roles={"writer"}, failed_roles=set(), all_roles={"writer", "reviewer"}
+    )
     assert cond.matches(ctx2) is False
 
 
@@ -191,7 +223,7 @@ def test_action_data_to_dict():
 def test_multiple_rules_fire_in_priority_order():
     rules = [
         _abort_on_timeout_rule(seconds=50),  # priority 5
-        _advance_on_quality_rule(),           # priority 10
+        _advance_on_quality_rule(),  # priority 10
     ]
     engine = PolicyEngine(rules)
     actions = engine.evaluate(_ctx(elapsed_seconds=100))

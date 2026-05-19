@@ -1,9 +1,14 @@
 """Tests for techrevati.runtime.circuit_breaker"""
 
-import time
 import threading
+import time
+
+import pytest
+
 from techrevati.runtime.circuit_breaker import (
-    CircuitBreaker, CircuitState, CircuitOpenError,
+    CircuitBreaker,
+    CircuitOpenError,
+    CircuitState,
 )
 
 
@@ -57,7 +62,7 @@ def test_circuit_opens_at_threshold():
         raise RuntimeError("test error")
 
     # Record 3 failures
-    for i in range(3):
+    for _ in range(3):
         try:
             cb.call(fail_fn)
         except RuntimeError:
@@ -281,7 +286,3 @@ def test_state_transitions_are_atomic():
     # Should only observe valid states
     for s in states_observed:
         assert s in (CircuitState.CLOSED, CircuitState.OPEN, CircuitState.HALF_OPEN)
-
-
-# Need to import pytest for the test that uses it
-import pytest

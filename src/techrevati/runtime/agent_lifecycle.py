@@ -12,7 +12,7 @@ import logging
 import threading
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -22,6 +22,7 @@ logger.addHandler(logging.NullHandler())
 
 class AgentStatus(str, Enum):
     """Agent lifecycle states with valid transition paths."""
+
     IDLE = "idle"
     INITIALIZING = "initializing"
     WAITING_FOR_INPUT = "waiting_for_input"
@@ -33,11 +34,15 @@ class AgentStatus(str, Enum):
 # Valid state transitions
 _VALID_TRANSITIONS: dict[AgentStatus, set[AgentStatus]] = {
     AgentStatus.IDLE: {AgentStatus.INITIALIZING, AgentStatus.FAILED},
-    AgentStatus.INITIALIZING: {AgentStatus.WAITING_FOR_INPUT, AgentStatus.RUNNING, AgentStatus.FAILED},
+    AgentStatus.INITIALIZING: {
+        AgentStatus.WAITING_FOR_INPUT,
+        AgentStatus.RUNNING,
+        AgentStatus.FAILED,
+    },
     AgentStatus.WAITING_FOR_INPUT: {AgentStatus.RUNNING, AgentStatus.FAILED},
     AgentStatus.RUNNING: {AgentStatus.COMPLETED, AgentStatus.FAILED},
     AgentStatus.COMPLETED: set(),  # terminal
-    AgentStatus.FAILED: set(),     # terminal
+    AgentStatus.FAILED: set(),  # terminal
 }
 
 
@@ -47,18 +52,17 @@ class InvalidTransitionError(Exception):
     def __init__(self, current: AgentStatus, target: AgentStatus) -> None:
         self.current = current
         self.target = target
-        super().__init__(
-            f"Invalid transition: {current.value} → {target.value}"
-        )
+        super().__init__(f"Invalid transition: {current.value} → {target.value}")
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 @dataclass(frozen=True)
 class AgentWorkerEvent:
     """Immutable record of a state transition."""
+
     seq: int
     kind: str
     status: str
@@ -80,6 +84,7 @@ class AgentWorkerEvent:
 @dataclass
 class AgentWorker:
     """Tracks an agent's lifecycle through execution."""
+
     worker_id: str
     role: str
     phase: str
