@@ -1,0 +1,47 @@
+site_name: techrevati-runtime
+site_description: Production runtime primitives for multi-step LLM agent loops
+site_url: https://Techrevati.github.io/runtime
+repo_url: https://github.com/Techrevati/runtime
+repo_name: Techrevati/runtime
+copyright: Copyright &copy; 2026 TechRevati doo
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - search.highlight
+    - content.code.copy
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Primitives:
+    - Orchestrator: patterns/orchestrator.md
+    - Retry Policy: patterns/retry.md
+    - Circuit Breaker: patterns/circuit-breaker.md
+    - Quality Gate: patterns/quality-gate.md
+    - Agent Lifecycle: patterns/lifecycle.md
+    - Agent Events: patterns/agent-events.md
+    - Permissions: patterns/permissions.md
+    - Policy Engine: patterns/policy.md
+    - Usage Tracking: patterns/usage-tracking.md
+  - Changelog: changelog.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - tables
+  - toc:
+      permalink: true

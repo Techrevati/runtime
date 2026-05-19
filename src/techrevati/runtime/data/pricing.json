@@ -1,0 +1,10 @@
+{
+  "_comment": "Pricing data is intentionally empty. Override at runtime via techrevati.runtime.usage_tracking.register_pricing(model, ModelPricing(...)) or load_pricing_from_file(path).",
+  "_schema": {
+    "input_per_million": "float",
+    "output_per_million": "float",
+    "cache_write_per_million": "float (optional, default 0.0)",
+    "cache_read_per_million": "float (optional, default 0.0)"
+  },
+  "models": {}
+}
