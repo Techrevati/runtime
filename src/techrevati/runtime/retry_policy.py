@@ -250,12 +250,51 @@ def attempt_recovery(
 # -- Step handlers (actual implementations) --
 
 
-def backoff_delay(attempt: int, base: float = 2.0, jitter: bool = True) -> float:
-    """Calculate backoff delay in seconds with optional jitter."""
-    delay = base**attempt
-    if jitter:
-        delay += random.uniform(0, delay * 0.25)
-    return delay
+JitterMode = Literal["none", "full", "equal", "decorrelated"]
+
+
+def backoff_delay(
+    attempt: int,
+    base: float = 2.0,
+    jitter: bool | JitterMode = "decorrelated",
+    cap: float = 60.0,
+    prev_delay: float = 0.0,
+) -> float:
+    """Calculate backoff delay in seconds with selectable jitter algorithm.
+
+    Algorithms follow Marc Brooker / AWS Architecture Blog
+    (https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/):
+
+    - ``"none"`` — pure exponential ``base ** attempt`` (capped).
+    - ``"full"`` — ``uniform(0, cap_exp)``: maximum spread, lowest contention.
+    - ``"equal"`` — ``cap_exp/2 + uniform(0, cap_exp/2)``: half deterministic.
+    - ``"decorrelated"`` (default) — ``uniform(base, prev_delay * 3)``: AWS's
+      fastest algorithm. Callers passing 0 for ``prev_delay`` get ``base``.
+
+    Backwards compatibility: ``jitter=True`` (bool) maps to ``"full"`` and
+    ``jitter=False`` maps to ``"none"``. The ``base ** attempt + 25% noise``
+    formula from 0.0.0 is gone — use ``"equal"`` for similar behavior.
+    """
+    if jitter is True:
+        mode: JitterMode = "full"
+    elif jitter is False:
+        mode = "none"
+    else:
+        mode = jitter
+
+    cap_exp = min(cap, base**attempt)
+
+    if mode == "none":
+        return cap_exp
+    if mode == "full":
+        return random.uniform(0.0, cap_exp)
+    if mode == "equal":
+        half = cap_exp / 2.0
+        return half + random.uniform(0.0, half)
+    if mode == "decorrelated":
+        anchor = prev_delay if prev_delay > 0 else base
+        return min(cap, random.uniform(base, anchor * 3.0))
+    raise ValueError(f"unknown jitter mode: {mode!r}")
 
 
 def next_provider(

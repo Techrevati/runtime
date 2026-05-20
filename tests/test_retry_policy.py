@@ -2,6 +2,8 @@
 
 import json
 
+import pytest
+
 from techrevati.runtime.retry_policy import (
     EscalationPolicy,
     FailureScenario,
@@ -125,11 +127,53 @@ def test_classify_default():
     assert classify_exception(Exception("unknown error")) == FailureScenario.LLM_ERROR
 
 
-def test_backoff_delay():
-    d0 = backoff_delay(0, jitter=False)
-    d1 = backoff_delay(1, jitter=False)
-    assert d0 == 1.0  # 2^0
-    assert d1 == 2.0  # 2^1
+def test_backoff_delay_no_jitter():
+    """jitter=False (bool) maps to 'none' mode: pure exponential."""
+    assert backoff_delay(0, jitter=False) == 1.0  # 2^0
+    assert backoff_delay(1, jitter=False) == 2.0  # 2^1
+    assert backoff_delay(0, jitter="none") == 1.0
+
+
+def test_backoff_delay_full_jitter_bounded():
+    """Full jitter returns uniform in [0, base**attempt]."""
+    for _ in range(50):
+        d = backoff_delay(3, base=2.0, jitter="full")
+        assert 0.0 <= d <= 8.0
+
+
+def test_backoff_delay_equal_jitter_bounded():
+    """Equal jitter returns half deterministic + half random."""
+    for _ in range(50):
+        d = backoff_delay(3, base=2.0, jitter="equal")
+        assert 4.0 <= d <= 8.0
+
+
+def test_backoff_delay_decorrelated_bounded():
+    """Decorrelated jitter returns uniform in [base, prev*3], respects cap."""
+    for _ in range(50):
+        d = backoff_delay(3, base=2.0, jitter="decorrelated", prev_delay=4.0)
+        assert 2.0 <= d <= 12.0
+        assert d <= 60.0  # cap
+
+
+def test_backoff_delay_cap_applies():
+    """Cap clamps the exponential before randomization."""
+    # 2 ** 20 = 1048576; cap=10 should clamp.
+    for _ in range(20):
+        d = backoff_delay(20, base=2.0, jitter="full", cap=10.0)
+        assert d <= 10.0
+
+
+def test_backoff_delay_bool_true_maps_to_full():
+    """jitter=True (bool) is backwards-compat for 'full' mode."""
+    for _ in range(20):
+        d = backoff_delay(2, base=2.0, jitter=True)
+        assert 0.0 <= d <= 4.0
+
+
+def test_backoff_delay_invalid_mode_raises():
+    with pytest.raises(ValueError, match="unknown jitter mode"):
+        backoff_delay(1, jitter="quantum")  # type: ignore[arg-type]
 
 
 def test_next_provider():

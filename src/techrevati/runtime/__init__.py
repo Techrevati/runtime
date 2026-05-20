@@ -1,5 +1,5 @@
 """
-techrevati.runtime — Production async runtime primitives for LLM agent loops.
+techrevati.runtime — Runtime primitives for multi-step LLM agent loops.
 
 Reliability, cost tracking, and lifecycle for multi-step agent execution.
 Zero runtime dependencies.
@@ -9,7 +9,7 @@ Zero runtime dependencies.
 >>> from techrevati.runtime import CircuitBreaker, PolicyEngine
 """
 
-__version__ = "0.0.0"
+__version__ = "0.0.1"
 
 from techrevati.runtime.agent_events import (
     AgentEvent,
@@ -71,9 +71,11 @@ from techrevati.runtime.retry_policy import (
 )
 from techrevati.runtime.usage_tracking import (
     PRICING_TABLE,
+    BudgetExceededError,
     ModelPricing,
     UsageSnapshot,
     UsageTracker,
+    has_pricing,
     load_pricing_from_file,
     register_pricing,
 )
@@ -87,6 +89,7 @@ __all__ = [
     "AgentStatus",
     "AgentWorker",
     "AgentWorkerEvent",
+    "BudgetExceededError",
     "CircuitBreaker",
     "CircuitOpenError",
     "CircuitState",
@@ -123,6 +126,7 @@ __all__ = [
     "attempt_recovery",
     "backoff_delay",
     "classify_exception",
+    "has_pricing",
     "load_pricing_from_file",
     "next_provider",
     "recipe_for",

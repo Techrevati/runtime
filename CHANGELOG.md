@@ -5,6 +5,61 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the project
 follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html), with the
 caveat that 0.x APIs are explicitly unstable.
 
+## [0.0.1] — 2026-05-20
+
+### Fixed
+- `mypy --strict` now passes. Added `src/techrevati/__init__.py` namespace
+  marker (PEP 420) so the wheel layout no longer double-maps modules. Removed
+  `continue-on-error: true` from the CI mypy step, which had been silently
+  swallowing failures since 0.0.0.
+- `CircuitBreaker` uses `time.monotonic` instead of `time.time` for duration
+  checks. NTP/clock jumps no longer stick the breaker open or close it early.
+- Removed inaccurate `"Production async runtime"` claim from the package
+  docstring. Async support is targeted for 0.1.0; this version is sync only.
+
+### Added
+- `BudgetExceededError` plus `Orchestrator(enforce_budget=True)` flag. When
+  enabled, `run_turn` raises after the cumulative cost exceeds `budget_usd`.
+  The default remains backwards-compatible (records an event, returns
+  normally) so existing callers see no behavior change unless they opt in.
+- `has_pricing(model)` helper. `UsageTracker.record_turn` now emits a one-time
+  `WARNING` per process per model when pricing has not been registered. This
+  closes the silent-$0 footgun where unregistered models produced no cost
+  signal.
+- `CircuitBreaker.half_open_max_probes` (default `1`). Concurrent half-open
+  probes are now serialized; previously the lock was released before `fn()`
+  ran, letting unbounded threads stampede a recovering service. Probe in-flight
+  counting is tracked under the same lock as state transitions. Conforms to
+  the Polly default; raise to N for Resilience4j-style behavior.
+- `CircuitBreaker.clock` parameter accepting a `Callable[[], float]`. Defaults
+  to `time.monotonic`. Test code injects a manual clock to make recovery-window
+  tests deterministic; `time.sleep` is no longer used in the test suite.
+- `backoff_delay(jitter=...)` accepts `"none"`, `"full"`, `"equal"`, or
+  `"decorrelated"` mode strings. Bool values are still accepted for backward
+  compatibility (`True` maps to `"full"`, `False` to `"none"`). New `cap` and
+  `prev_delay` parameters support standard AWS Architecture Blog formulas
+  (Marc Brooker, exponential backoff & jitter).
+- README "Limitations" section documenting sync-only constraint, in-memory
+  tracker growth, pricing-not-bundled default, advisory permissions, lack of
+  durable execution, and lack of OTel integration.
+
+### Changed
+- **Default jitter algorithm is now decorrelated** (was full-additive 25%
+  jitter). Per AWS Builders' Library, decorrelated is the fastest of the four
+  documented algorithms. The change affects code calling `backoff_delay()`
+  with default jitter; pass `jitter="equal"` for behavior closest to the
+  previous default.
+- README tagline reflects alpha status until 0.2.0 (was "Production runtime
+  primitives ...").
+- `[project.optional-dependencies] dev` now pins `pytest`, `pytest-cov`,
+  `mypy`, and `ruff` to exact versions matching `.pre-commit-config.yaml`.
+  Local lint and CI lint can no longer disagree.
+- CI now installs the package with `pip install -e ".[dev]"` instead of
+  unpinned `pip install pytest pytest-cov ruff mypy`. `actions/setup-python`
+  bumped from v4 to v5 with pip caching. `codecov/codecov-action` bumped from
+  v3 to v4. The `PYTHONPATH=src` workaround in pytest is gone (now resolved
+  by the namespace marker).
+
 ## [0.0.0] — 2026-05-20
 
 Initial public release under the `techrevati-runtime` namespace.
@@ -25,4 +80,5 @@ loops with reliability and cost visibility:
 - `PermissionPolicy` + `PermissionEnforcer` — deny-first role × tool gating.
 - `PolicyEngine` + composable conditions — declarative rule evaluator.
 
+[0.0.1]: https://github.com/Techrevati/runtime/releases/tag/v0.0.1
 [0.0.0]: https://github.com/Techrevati/runtime/releases/tag/v0.0.0

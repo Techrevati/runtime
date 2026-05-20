@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "techrevati-runtime"
-version = "0.0.0"
+version = "0.0.1"
 description = "Production runtime primitives for multi-step LLM agent loops."
 readme = "README.md"
 license = "MIT"
@@ -24,7 +24,13 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "pytest-cov>=5.0", "mypy>=1.10", "ruff>=0.5.0"]
+dev = [
+    # Pinned to match .pre-commit-config.yaml so local and CI lint agree.
+    "pytest==9.0.3",
+    "pytest-cov==7.1.0",
+    "mypy==1.18.2",
+    "ruff==0.14.5",
+]
 docs = ["mkdocs-material>=9.5", "mkdocstrings[python]>=0.25"]
 
 [project.urls]

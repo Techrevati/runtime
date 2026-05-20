@@ -50,7 +50,11 @@ from techrevati.runtime.retry_policy import (
     attempt_recovery,
     classify_exception,
 )
-from techrevati.runtime.usage_tracking import UsageSnapshot, UsageTracker
+from techrevati.runtime.usage_tracking import (
+    BudgetExceededError,
+    UsageSnapshot,
+    UsageTracker,
+)
 
 T = TypeVar("T")
 
@@ -80,6 +84,7 @@ class Orchestrator:
     policy_engine: PolicyEngine | None = None
     quality_gate: QualityGate | None = None
     budget_usd: float | None = None
+    enforce_budget: bool = False
 
     @contextmanager
     def session(self) -> Iterator[OrchestrationSession]:
@@ -105,6 +110,7 @@ class Orchestrator:
             policy_engine=self.policy_engine,
             quality_gate=self.quality_gate,
             budget_usd=self.budget_usd,
+            enforce_budget=self.enforce_budget,
             phase=self.phase,
             role=self.role,
             project_id=self.project_id,
@@ -137,6 +143,7 @@ class OrchestrationSession:
     policy_engine: PolicyEngine | None = None
     quality_gate: QualityGate | None = None
     budget_usd: float | None = None
+    enforce_budget: bool = False
     events: list[AgentEvent] = field(default_factory=list)
 
     # -- Tool authorization --
@@ -218,6 +225,11 @@ class OrchestrationSession:
                     detail=f"budget exceeded: {self.tracker.format_cost()}",
                 ).with_data({"budget_usd": budget})
             )
+            if self.enforce_budget:
+                raise BudgetExceededError(
+                    budget_usd=budget,
+                    current_cost_usd=self.tracker.total_cost(),
+                )
 
         return result, snapshot
 

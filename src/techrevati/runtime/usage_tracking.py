@@ -8,11 +8,30 @@ extend it at runtime via register_pricing() / load_pricing_from_file().
 from __future__ import annotations
 
 import json
+import logging
 import threading
 from dataclasses import dataclass, field
 from importlib import resources
 from pathlib import Path
 from typing import Any
+
+logger = logging.getLogger("techrevati.runtime.usage_tracking")
+logger.addHandler(logging.NullHandler())
+
+
+class BudgetExceededError(Exception):
+    """Raised when cumulative usage cost exceeds a configured budget.
+
+    Carries the offending budget and current cost so callers can decide
+    how to recover (escalate to human, switch to cheaper model, abort).
+    """
+
+    def __init__(self, budget_usd: float, current_cost_usd: float) -> None:
+        self.budget_usd = budget_usd
+        self.current_cost_usd = current_cost_usd
+        super().__init__(
+            f"budget exceeded: ${current_cost_usd:.4f} > ${budget_usd:.4f}"
+        )
 
 
 @dataclass(frozen=True)
@@ -47,6 +66,22 @@ def _load_default_pricing() -> dict[str, ModelPricing]:
 # Mutable global registry. Use register_pricing() to update.
 PRICING_TABLE: dict[str, ModelPricing] = _load_default_pricing()
 _pricing_lock = threading.Lock()
+
+# Models we've already warned about (one warning per model per process).
+_warned_unpriced_models: set[str] = set()
+
+
+def has_pricing(model: str) -> bool:
+    """Check whether pricing is registered for a model.
+
+    Matches by exact name (case-insensitive) or longest-prefix, mirroring
+    the resolution behavior of cost calculations. Returns False if the
+    lookup falls back to the zero-cost default.
+    """
+    model_lower = model.lower()
+    if model_lower in PRICING_TABLE:
+        return True
+    return any(model_lower.startswith(key) for key in PRICING_TABLE)
 
 
 def register_pricing(model: str, pricing: ModelPricing) -> None:
@@ -137,6 +172,17 @@ class UsageTracker:
     def record_turn(self, model: str, usage: UsageSnapshot) -> None:
         with self._lock:
             self.turns.append((model, usage))
+        if model and not has_pricing(model):
+            with _pricing_lock:
+                already_warned = model.lower() in _warned_unpriced_models
+                if not already_warned:
+                    _warned_unpriced_models.add(model.lower())
+            if not already_warned:
+                logger.warning(
+                    "no pricing registered for model=%s; cost will be $0. "
+                    "Call register_pricing() or load_pricing_from_file().",
+                    model,
+                )
 
     @property
     def total_input_tokens(self) -> int:

@@ -5,7 +5,10 @@ Implements the Circuit Breaker pattern to prevent cascading failures
 when calling unreliable services or operations. Transitions between
 CLOSED (normal), OPEN (failing), and HALF_OPEN (testing) states.
 
-Thread-safe with configurable failure threshold and recovery timeout.
+Thread-safe with configurable failure threshold, recovery timeout,
+and number of in-flight probes permitted in HALF_OPEN. Uses
+``time.monotonic`` for duration checks so clock jumps don't affect
+behavior; the clock function is injectable for deterministic tests.
 """
 
 from __future__ import annotations
@@ -25,7 +28,7 @@ class CircuitState(str, Enum):
 
     CLOSED = "closed"  # Normal operation; requests pass through
     OPEN = "open"  # Failed; requests blocked immediately
-    HALF_OPEN = "half_open"  # Testing; one request allowed to probe
+    HALF_OPEN = "half_open"  # Testing; limited probes allowed
 
 
 class CircuitOpenError(Exception):
@@ -38,27 +41,58 @@ class CircuitOpenError(Exception):
 
 @dataclass
 class CircuitBreaker:
-    """Stateful circuit breaker with thread-safe transitions."""
+    """Stateful circuit breaker with thread-safe transitions.
+
+    Parameters
+    ----------
+    name:
+        Human-readable identifier (included in ``CircuitOpenError``).
+    failure_threshold:
+        Consecutive failures before the circuit opens.
+    recovery_timeout_seconds:
+        Duration the circuit stays open before allowing probes.
+    half_open_max_probes:
+        Concurrent probe calls allowed in HALF_OPEN. Default 1 (Polly
+        convention); raising to N spreads recovery risk over multiple
+        in-flight calls (Resilience4j defaults to 10).
+    clock:
+        Monotonic time source. Defaults to ``time.monotonic``. Override
+        in tests to make timing-dependent behavior deterministic.
+    """
 
     name: str
     failure_threshold: int = 5
     recovery_timeout_seconds: float = 60.0
+    half_open_max_probes: int = 1
+    clock: Callable[[], float] = field(default=time.monotonic)
 
     _state: CircuitState = field(default=CircuitState.CLOSED, init=False, repr=False)
     _failure_count: int = field(default=0, init=False, repr=False)
     _last_failure_time: float | None = field(default=None, init=False, repr=False)
+    _probe_in_flight: int = field(default=0, init=False, repr=False)
     _lock: threading.Lock = field(
         default_factory=threading.Lock, init=False, repr=False
     )
 
     def call(self, fn: Callable[..., T], *args: Any, **kwargs: Any) -> T:
-        """Execute fn with breaker protection. Raises CircuitOpenError if open."""
+        """Execute fn with breaker protection. Raises CircuitOpenError if open.
+
+        In HALF_OPEN state, at most ``half_open_max_probes`` concurrent
+        calls are admitted; excess callers receive ``CircuitOpenError``
+        until in-flight probes complete.
+        """
         with self._lock:
             if self._state == CircuitState.OPEN:
                 if self._should_attempt_reset():
                     self._state = CircuitState.HALF_OPEN
+                    self._probe_in_flight = 1
                 else:
                     raise CircuitOpenError(self.name)
+            elif self._state == CircuitState.HALF_OPEN:
+                if self._probe_in_flight >= self.half_open_max_probes:
+                    raise CircuitOpenError(self.name)
+                self._probe_in_flight += 1
+            # CLOSED: pass through without tracking probes.
 
         try:
             result = fn(*args, **kwargs)
@@ -74,13 +108,18 @@ class CircuitBreaker:
             self._failure_count = 0
             if self._state == CircuitState.HALF_OPEN:
                 self._state = CircuitState.CLOSED
+                self._probe_in_flight = 0
 
     def record_failure(self) -> None:
         """Record a failed execution. Opens the circuit at threshold."""
         with self._lock:
             self._failure_count += 1
-            self._last_failure_time = time.time()
-            if self._failure_count >= self.failure_threshold:
+            self._last_failure_time = self.clock()
+            if self._state == CircuitState.HALF_OPEN:
+                # Failed probe → back to OPEN, drop all in-flight permits.
+                self._state = CircuitState.OPEN
+                self._probe_in_flight = 0
+            elif self._failure_count >= self.failure_threshold:
                 self._state = CircuitState.OPEN
 
     def state(self) -> CircuitState:
@@ -100,9 +139,10 @@ class CircuitBreaker:
             self._state = CircuitState.CLOSED
             self._failure_count = 0
             self._last_failure_time = None
+            self._probe_in_flight = 0
 
     def _should_attempt_reset(self) -> bool:
         """Check if recovery timeout has elapsed since last failure."""
         if self._last_failure_time is None:
             return False
-        return (time.time() - self._last_failure_time) >= self.recovery_timeout_seconds
+        return (self.clock() - self._last_failure_time) >= self.recovery_timeout_seconds

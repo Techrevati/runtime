@@ -4,6 +4,7 @@ import pytest
 
 from techrevati.runtime import (
     AgentStatus,
+    BudgetExceededError,
     CircuitBreaker,
     CircuitOpenError,
     ModelPricing,
@@ -166,3 +167,55 @@ def test_summary_includes_worker_and_usage():
     assert summary["worker"]["status"] == "completed"
     assert summary["usage"]["turns"] == 1
     assert "test-model" in summary["per_model_cost"]
+
+
+def test_enforce_budget_raises_when_over():
+    """enforce_budget=True converts over-budget into BudgetExceededError."""
+    orch = Orchestrator(
+        role="writer",
+        phase="draft",
+        budget_usd=0.001,
+        enforce_budget=True,
+    )
+    with pytest.raises(BudgetExceededError) as exc_info:
+        with orch.session() as session:
+            session.run_turn(
+                lambda: "ok",
+                model="test-model",
+                usage=UsageSnapshot(input_tokens=1_000_000, output_tokens=0),
+            )
+    assert exc_info.value.budget_usd == 0.001
+    assert exc_info.value.current_cost_usd > 0.001
+
+
+def test_enforce_budget_default_is_informational_only():
+    """Without enforce_budget=True, over-budget logs an event but doesn't raise."""
+    orch = Orchestrator(
+        role="writer",
+        phase="draft",
+        budget_usd=0.001,
+    )
+    with orch.session() as session:
+        result, _ = session.run_turn(
+            lambda: "ok",
+            model="test-model",
+            usage=UsageSnapshot(input_tokens=1_000_000, output_tokens=0),
+        )
+    assert result == "ok"
+    assert any("budget exceeded" in (e.detail or "") for e in session.events)
+
+
+def test_enforce_budget_does_not_fire_when_under_budget():
+    orch = Orchestrator(
+        role="writer",
+        phase="draft",
+        budget_usd=100.0,
+        enforce_budget=True,
+    )
+    with orch.session() as session:
+        result, _ = session.run_turn(
+            lambda: "ok",
+            model="test-model",
+            usage=UsageSnapshot(input_tokens=1000, output_tokens=100),
+        )
+    assert result == "ok"
