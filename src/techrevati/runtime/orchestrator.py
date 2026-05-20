@@ -52,6 +52,7 @@ from techrevati.runtime.circuit_breaker import (
     CircuitBreaker,
     CircuitOpenError,
 )
+from techrevati.runtime.governance import GovernanceBreachError, GovernancePlane
 from techrevati.runtime.guardrails import (
     Guardrail,
     run_post_checks,
@@ -220,6 +221,7 @@ class AgentSession:
     async_rate_limiter: AsyncRateLimiter | None = None
     provider_router: ProviderRouter | None = None
     usage_limits: UsageLimits | None = None
+    governance: GovernancePlane | None = None
 
     @contextmanager
     def session(
@@ -258,10 +260,18 @@ class AgentSession:
             provider_router=self.provider_router,
             rate_limiter=self.rate_limiter,
             usage_limits=self.usage_limits,
+            governance=self.governance,
         )
 
         try:
             yield session
+        except GovernanceBreachError:
+            # Terminal — record FAILED with governance class, do NOT recover.
+            session.fail(
+                detail="governance breach",
+                failure_class=AgentFailureClass.DEPENDENCY_FAILED,
+            )
+            raise
         except Exception as exc:
             scenario = classify_exception(exc)
             session.fail(detail=str(exc), failure_class=_scenario_to_class(scenario))
@@ -308,12 +318,19 @@ class AgentSession:
             provider_router=self.provider_router,
             async_rate_limiter=self.async_rate_limiter,
             usage_limits=self.usage_limits,
+            governance=self.governance,
         )
 
         try:
             yield session
         except asyncio.CancelledError:
             session.cancel(detail="async session cancelled")
+            raise
+        except GovernanceBreachError:
+            session.fail(
+                detail="governance breach",
+                failure_class=AgentFailureClass.DEPENDENCY_FAILED,
+            )
             raise
         except Exception as exc:
             scenario = classify_exception(exc)
@@ -358,6 +375,7 @@ class _SessionBase:
     saver: CheckpointSaver | None = None
     provider_router: ProviderRouter | None = None
     usage_limits: UsageLimits | None = None
+    governance: GovernancePlane | None = None
     _started_at: float = field(default_factory=time.monotonic, init=False, repr=False)
     _iteration_count: int = field(default=0, init=False, repr=False)
 
@@ -589,6 +607,35 @@ class _SessionBase:
             raise MaxIterationsExceededError(self.max_iterations)
         self._iteration_count += 1
 
+    def _check_governance_pre_turn(self) -> None:
+        """Tick the turn counter and enforce limits before fn runs."""
+        if self.governance is None:
+            return
+        self.governance.state.record_turn_start()
+        self.governance.enforce()
+
+    def _check_governance_pre_tool(self) -> None:
+        """Tick the tool counter and enforce limits before tool fn runs."""
+        if self.governance is None:
+            return
+        self.governance.state.record_tool_call()
+        self.governance.enforce()
+
+    def _record_governance_turn_outcome(
+        self, *, success: bool, cost_usd: float | None = None
+    ) -> None:
+        """Update success/failure streak + cost after a turn completes."""
+        if self.governance is None:
+            return
+        if success:
+            self.governance.state.record_success()
+        else:
+            self.governance.state.record_failure()
+        if cost_usd is not None:
+            self.governance.state.record_cost(cost_usd)
+        # Post-turn enforcement: a cost or failure-streak breach surfaces here.
+        self.governance.enforce()
+
     def handoff_to(
         self,
         target_role: str,
@@ -709,13 +756,14 @@ class OrchestrationSession(_SessionBase):
         tool_name: str,
         fn: Callable[[], T],
     ) -> T:
-        """Execute a tool with permission + guardrail checks around it.
+        """Execute a tool with permission + guardrail + governance checks around it.
 
-        Order: permission → pre-guardrails → fn() → post-guardrails.
+        Order: permission → governance → pre-guardrails → fn() → post-guardrails.
         """
         outcome = self.authorize(tool_name)
         if not outcome.allowed:
             raise PermissionDeniedError(outcome)
+        self._check_governance_pre_tool()
         run_pre_checks(self.guardrails, role=self.role, tool=tool_name)
         result = fn()
         run_post_checks(self.guardrails, result, role=self.role, tool=tool_name)
@@ -753,20 +801,26 @@ class OrchestrationSession(_SessionBase):
             # Iteration count still ticks so the cap reflects logical
             # progress through the loop, not just live executions.
             self._check_iteration_cap()
+            self._check_governance_pre_turn()
             return cached_result, cached_usage
 
         if self.rate_limiter is not None:
             self.rate_limiter.acquire_pre_call()
 
         self._check_iteration_cap()
+        self._check_governance_pre_turn()
+        cost_before = self.tracker.total_cost()
         try:
             result = self._invoke_fn(fn, timeout=timeout)
         except CircuitOpenError:
+            self._record_governance_turn_outcome(success=False)
             raise
         except TurnTimeoutError:
+            self._record_governance_turn_outcome(success=False)
             raise
         except Exception as exc:
             _record_recovery_event(self, exc)
+            self._record_governance_turn_outcome(success=False)
             raise
 
         snapshot = self._resolve_usage(result, usage, estimate_usage)
@@ -782,6 +836,8 @@ class OrchestrationSession(_SessionBase):
             model=model,
             idempotency_key=idempotency_key,
         )
+        cost_delta = self.tracker.total_cost() - cost_before
+        self._record_governance_turn_outcome(success=True, cost_usd=cost_delta)
         return result, snapshot
 
     def _invoke_fn(self, fn: Callable[[], T], *, timeout: float | None) -> T:
@@ -840,11 +896,12 @@ class AsyncOrchestrationSession(_SessionBase):
     ) -> T:
         """Async sibling of run_tool.
 
-        Permission + guardrails are sync; the call itself is awaited.
+        Permission + governance + guardrails are sync; the call itself is awaited.
         """
         outcome = self.authorize(tool_name)
         if not outcome.allowed:
             raise PermissionDeniedError(outcome)
+        self._check_governance_pre_tool()
         run_pre_checks(self.guardrails, role=self.role, tool=tool_name)
         result = await coro_factory()
         run_post_checks(self.guardrails, result, role=self.role, tool=tool_name)
@@ -873,22 +930,28 @@ class AsyncOrchestrationSession(_SessionBase):
         if cached is not None:
             cached_result, cached_usage = cached
             self._check_iteration_cap()
+            self._check_governance_pre_turn()
             return cached_result, cached_usage
 
         if self.async_rate_limiter is not None:
             await self.async_rate_limiter.acquire_pre_call()
 
         self._check_iteration_cap()
+        self._check_governance_pre_turn()
+        cost_before = self.tracker.total_cost()
         try:
             result = await self._ainvoke(coro_factory, timeout=timeout)
         except CircuitOpenError:
+            self._record_governance_turn_outcome(success=False)
             raise
         except TurnTimeoutError:
+            self._record_governance_turn_outcome(success=False)
             raise
         except asyncio.CancelledError:
             raise
         except Exception as exc:
             await _arecord_recovery_event(self, exc)
+            self._record_governance_turn_outcome(success=False)
             raise
 
         snapshot = self._resolve_usage(result, usage, estimate_usage)
@@ -904,6 +967,8 @@ class AsyncOrchestrationSession(_SessionBase):
             model=model,
             idempotency_key=idempotency_key,
         )
+        cost_delta = self.tracker.total_cost() - cost_before
+        self._record_governance_turn_outcome(success=True, cost_usd=cost_delta)
         return result, snapshot
 
     async def _ainvoke(
