@@ -6,7 +6,9 @@ on:
       - 'v*'
 
 permissions:
-  contents: read
+  # contents: write so softprops/action-gh-release can create the
+  # GitHub Release; id-token: write for PyPI trusted publishing.
+  contents: write
   id-token: write
 
 jobs:
@@ -18,7 +20,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
