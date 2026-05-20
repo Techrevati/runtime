@@ -5,7 +5,186 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the project
 follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html), with the
 caveat that 0.x APIs are explicitly unstable.
 
-## [Unreleased] — Sprint 6 (testing rigor)
+## [0.2.0] — 2026-05-20
+
+Durable execution, token-aware rate limiting, OTel agent-level span
+nesting, granular usage limits, supply-chain hardening. Zero new
+runtime dependencies. Two soft-breaking changes: OTel sink wire format
+(one-shot → nested) and `UsageLimitExceededError` for non-cost
+overruns (see [docs/migrating-from-0.1.x.md](docs/migrating-from-0.1.x.md)).
+
+### Added — Sprint 6 (supply chain + release polish)
+
+- **CycloneDX SBOM in `release.yml`** — generated via `cyclonedx-bom`
+  (dev-only) before publish and attached to the GitHub Release as
+  both JSON and XML. PyPI Trusted Publishing already attaches a
+  Sigstore-backed attestation to each artifact; `SECURITY.md` now
+  documents the `gh attestation verify` command callers should run
+  before installing.
+- **`.github/workflows/codeql.yml`** — Python `security-and-quality`
+  CodeQL scan on every push, PR, and weekly cron. Findings go to the
+  repo's Security tab.
+- **Zero-deps smoke job in `ci.yml`** — installs the built wheel into
+  a fresh venv with no `[dev]` or `[otel]` extras and imports the
+  full public surface on Python 3.11 / 3.12 / 3.13. Guards the
+  zero-runtime-dependency promise against accidental optional-deps
+  leakage in `__init__`.
+- **`examples/durable_agent.py`** — full SqliteSaver + thread_id +
+  idempotency_key + ProviderRouter + RateLimiter demo. Runs twice in
+  a row to show resume-from-checkpoint replay.
+- **`examples/parallel_tools.py`** — `arun_parallel_tools` under
+  `asyncio.TaskGroup` with input-order results.
+- **`examples/pricing.json` populated** — six representative 2025-Q4
+  entries (premium / mid / mini tiers) with `_verified_on` timestamp
+  and a demonstration of the new 5-min / 1-hour ephemeral
+  cache-write tiers. Model identifiers are intentionally generic so
+  callers can drop in their own provider names without diff noise.
+
+### Added — Sprint 5 (usage limits, prompt caching TTL, scheduler, async policy, persistent sinks)
+
+- **`UsageLimits`** — per-session token / tool-call / cost caps with
+  Pydantic-AI-compatible field names (`request_tokens_max`,
+  `response_tokens_max`, `total_tokens_max`, `tool_calls_max`,
+  `cost_usd_max`). Wired into `AgentSession(usage_limits=...)`; each
+  turn calls `tracker.check_limits` post-record.
+- **`UsageLimitExceededError`** — distinct from `BudgetExceededError`.
+  Both share the new `UsageBoundExceededError` base class so callers
+  can choose to handle them together or separately.
+- **`UsageSnapshot.cache_ttl`** and **`UsageSnapshot.tool_calls`** —
+  optional ephemeral-cache TTL hint (`"5m"` / `"1h"` / `None`) and a
+  per-turn tool-call counter for `tool_calls_max` accounting.
+- **`ModelPricing.cache_write_5min_per_million` /
+  `cache_write_1h_per_million`** — 2026 ephemeral prompt-caching tiers.
+  `UsageTracker.cost_for_turn` picks the rate via
+  `ModelPricing.write_rate_for_ttl`; unknown TTL falls back to the
+  legacy single-tier `cache_write_per_million`.
+- **`scheduler.py`** — `Clock` protocol, `SystemClock` (default
+  production), `ManualClock` (canonical deterministic test double,
+  promoted from `tests/conftest.py` with new `tick`, `now_utc`,
+  `sleep_async` helpers).
+- **`persistence.py`** — `SqliteEventSink` and `SqliteUsageSink`
+  satisfy the existing `EventSink` / `UsageSink` protocols, persist
+  to stdlib `sqlite3` in WAL mode, and survive process restart. Fills
+  the long-running-session gap that the in-memory ring buffers can't.
+- **`PolicyEngine.evaluate_async`** — awaits async `matches` while
+  running sync conditions in place. `AsyncOrchestrationSession`
+  callers can now plug coroutine-based policy rules in.
+
+### Changed — Sprint 4 (OTel nesting + `AgentSession` rename)
+
+- **`AgentSession` is the canonical class name** (formerly
+  `Orchestrator`). The legacy `Orchestrator` symbol is now a bare
+  alias for the same class — same constructor, same identity. It will
+  be removed in 0.3.0; new code should import `AgentSession` directly.
+- **`OpenTelemetrySink` now emits nested spans** instead of one-shot
+  events. `AGENT_STARTED` / `PHASE_STARTED` open a long-lived parent
+  span keyed by `(role, phase)`; subsequent events emit as children
+  of that parent via OTel context propagation; `AGENT_COMPLETED` /
+  `AGENT_FAILED` / `PHASE_COMPLETED` end it, copying the terminal
+  event's attributes (incl. `error.type` and an `ERROR` status on
+  failure) onto the parent. APM dashboards now see real trace trees
+  per session instead of unrelated event roots. See
+  [Migrating from 0.1.x](migrating-from-0.1.x.md).
+- New `docs/migrating-from-0.1.x.md` walks the rename + the OTel wire
+  format change.
+
+### Added — Sprint 3 (rate limiting + routing + structured concurrency)
+
+- **`TokenBucket` / `AsyncTokenBucket`** — classic token-bucket
+  limiters with injectable clock. Sync uses `threading.Lock`; async
+  uses `asyncio.Lock` + `asyncio.sleep` so waiting yields the event
+  loop. `RateLimiter` / `AsyncRateLimiter` compose three named buckets
+  (`rpm`, `input_tpm`, `output_tpm`) so typical LLM-provider limits
+  fit in one object. `RateLimitExceededError` raised on timeout.
+- **`Orchestrator(rate_limiter=...)` /
+  `Orchestrator(async_rate_limiter=...)`** — wired into `run_turn` and
+  `arun_turn`. RPM is spent before the call; input / output TPM after
+  the `UsageSnapshot` is known, matching how providers enforce limits.
+- **`ProviderRouter` protocol** with three reference implementations:
+  `StaticProviderRouter` (wraps the existing `next_provider`),
+  `RoundRobinProviderRouter` (strict rotation), `WeightedProviderRouter`
+  (highest-weight non-excluded, ties to declaration order).
+  `Orchestrator(provider_router=...)` exposes it on sessions; caller
+  code consults it when a recovery step calls for a switch.
+- **`RecoveryRecipe.step_retries`** — optional per-step retry budget
+  the caller is expected to honor when executing a step. Default empty
+  mapping preserves the 0.1.0 single-attempt semantics.
+- **`AsyncOrchestrationSession.arun_parallel_tools(...)`** — runs a
+  sequence of tool coroutines concurrently under `asyncio.TaskGroup`.
+  Any child failure cancels its siblings and surfaces an
+  `ExceptionGroup`; a `timeout` argument applies to the whole group.
+- **`_ainvoke` migrated from `asyncio.wait_for` to `asyncio.timeout`** —
+  proper structured-concurrency cancellation semantics per PEP 789.
+  The inner task is cancelled exactly once; no resurrection.
+- **Docs**: `docs/patterns/rate-limiting.md`, `docs/patterns/routing.md`,
+  `docs/api/rate_limit.md`, `docs/api/routing.md`, all in the nav.
+
+### Added — Sprint 2 (durable execution)
+
+- **`CheckpointSaver` protocol** — `get` / `put` / `list` / `delete`
+  shape that mirrors the LangGraph contract. Two reference impls ship:
+  `InMemorySaver` (process-local) and `SqliteSaver(path)` (durable via
+  stdlib `sqlite3`, no new runtime dependency). Both are thread-safe;
+  `SqliteSaver` uses WAL mode so concurrent readers don't block the
+  writer.
+- **`Orchestrator(saver=...)` + `session(thread_id=...)` /
+  `asession(thread_id=...)`** — pair the two to turn a session into a
+  restart-resumable workflow. Per-turn checkpoints are written
+  automatically when both are configured.
+- **`run_turn(..., idempotency_key=...)` /
+  `arun_turn(..., idempotency_key=...)`** — replay-safe turns. A
+  matching key on the same `thread_id` short-circuits the call and
+  returns the cached `(result, usage)` without invoking the model.
+- **`docs/patterns/durability.md` + `docs/api/checkpoint.md`** — when /
+  when-not / anti-patterns / tuning + mkdocstrings API reference.
+
+### Fixed — Sprint 0 (code-quality + bug fixes)
+
+- **Release pipeline gating** — `.github/workflows/release.yml` now
+  runs `ruff` + `mypy --strict` + `pytest` + per-module coverage on
+  3.11/3.12/3.13 BEFORE the PyPI publish step. Pre-0.2.0 the publish
+  step could ship a wheel that failed CI on the underlying commit.
+- **`_resolve_pricing` read race** — `usage_tracking._resolve_pricing`
+  now snapshots `PRICING_TABLE` under `_pricing_lock` before the
+  prefix-match loop, closing the `RuntimeError: dictionary changed
+  size during iteration` window that opened whenever a thread called
+  `register_pricing` while another resolved a model.
+- **Hard turn timeout was blocking** — `OrchestrationSession._invoke_fn`
+  no longer uses `with ThreadPoolExecutor(...) as ex:`, whose `__exit__`
+  calls `shutdown(wait=True)` and made `TurnTimeoutError` wait for the
+  slow worker thread to return. We now call `shutdown(wait=False,
+  cancel_futures=True)` in finally so the timeout propagates promptly.
+- **`classify_exception` walks the exception chain** — wrapped errors
+  (`raise MyAppError() from ConnectionError(...)`) are now classified
+  by the original cause's type. Cyclic chains are detected and broken.
+  Type-based dispatch is consolidated into `_EXCEPTION_TYPE_MAPPING`.
+- **`RecoveryRecipe.steps` is now `tuple[RecoveryStep, ...]`** — frozen
+  dataclass contract is honored end-to-end. Construction from a `list`
+  is still accepted (auto-converted in `__post_init__`) for back-compat.
+- **`__version__` sourced from package metadata** — single source of
+  truth in `pyproject.toml`; `importlib.metadata.version()` with a
+  local-checkout fallback so editable installs keep working.
+- **CI build matrix** — `.github/workflows/ci.yml` build job now runs
+  on Python 3.11/3.12/3.13 (was 3.11 only), matching the test matrix.
+
+### Fixed — Sprint 1 (docs trust)
+
+- **`mkdocs.yml` site description** — "(alpha)" → "(beta)" to match the
+  pyproject.toml classifier, README, and CHANGELOG.
+- **`docs/index.md`** — added a `!!! warning "Beta"` admonition pointing
+  at the migration guide so the landing page no longer reads as
+  "Production".
+- **`.github/workflows/docs.yml`** — `mkdocs build` → `mkdocs build
+  --strict` so broken refs and unresolved nav entries fail the build
+  instead of silently degrading the published site.
+- **`CONTRIBUTING.md`** — new "Testing" section covering when to reach
+  for Hypothesis property tests and how to use the `ManualClock`
+  injection pattern from `tests/conftest.py`.
+- **`CODEOWNERS`** — added an inline note flagging that the
+  `@Techrevati/runtime-maintainers` team must exist on GitHub for
+  auto-review to actually trigger.
+
+## [Pre-0.2.0] — Sprint 6 (testing rigor)
 
 Hardening work between 0.1.0 and 0.2.0. Public API is unchanged; this is
 test-suite and CI-only.

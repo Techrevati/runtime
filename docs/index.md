@@ -1,6 +1,13 @@
 # techrevati-runtime
 
-Production runtime primitives for multi-step LLM agent loops.
+Production-aware runtime primitives for multi-step LLM agent loops.
+
+!!! warning "Beta — 0.1.x"
+    The 0.x API surface is unstable; minor breaking changes are
+    possible until 0.2.0. See
+    [Migrating from 0.0.x](migrating-from-0.0.x.md) for the current
+    upgrade notes, and the [Changelog](changelog.md) for what changed
+    in each release.
 
 ```bash
 pip install techrevati-runtime

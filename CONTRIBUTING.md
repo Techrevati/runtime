@@ -64,6 +64,67 @@ Subclass `PolicyCondition` in `policy_engine.py`, implement
 readable. Update `PhaseContext` if the condition needs new state.
 Tests go in `tests/test_policy_engine.py`.
 
+## Testing
+
+The example-based tests in `tests/test_<module>.py` are the day-to-day
+unit tests. Two adjacent techniques are also in routine use; reach for
+them when they fit, not as a matter of course.
+
+### Property-based testing with Hypothesis
+
+`tests/test_property_<module>.py` files use
+[Hypothesis](https://hypothesis.readthedocs.io/) to assert invariants
+over a wider input space than enumerated examples can cover. Two
+templates already in the tree:
+
+- `tests/test_property_retry_policy.py` — `@given` over strings to
+  prove `classify_exception` never crashes on exotic input, and over
+  attempt counts to prove `backoff_delay` stays in `[0, cap]`.
+- `tests/test_property_circuit_breaker.py` —
+  `RuleBasedStateMachine` driving CLOSED ↔ OPEN ↔ HALF_OPEN transitions
+  with random success/failure sequences, asserting state-machine
+  invariants after every step.
+
+Reach for Hypothesis when:
+
+- the input is text/numbers/structures the example tests can only
+  cover by hand-picking representatives (classifiers, parsers, math);
+- the unit is a state machine and you can name an invariant that must
+  hold after every legal operation (the circuit breaker is the canonical
+  example here); or
+- you fixed a fuzz-style bug and want a regression strategy that won't
+  shrink to "the exact value I caught it on".
+
+Don't reach for it when the assertion you'd write is essentially the
+implementation re-stated, or when the cost of generating valid inputs
+exceeds the cost of one or two example tests.
+
+### ManualClock injection pattern
+
+Every primitive that depends on monotonic time accepts a `clock`
+parameter — `CircuitBreaker(name, clock=...)` is the prototype. In
+production code the default is `time.monotonic`; in tests, inject the
+`ManualClock` from `tests/conftest.py`:
+
+```python
+from tests.conftest import ManualClock  # or use the `manual_clock` fixture
+
+clock = ManualClock(start=1000.0)
+breaker = CircuitBreaker("api", recovery_timeout_seconds=60.0, clock=clock)
+# ... drive the breaker to OPEN ...
+clock.advance(61.0)  # cross the recovery timeout deterministically
+assert breaker.state() is CircuitState.HALF_OPEN
+```
+
+Why this matters: tests that call `time.sleep(60)` are slow, flaky, and
+lie about what they're testing (they prove the OS scheduler honors the
+sleep, not that the unit transitions on time). `ManualClock` lets the
+test name the exact instant it cares about, and the suite stays fast.
+
+When you add a new primitive that depends on time, accept a `clock`
+parameter with the same shape (`Callable[[], float]`) so the existing
+`ManualClock` plugs in unchanged.
+
 ## Async-vs-sync invariants
 
 When you add a sync primitive, add the async sibling in the same
@@ -81,8 +142,8 @@ match, or accept independent state when use cases differ
   share a PR; refactors that touch unrelated code go separately.
 - **Squash on merge** is the default. The dev-tag commits in `git log`
   show what a clean Sprint-sized PR looks like.
-- **Sign-off welcome but not required**. Maintainers will add a
-  `Co-Authored-By` for AI-assisted contributions.
+- **Sign-off welcome but not required.** Commits and PR bodies end at
+  the last content line — no trailers, no auto-generated footers.
 
 ## Release process (for maintainers)
 

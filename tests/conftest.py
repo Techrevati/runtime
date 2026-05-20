@@ -1,33 +1,20 @@
 """Shared test fixtures and utilities.
 
-ManualClock is the test double for any primitive that accepts an injectable
-monotonic clock (currently CircuitBreaker / AsyncCircuitBreaker via their
-``clock`` field, and any future rate-limiter or scheduler with the same
-contract). Using a single source-of-truth class keeps the contract uniform
-across modules and lets Sprint 8 primitives plug into it without re-inventing
-the type.
+``ManualClock`` is the deterministic test double for any primitive that
+accepts an injectable monotonic clock. As of 0.2.0 the canonical
+implementation lives in ``techrevati.runtime.scheduler`` so downstream
+test suites can use the same class without depending on our
+``tests/`` package. We re-export it here so existing imports keep
+working unchanged.
 """
 
 from __future__ import annotations
 
 import pytest
 
+from techrevati.runtime import ManualClock
 
-class ManualClock:
-    """Test double for an injectable monotonic clock.
-
-    Returns the same value on every call until ``advance()`` is called.
-    Construct with ``start`` if a non-zero baseline is needed.
-    """
-
-    def __init__(self, start: float = 1000.0) -> None:
-        self._t = start
-
-    def __call__(self) -> float:
-        return self._t
-
-    def advance(self, seconds: float) -> None:
-        self._t += seconds
+__all__ = ["ManualClock", "manual_clock"]
 
 
 @pytest.fixture

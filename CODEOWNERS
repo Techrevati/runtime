@@ -1,6 +1,12 @@
 # GitHub CODEOWNERS — pinpoint review on touchy files.
 # Format: <pattern> <owner> [<owner>...]
 # Owners auto-request review on PRs touching the matched paths.
+#
+# NOTE — the @Techrevati/runtime-maintainers team must exist on GitHub
+# for these entries to actually trigger auto-review. As of 0.1.0 the
+# team has not been created, so CODEOWNERS auto-review is silently
+# inactive. Either create the team via GitHub settings, or replace
+# every team reference below with a concrete `@user` handle.
 
 # Default fallback.
 *       @Techrevati/runtime-maintainers

@@ -238,6 +238,27 @@ class PolicyEngine:
                 actions.extend(rule.actions)
         return actions
 
+    async def evaluate_async(self, ctx: PhaseContext) -> list[PolicyActionData]:
+        """Async sibling of ``evaluate``.
+
+        Conditions whose ``matches`` is a coroutine function are awaited;
+        sync conditions are called in place. Falls back to the sync path
+        if every rule is sync, so existing engines run unchanged.
+        """
+        import inspect
+
+        actions: list[PolicyActionData] = []
+        for rule in self._rules:
+            match_fn = rule.condition.matches
+            result = match_fn(ctx)
+            if inspect.isawaitable(result):
+                ok = bool(await result)
+            else:
+                ok = bool(result)
+            if ok:
+                actions.extend(rule.actions)
+        return actions
+
     @property
     def rules(self) -> list[PolicyRule]:
         return list(self._rules)

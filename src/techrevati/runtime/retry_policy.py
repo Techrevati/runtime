@@ -58,12 +58,27 @@ class EscalationPolicy(str, Enum):
 
 @dataclass(frozen=True)
 class RecoveryRecipe:
-    """Recovery plan for a failure scenario."""
+    """Recovery plan for a failure scenario.
+
+    ``step_retries`` is an optional per-step retry budget the caller is
+    expected to honor when actually executing a step. The default empty
+    mapping preserves the 0.1.0 single-attempt semantics; populate it
+    when you want, e.g. ``RETRY_WITH_BACKOFF`` to fire three times
+    before the recipe moves on to ``SWITCH_PROVIDER``. This module
+    only records the budget — execution happens in the caller.
+    """
 
     scenario: FailureScenario
-    steps: list[RecoveryStep]
+    steps: tuple[RecoveryStep, ...]
     max_attempts: int
     escalation_policy: EscalationPolicy
+    step_retries: dict[RecoveryStep, int] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        # Accept list/tuple at the call site; freeze to tuple so the
+        # frozen-dataclass contract is honored end-to-end.
+        if not isinstance(self.steps, tuple):
+            object.__setattr__(self, "steps", tuple(self.steps))
 
 
 @dataclass
@@ -111,43 +126,43 @@ class RecoveryEvent:
 _RECIPES: dict[FailureScenario, RecoveryRecipe] = {
     FailureScenario.LLM_TIMEOUT: RecoveryRecipe(
         scenario=FailureScenario.LLM_TIMEOUT,
-        steps=[RecoveryStep.RETRY_WITH_BACKOFF],
+        steps=(RecoveryStep.RETRY_WITH_BACKOFF,),
         max_attempts=2,
         escalation_policy=EscalationPolicy.ALERT_HUMAN,
     ),
     FailureScenario.LLM_ERROR: RecoveryRecipe(
         scenario=FailureScenario.LLM_ERROR,
-        steps=[RecoveryStep.RETRY_WITH_BACKOFF, RecoveryStep.SWITCH_PROVIDER],
+        steps=(RecoveryStep.RETRY_WITH_BACKOFF, RecoveryStep.SWITCH_PROVIDER),
         max_attempts=2,
         escalation_policy=EscalationPolicy.ALERT_HUMAN,
     ),
     FailureScenario.TOOL_EXECUTION_ERROR: RecoveryRecipe(
         scenario=FailureScenario.TOOL_EXECUTION_ERROR,
-        steps=[RecoveryStep.RESTART_AGENT],
+        steps=(RecoveryStep.RESTART_AGENT,),
         max_attempts=1,
         escalation_policy=EscalationPolicy.LOG_AND_CONTINUE,
     ),
     FailureScenario.CONTEXT_OVERFLOW: RecoveryRecipe(
         scenario=FailureScenario.CONTEXT_OVERFLOW,
-        steps=[RecoveryStep.RETRY_WITH_SMALLER_CONTEXT, RecoveryStep.REDUCE_TOOL_SET],
+        steps=(RecoveryStep.RETRY_WITH_SMALLER_CONTEXT, RecoveryStep.REDUCE_TOOL_SET),
         max_attempts=1,
         escalation_policy=EscalationPolicy.ALERT_HUMAN,
     ),
     FailureScenario.DEPENDENCY_TIMEOUT: RecoveryRecipe(
         scenario=FailureScenario.DEPENDENCY_TIMEOUT,
-        steps=[RecoveryStep.RETRY_WITH_BACKOFF],
+        steps=(RecoveryStep.RETRY_WITH_BACKOFF,),
         max_attempts=1,
         escalation_policy=EscalationPolicy.ALERT_HUMAN,
     ),
     FailureScenario.MEMORY_CORRUPTION: RecoveryRecipe(
         scenario=FailureScenario.MEMORY_CORRUPTION,
-        steps=[RecoveryStep.CLEAR_MEMORY_CACHE, RecoveryStep.RESTART_AGENT],
+        steps=(RecoveryStep.CLEAR_MEMORY_CACHE, RecoveryStep.RESTART_AGENT),
         max_attempts=1,
         escalation_policy=EscalationPolicy.ABORT,
     ),
     FailureScenario.PROVIDER_FAILURE: RecoveryRecipe(
         scenario=FailureScenario.PROVIDER_FAILURE,
-        steps=[RecoveryStep.SWITCH_PROVIDER, RecoveryStep.RETRY_WITH_BACKOFF],
+        steps=(RecoveryStep.SWITCH_PROVIDER, RecoveryStep.RETRY_WITH_BACKOFF),
         max_attempts=2,
         escalation_policy=EscalationPolicy.ABORT,
     ),
@@ -339,17 +354,62 @@ def smaller_context_budget(current_chars: int, reduction: float = 0.75) -> int:
 # -- Exception classifier --
 
 
+# Type-based dispatch first — subclass entries MUST come before their bases
+# (e.g. ConnectionRefusedError before ConnectionError) so the tuple-order
+# scan gives the most specific match.
+_EXCEPTION_TYPE_MAPPING: tuple[tuple[type[BaseException], FailureScenario], ...] = (
+    (asyncio.TimeoutError, FailureScenario.LLM_TIMEOUT),
+    (TimeoutError, FailureScenario.LLM_TIMEOUT),
+    (ConnectionRefusedError, FailureScenario.PROVIDER_FAILURE),
+    (ConnectionResetError, FailureScenario.PROVIDER_FAILURE),
+    (ConnectionError, FailureScenario.PROVIDER_FAILURE),
+    (json.JSONDecodeError, FailureScenario.MEMORY_CORRUPTION),
+)
+
+
+def _classify_by_type(error: BaseException) -> FailureScenario | None:
+    """Type-based dispatch against the stdlib exception mapping."""
+    for exc_type, scenario in _EXCEPTION_TYPE_MAPPING:
+        if isinstance(error, exc_type):
+            return scenario
+    return None
+
+
 def classify_exception(error: Exception) -> FailureScenario:
-    """Map a Python exception to a FailureScenario for recovery."""
+    """Map a Python exception to a FailureScenario for recovery.
+
+    Two-pass dispatch:
+
+    1. **Type-based** — ``isinstance`` against well-known stdlib classes
+       (``TimeoutError``, ``ConnectionError`` family, ``JSONDecodeError``).
+       Walks the exception chain via ``__cause__`` / ``__context__`` so a
+       ``RuntimeError`` wrapping a ``ConnectionError`` is still classified
+       as ``PROVIDER_FAILURE``.
+    2. **String match** — provider SDKs that don't expose stdlib types
+       fall through to substring matching on the rendered message.
+    """
+    # Pass 1: type-based, with __cause__ / __context__ walk. Mirrors the
+    # stdlib traceback rule: prefer explicit cause; fall back to implicit
+    # context only when ``__suppress_context__`` is not set (i.e. caller
+    # did NOT use ``raise X from None``).
+    seen: set[int] = set()
+    cursor: BaseException | None = error
+    while cursor is not None and id(cursor) not in seen:
+        seen.add(id(cursor))
+        scenario = _classify_by_type(cursor)
+        if scenario is not None:
+            return scenario
+        nxt: BaseException | None = cursor.__cause__
+        if nxt is None and not cursor.__suppress_context__:
+            nxt = cursor.__context__
+        cursor = nxt
+
+    # Pass 2: string substring match against the rendered message.
     error_str = str(error).lower()
 
-    # Timeout errors
-    if isinstance(error, (asyncio.TimeoutError, TimeoutError)):
-        return FailureScenario.LLM_TIMEOUT
     if "timeout" in error_str or "timed out" in error_str:
         return FailureScenario.LLM_TIMEOUT
 
-    # Rate limits
     if (
         "rate limit" in error_str
         or "429" in error_str
@@ -357,44 +417,34 @@ def classify_exception(error: Exception) -> FailureScenario:
     ):
         return FailureScenario.LLM_ERROR
 
-    # Context overflow
     if any(
         kw in error_str
-        for kw in [
+        for kw in (
             "context length",
             "token limit",
             "maximum context",
             "too many tokens",
             "context_length_exceeded",
-        ]
+        )
     ):
         return FailureScenario.CONTEXT_OVERFLOW
 
-    # Memory corruption
-    if isinstance(error, (json.JSONDecodeError,)):
-        return FailureScenario.MEMORY_CORRUPTION
     if "corrupt" in error_str or "malformed" in error_str:
         return FailureScenario.MEMORY_CORRUPTION
 
-    # Connection / provider failures
-    if isinstance(
-        error, (ConnectionError, ConnectionRefusedError, ConnectionResetError)
-    ):
-        return FailureScenario.PROVIDER_FAILURE
     if any(
         kw in error_str
-        for kw in [
+        for kw in (
             "connection refused",
             "connection reset",
             "503",
             "502",
             "service unavailable",
             "bad gateway",
-        ]
+        )
     ):
         return FailureScenario.PROVIDER_FAILURE
 
-    # Authentication errors
     if (
         "401" in error_str
         or "unauthorized" in error_str
@@ -402,23 +452,20 @@ def classify_exception(error: Exception) -> FailureScenario:
     ):
         return FailureScenario.PROVIDER_FAILURE
 
-    # Tool errors
     if "tool" in error_str and ("error" in error_str or "failed" in error_str):
         return FailureScenario.TOOL_EXECUTION_ERROR
 
-    # Dependency/downstream timeouts
     if any(
         kw in error_str
-        for kw in [
+        for kw in (
             "dependency",
             "downstream",
             "upstream",
             "external service",
             "dependent",
             "dependency timeout",
-        ]
+        )
     ):
         return FailureScenario.DEPENDENCY_TIMEOUT
 
-    # Default to LLM error
     return FailureScenario.LLM_ERROR

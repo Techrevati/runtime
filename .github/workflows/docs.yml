@@ -26,7 +26,10 @@ jobs:
           pip install mkdocs mkdocs-material mkdocstrings[python]
 
       - name: Build documentation
-        run: mkdocs build
+        # --strict turns broken refs and unresolved nav entries into
+        # hard failures so a doc regression cannot silently degrade
+        # the published site.
+        run: mkdocs build --strict
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3

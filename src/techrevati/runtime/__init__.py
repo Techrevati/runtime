@@ -9,7 +9,15 @@ Zero runtime dependencies.
 >>> from techrevati.runtime import CircuitBreaker, PolicyEngine
 """
 
-__version__ = "0.1.0"
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _pkg_version
+
+try:
+    __version__ = _pkg_version("techrevati-runtime")
+except PackageNotFoundError:
+    # Editable / source checkout without an installed dist — fall back to
+    # the in-tree version so imports still work during local development.
+    __version__ = "0.0.0+local"
 
 from techrevati.runtime.agent_events import (
     AgentEvent,
@@ -23,6 +31,12 @@ from techrevati.runtime.agent_lifecycle import (
     AgentWorker,
     AgentWorkerEvent,
     InvalidTransitionError,
+)
+from techrevati.runtime.checkpoint import (
+    Checkpoint,
+    CheckpointSaver,
+    InMemorySaver,
+    SqliteSaver,
 )
 from techrevati.runtime.circuit_breaker import (
     AsyncCircuitBreaker,
@@ -54,6 +68,10 @@ from techrevati.runtime.permissions import (
     PermissionPolicy,
     RolePermissionConfig,
 )
+from techrevati.runtime.persistence import (
+    SqliteEventSink,
+    SqliteUsageSink,
+)
 from techrevati.runtime.policy_engine import (
     PhaseContext,
     PolicyAction,
@@ -66,6 +84,13 @@ from techrevati.runtime.quality_gate import (
     QualityGate,
     QualityGateOutcome,
     QualityLevel,
+)
+from techrevati.runtime.rate_limit import (
+    AsyncRateLimiter,
+    AsyncTokenBucket,
+    RateLimiter,
+    RateLimitExceededError,
+    TokenBucket,
 )
 from techrevati.runtime.retry_policy import (
     EscalationPolicy,
@@ -83,6 +108,17 @@ from techrevati.runtime.retry_policy import (
     recipe_for,
     smaller_context_budget,
 )
+from techrevati.runtime.routing import (
+    ProviderRouter,
+    RoundRobinProviderRouter,
+    StaticProviderRouter,
+    WeightedProviderRouter,
+)
+from techrevati.runtime.scheduler import (
+    Clock,
+    ManualClock,
+    SystemClock,
+)
 from techrevati.runtime.sinks import (
     DEFAULT_RING_CAPACITY,
     EventSink,
@@ -96,6 +132,9 @@ from techrevati.runtime.usage_tracking import (
     PRICING_TABLE,
     BudgetExceededError,
     ModelPricing,
+    UsageBoundExceededError,
+    UsageLimitExceededError,
+    UsageLimits,
     UsageSnapshot,
     UsageTracker,
     has_pricing,
@@ -116,10 +155,15 @@ __all__ = [
     "AllowAllGuardrail",
     "AsyncCircuitBreaker",
     "AsyncOrchestrationSession",
+    "AsyncRateLimiter",
+    "AsyncTokenBucket",
     "BudgetExceededError",
+    "Checkpoint",
+    "CheckpointSaver",
     "CircuitBreaker",
     "CircuitOpenError",
     "CircuitState",
+    "Clock",
     "DEFAULT_RING_CAPACITY",
     "EscalationPolicy",
     "EventSink",
@@ -129,7 +173,9 @@ __all__ = [
     "GuardrailStage",
     "GuardrailViolatedError",
     "Handoff",
+    "InMemorySaver",
     "InvalidTransitionError",
+    "ManualClock",
     "MaxIterationsExceededError",
     "ModelPricing",
     "NoopEventSink",
@@ -148,9 +194,12 @@ __all__ = [
     "PolicyEngine",
     "PolicyRule",
     "PRICING_TABLE",
+    "ProviderRouter",
     "QualityGate",
     "QualityGateOutcome",
     "QualityLevel",
+    "RateLimitExceededError",
+    "RateLimiter",
     "RecoveryContext",
     "RecoveryEvent",
     "RecoveryRecipe",
@@ -159,10 +208,21 @@ __all__ = [
     "RingBufferEventSink",
     "RingBufferUsageSink",
     "RolePermissionConfig",
+    "RoundRobinProviderRouter",
+    "SqliteEventSink",
+    "SqliteSaver",
+    "SqliteUsageSink",
+    "StaticProviderRouter",
+    "SystemClock",
+    "TokenBucket",
     "TurnTimeoutError",
+    "UsageBoundExceededError",
+    "UsageLimitExceededError",
+    "UsageLimits",
     "UsageSink",
     "UsageSnapshot",
     "UsageTracker",
+    "WeightedProviderRouter",
     "__version__",
     "aattempt_recovery",
     "attempt_recovery",

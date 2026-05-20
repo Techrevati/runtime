@@ -1,5 +1,5 @@
 site_name: techrevati-runtime
-site_description: Runtime primitives for multi-step LLM agent loops (alpha)
+site_description: Runtime primitives for multi-step LLM agent loops (beta)
 site_url: https://Techrevati.github.io/runtime
 repo_url: https://github.com/Techrevati/runtime
 repo_name: Techrevati/runtime
@@ -39,10 +39,14 @@ nav:
   - Getting Started: getting-started.md
   - End-to-End Tutorial: tutorials/end-to-end.md
   - Migrating from 0.0.x: migrating-from-0.0.x.md
+  - Migrating from 0.1.x: migrating-from-0.1.x.md
   - Patterns:
     - Orchestrator: patterns/orchestrator.md
     - Retry Policy: patterns/retry.md
     - Circuit Breaker: patterns/circuit-breaker.md
+    - Durability: patterns/durability.md
+    - Rate Limiting: patterns/rate-limiting.md
+    - Routing: patterns/routing.md
     - Quality Gate: patterns/quality-gate.md
     - Agent Lifecycle: patterns/lifecycle.md
     - Agent Events: patterns/agent-events.md
@@ -52,11 +56,16 @@ nav:
   - API Reference:
     - Orchestrator: api/orchestrator.md
     - Circuit Breaker: api/circuit_breaker.md
+    - Checkpoint: api/checkpoint.md
+    - Rate Limit: api/rate_limit.md
+    - Routing: api/routing.md
     - Retry Policy: api/retry_policy.md
     - Usage Tracking: api/usage_tracking.md
     - Guardrails: api/guardrails.md
     - Handoffs: api/handoffs.md
     - Sinks: api/sinks.md
+    - Persistence: api/persistence.md
+    - Scheduler: api/scheduler.md
     - OpenTelemetry: api/otel.md
   - Changelog: changelog.md
 

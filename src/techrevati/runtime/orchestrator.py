@@ -32,9 +32,10 @@ from __future__ import annotations
 
 import asyncio
 import concurrent.futures
+import json
 import logging
 import time
-from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterator, Sequence
 from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass, field
 from typing import Any, TypeVar
@@ -45,6 +46,7 @@ from techrevati.runtime.agent_lifecycle import (
     AgentStatus,
     AgentWorker,
 )
+from techrevati.runtime.checkpoint import CheckpointSaver
 from techrevati.runtime.circuit_breaker import (
     AsyncCircuitBreaker,
     CircuitBreaker,
@@ -67,6 +69,7 @@ from techrevati.runtime.quality_gate import (
     QualityGateOutcome,
     QualityLevel,
 )
+from techrevati.runtime.rate_limit import AsyncRateLimiter, RateLimiter
 from techrevati.runtime.retry_policy import (
     FailureScenario,
     RecoveryContext,
@@ -74,6 +77,7 @@ from techrevati.runtime.retry_policy import (
     attempt_recovery,
     classify_exception,
 )
+from techrevati.runtime.routing import ProviderRouter
 from techrevati.runtime.sinks import (
     EventSink,
     NoopEventSink,
@@ -82,6 +86,7 @@ from techrevati.runtime.sinks import (
 )
 from techrevati.runtime.usage_tracking import (
     BudgetExceededError,
+    UsageLimits,
     UsageSnapshot,
     UsageTracker,
 )
@@ -181,13 +186,18 @@ async def _arecord_recovery_event(
 
 
 @dataclass
-class Orchestrator:
+class AgentSession:
     """Factory for sessions. Holds shared, long-lived components.
 
     Components are optional; the simplest invocation is
     ``Orchestrator(role=..., phase=...)``. Provide ``circuit_breaker``
     for sync sessions, ``async_circuit_breaker`` for async sessions, or
     both — they are independent.
+
+    To make sessions restart-resumable, pass ``saver`` (any object that
+    satisfies the ``CheckpointSaver`` protocol) and a ``thread_id`` at
+    ``session()`` / ``asession()`` time. The thread id is the durable
+    handle a future process uses to pick up where this one left off.
     """
 
     role: str
@@ -205,13 +215,24 @@ class Orchestrator:
     guardrails: list[Guardrail] = field(default_factory=list)
     event_sink: EventSink = field(default_factory=NoopEventSink)
     usage_sink: UsageSink = field(default_factory=NoopUsageSink)
+    saver: CheckpointSaver | None = None
+    rate_limiter: RateLimiter | None = None
+    async_rate_limiter: AsyncRateLimiter | None = None
+    provider_router: ProviderRouter | None = None
+    usage_limits: UsageLimits | None = None
 
     @contextmanager
-    def session(self) -> Iterator[OrchestrationSession]:
+    def session(
+        self, *, thread_id: str | None = None
+    ) -> Iterator[OrchestrationSession]:
         """Open a single-agent sync session.
 
         On clean exit: worker → COMPLETED if still running. On exception:
         worker → FAILED with the error classified into an AgentFailureClass.
+
+        If ``thread_id`` is supplied and the orchestrator has a ``saver``,
+        the session writes a checkpoint after each turn and an
+        ``idempotency_key`` on ``run_turn`` makes that turn replay-safe.
         """
         worker = self._start_worker()
         session = OrchestrationSession(
@@ -232,6 +253,11 @@ class Orchestrator:
             phase=self.phase,
             role=self.role,
             project_id=self.project_id,
+            thread_id=thread_id,
+            saver=self.saver,
+            provider_router=self.provider_router,
+            rate_limiter=self.rate_limiter,
+            usage_limits=self.usage_limits,
         )
 
         try:
@@ -245,12 +271,18 @@ class Orchestrator:
                 session.complete()
 
     @asynccontextmanager
-    async def asession(self) -> AsyncIterator[AsyncOrchestrationSession]:
+    async def asession(
+        self, *, thread_id: str | None = None
+    ) -> AsyncIterator[AsyncOrchestrationSession]:
         """Open a single-agent async session.
 
         Mirrors ``session()`` but uses async primitives. ``CancelledError``
         from anywhere inside the ``async with`` body transitions the
         worker to CANCELLED instead of FAILED, and is re-raised.
+
+        The same ``thread_id`` / ``saver`` contract from ``session()``
+        applies; pair with ``arun_turn(..., idempotency_key=...)`` for
+        replay-safe async turns.
         """
         worker = self._start_worker()
         session = AsyncOrchestrationSession(
@@ -271,6 +303,11 @@ class Orchestrator:
             phase=self.phase,
             role=self.role,
             project_id=self.project_id,
+            thread_id=thread_id,
+            saver=self.saver,
+            provider_router=self.provider_router,
+            async_rate_limiter=self.async_rate_limiter,
+            usage_limits=self.usage_limits,
         )
 
         try:
@@ -317,8 +354,67 @@ class _SessionBase:
     event_sink: EventSink = field(default_factory=NoopEventSink)
     usage_sink: UsageSink = field(default_factory=NoopUsageSink)
     events: list[AgentEvent] = field(default_factory=list)
+    thread_id: str | None = None
+    saver: CheckpointSaver | None = None
+    provider_router: ProviderRouter | None = None
+    usage_limits: UsageLimits | None = None
     _started_at: float = field(default_factory=time.monotonic, init=False, repr=False)
     _iteration_count: int = field(default=0, init=False, repr=False)
+
+    # -- Durable execution helpers (idempotent replay + per-turn checkpoint).
+    # Both no-op gracefully when either ``thread_id`` or ``saver`` is absent,
+    # so the call sites can stay flat.
+
+    def _restore_idempotent_turn(
+        self, idempotency_key: str | None
+    ) -> tuple[Any, UsageSnapshot] | None:
+        """Return a cached (result, usage) if this idempotency_key already ran."""
+        if not (idempotency_key and self.thread_id and self.saver is not None):
+            return None
+        # Bounded scan over the most recent checkpoints. 100 is plenty for a
+        # typical session; callers expecting truly long-lived threads should
+        # cache the lookup outside the runtime.
+        for cp in self.saver.list(self.thread_id, limit=100):
+            if cp.metadata.get("idempotency_key") == idempotency_key:
+                result = cp.state.get("result")
+                usage_data = cp.state.get("usage") or {}
+                return result, UsageSnapshot.from_dict(usage_data)
+        return None
+
+    def _persist_turn_checkpoint(
+        self,
+        *,
+        result: Any,
+        usage: UsageSnapshot,
+        model: str,
+        idempotency_key: str | None,
+    ) -> None:
+        """Write a checkpoint for the turn. JSON-serializable results only.
+
+        Non-serializable results are skipped with a logged warning rather
+        than raising, so a session that does not care about durability
+        keeps working when the saver is configured globally.
+        """
+        if not (self.thread_id and self.saver is not None):
+            return
+        try:
+            result_payload = json.loads(json.dumps(result))
+        except (TypeError, ValueError):
+            logger.warning(
+                "checkpoint skipped: result for model=%s is not "
+                "JSON-serializable; pass a JSON-friendly value or omit "
+                "idempotency_key",
+                model or "<unspecified>",
+            )
+            return
+        metadata: dict[str, Any] = {"status": "completed", "model": model}
+        if idempotency_key:
+            metadata["idempotency_key"] = idempotency_key
+        self.saver.put(
+            self.thread_id,
+            state={"result": result_payload, "usage": usage.to_dict()},
+            metadata=metadata,
+        )
 
     # -- Tool authorization (sync; safe to call from async context too) --
 
@@ -593,12 +689,20 @@ class _SessionBase:
                     current_cost_usd=self.tracker.total_cost(),
                 )
 
+        if self.usage_limits is not None:
+            # ``check_limits`` raises ``UsageLimitExceededError`` on the
+            # first overrun. We let it propagate so callers can react
+            # to per-dimension caps (token quota, tool-call budget)
+            # distinctly from cost overruns.
+            self.tracker.check_limits(self.usage_limits)
+
 
 @dataclass
 class OrchestrationSession(_SessionBase):
     """Single-agent sync execution context. Created by Orchestrator.session()."""
 
     circuit_breaker: CircuitBreaker | None = None
+    rate_limiter: RateLimiter | None = None
 
     def run_tool(
         self,
@@ -624,6 +728,7 @@ class OrchestrationSession(_SessionBase):
         usage: UsageSnapshot | None = None,
         estimate_usage: Callable[[T], UsageSnapshot] | None = None,
         timeout: float | None = None,
+        idempotency_key: str | None = None,
     ) -> tuple[T, UsageSnapshot]:
         """Execute one model turn with circuit-breaker + recovery wiring.
 
@@ -634,7 +739,25 @@ class OrchestrationSession(_SessionBase):
 
         On exception: classifies the failure, attempts recovery once,
         and re-raises so the caller decides whether to retry.
+
+        If a ``saver`` + ``thread_id`` are configured and
+        ``idempotency_key`` is supplied, this method first looks for a
+        prior checkpoint with the same key on the same thread; on a hit
+        it returns the cached ``(result, usage)`` without calling
+        ``fn``. After a successful execution, a new checkpoint is
+        written so a restart can replay through it.
         """
+        cached = self._restore_idempotent_turn(idempotency_key)
+        if cached is not None:
+            cached_result, cached_usage = cached
+            # Iteration count still ticks so the cap reflects logical
+            # progress through the loop, not just live executions.
+            self._check_iteration_cap()
+            return cached_result, cached_usage
+
+        if self.rate_limiter is not None:
+            self.rate_limiter.acquire_pre_call()
+
         self._check_iteration_cap()
         try:
             result = self._invoke_fn(fn, timeout=timeout)
@@ -647,7 +770,18 @@ class OrchestrationSession(_SessionBase):
             raise
 
         snapshot = self._resolve_usage(result, usage, estimate_usage)
+        if self.rate_limiter is not None:
+            self.rate_limiter.acquire_usage(
+                input_tokens=snapshot.input_tokens,
+                output_tokens=snapshot.output_tokens,
+            )
         self._apply_usage_and_check_budget(model, snapshot)
+        self._persist_turn_checkpoint(
+            result=result,
+            usage=snapshot,
+            model=model,
+            idempotency_key=idempotency_key,
+        )
         return result, snapshot
 
     def _invoke_fn(self, fn: Callable[[], T], *, timeout: float | None) -> T:
@@ -661,13 +795,24 @@ class OrchestrationSession(_SessionBase):
         # downstream failure if the inner fn raises, and a hard timeout
         # counts as TurnTimeoutError (a session-level concern, not a
         # downstream signal).
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+        #
+        # We deliberately bypass `with ... as ex:` because its __exit__
+        # calls shutdown(wait=True), which would block the timeout from
+        # returning until the worker thread finishes — defeating the
+        # whole point of a hard turn deadline. shutdown(wait=False,
+        # cancel_futures=True) lets the timeout propagate immediately;
+        # the orphan thread completes in the background (Python has no
+        # thread.kill()) but is reclaimed naturally when it returns.
+        ex = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        try:
             future = ex.submit(self._wrapped_call, fn)
             try:
                 return future.result(timeout=timeout)
             except concurrent.futures.TimeoutError as exc:
                 future.cancel()
                 raise TurnTimeoutError(timeout) from exc
+        finally:
+            ex.shutdown(wait=False, cancel_futures=True)
 
     def _wrapped_call(self, fn: Callable[[], T]) -> T:
         if self.circuit_breaker is not None:
@@ -686,6 +831,7 @@ class AsyncOrchestrationSession(_SessionBase):
     """
 
     circuit_breaker: AsyncCircuitBreaker | None = None
+    async_rate_limiter: AsyncRateLimiter | None = None
 
     async def arun_tool(
         self,
@@ -711,13 +857,27 @@ class AsyncOrchestrationSession(_SessionBase):
         usage: UsageSnapshot | None = None,
         estimate_usage: Callable[[T], UsageSnapshot] | None = None,
         timeout: float | None = None,
+        idempotency_key: str | None = None,
     ) -> tuple[T, UsageSnapshot]:
         """Execute one model turn with async circuit-breaker + recovery wiring.
 
         ``timeout`` is enforced with ``asyncio.wait_for``. Cancellation
         from outside (parent task) is propagated as CancelledError; an
         internal timeout becomes ``TurnTimeoutError``.
+
+        ``idempotency_key`` behaves the same as in ``run_turn``: when the
+        session has a saver + thread_id configured, a prior checkpoint
+        with the same key short-circuits the call.
         """
+        cached = self._restore_idempotent_turn(idempotency_key)
+        if cached is not None:
+            cached_result, cached_usage = cached
+            self._check_iteration_cap()
+            return cached_result, cached_usage
+
+        if self.async_rate_limiter is not None:
+            await self.async_rate_limiter.acquire_pre_call()
+
         self._check_iteration_cap()
         try:
             result = await self._ainvoke(coro_factory, timeout=timeout)
@@ -732,7 +892,18 @@ class AsyncOrchestrationSession(_SessionBase):
             raise
 
         snapshot = self._resolve_usage(result, usage, estimate_usage)
+        if self.async_rate_limiter is not None:
+            await self.async_rate_limiter.acquire_usage(
+                input_tokens=snapshot.input_tokens,
+                output_tokens=snapshot.output_tokens,
+            )
         self._apply_usage_and_check_budget(model, snapshot)
+        self._persist_turn_checkpoint(
+            result=result,
+            usage=snapshot,
+            model=model,
+            idempotency_key=idempotency_key,
+        )
         return result, snapshot
 
     async def _ainvoke(
@@ -744,11 +915,14 @@ class AsyncOrchestrationSession(_SessionBase):
         if timeout is None:
             return await self._wrapped_acall(coro_factory)
 
+        # asyncio.timeout (Python 3.11+) gives proper structured-concurrency
+        # cancellation semantics — the inner task is cancelled exactly
+        # once and the context manager re-raises a clean TimeoutError.
+        # asyncio.wait_for has a long-standing bug where the inner task
+        # can be resurrected after the timeout fires; PEP 789 explains.
         try:
-            return await asyncio.wait_for(
-                self._wrapped_acall(coro_factory),
-                timeout=timeout,
-            )
+            async with asyncio.timeout(timeout):
+                return await self._wrapped_acall(coro_factory)
         except TimeoutError as exc:
             raise TurnTimeoutError(timeout) from exc
 
@@ -756,6 +930,46 @@ class AsyncOrchestrationSession(_SessionBase):
         if self.circuit_breaker is not None:
             return await self.circuit_breaker.call(coro_factory)
         return await coro_factory()
+
+    async def arun_parallel_tools(
+        self,
+        coro_factories: Sequence[Callable[[], Awaitable[Any]]],
+        *,
+        timeout: float | None = None,
+    ) -> list[Any]:
+        """Run several tool calls concurrently with structured concurrency.
+
+        Uses ``asyncio.TaskGroup`` so any child failure cancels its
+        siblings and surfaces as ``ExceptionGroup`` to the caller —
+        no orphan tasks, no swallowed exceptions. ``timeout`` (if
+        given) applies to the whole group via ``asyncio.timeout``.
+
+        Returns results in input order. Each ``coro_factory`` is a
+        zero-arg callable that returns an awaitable; this matches the
+        contract used elsewhere in the session API and means callers
+        can build the coroutine lazily inside the group.
+        """
+        if not coro_factories:
+            return []
+
+        results: list[Any] = [None] * len(coro_factories)
+
+        async def _runner(idx: int, factory: Callable[[], Awaitable[Any]]) -> None:
+            results[idx] = await factory()
+
+        try:
+            if timeout is None:
+                async with asyncio.TaskGroup() as tg:
+                    for i, f in enumerate(coro_factories):
+                        tg.create_task(_runner(i, f))
+            else:
+                async with asyncio.timeout(timeout):
+                    async with asyncio.TaskGroup() as tg:
+                        for i, f in enumerate(coro_factories):
+                            tg.create_task(_runner(i, f))
+        except TimeoutError as exc:
+            raise TurnTimeoutError(timeout or 0.0) from exc
+        return results
 
     async def pause_for_input(self, prompt: str) -> str:
         """Mark the worker WAITING_FOR_INPUT and await an external response.
@@ -810,11 +1024,11 @@ def _scenario_to_class(scenario: FailureScenario) -> AgentFailureClass:
     return mapping.get(scenario, AgentFailureClass.UNKNOWN)
 
 
-# Forward-looking name. 0.2.0 will promote ``AgentSession`` to the canonical
-# class name with ``Orchestrator`` kept as a deprecation alias. Adding the
-# alias now lets new code adopt the future name while existing code keeps
-# working unchanged.
-AgentSession = Orchestrator
+# `Orchestrator` is the legacy 0.1.x name; `AgentSession` is now
+# canonical (see class definition above). The alias is intentionally a
+# bare assignment — same class, same constructor, same identity. It
+# will be removed in 0.3.0; consumers should migrate imports now.
+Orchestrator = AgentSession
 
 
 __all__ = [

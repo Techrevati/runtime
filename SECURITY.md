@@ -78,3 +78,25 @@ how you should deploy:
   for compliance/audit trails.
 - The runtime trusts `UsageSnapshot` values its callers provide.
   Token counts are not validated against the model's actual response.
+
+## Verifying release provenance
+
+Starting with 0.2.0, every wheel and sdist on PyPI carries a
+[PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/)
+attestation chained back to the `release.yml` workflow on
+`github.com/Techrevati/runtime`. A CycloneDX SBOM accompanies each
+GitHub Release as `sbom.cyclonedx.json` and `sbom.cyclonedx.xml`.
+
+To verify before installing:
+
+```bash
+# Attestation: proves what built the artifact and from which commit.
+gh attestation verify --owner Techrevati techrevati_runtime-X.Y.Z-py3-none-any.whl
+
+# SBOM: download from the GitHub Release page and inspect with any
+# CycloneDX-aware tool (e.g. cyclonedx-cli, anchore/grype).
+gh release download vX.Y.Z --pattern "sbom.cyclonedx.json"
+```
+
+If either verification fails, do not install the artifact and report
+the discrepancy to security@techrevati.com.
