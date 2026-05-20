@@ -3,7 +3,7 @@
 0.1.0 is a beta release. Most existing 0.0.x calls keep working, but a
 handful of changes are worth knowing before you bump the pin. This page
 lists every behavior change in one place; pair it with the
-[CHANGELOG](../CHANGELOG.md) for the full feature list.
+[CHANGELOG](changelog.md) for the full feature list.
 
 ## TL;DR
 

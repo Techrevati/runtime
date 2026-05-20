@@ -11,7 +11,7 @@ First beta release. Closes the primitive-parity gap with 2026 agent
 SDKs and ships the async path the 0.0.x docstring had been falsely
 advertising. APIs in this release are intended to be stable; breaking
 changes between 0.1.x and 0.2.0 will be documented in
-[`docs/migrating-from-0.0.x.md`](docs/migrating-from-0.0.x.md) and
+[`docs/migrating-from-0.0.x.md`](https://github.com/Techrevati/runtime/blob/main/docs/migrating-from-0.0.x.md) and
 gated by deprecation warnings.
 
 Consolidates the work of pre-release tags `0.1.0.dev1`, `0.1.0.dev2`,
