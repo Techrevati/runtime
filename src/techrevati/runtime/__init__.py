@@ -9,7 +9,7 @@ Zero runtime dependencies.
 >>> from techrevati.runtime import CircuitBreaker, PolicyEngine
 """
 
-__version__ = "0.1.0.dev2"
+__version__ = "0.1.0.dev3"
 
 from techrevati.runtime.agent_events import (
     AgentEvent,
@@ -83,6 +83,15 @@ from techrevati.runtime.retry_policy import (
     recipe_for,
     smaller_context_budget,
 )
+from techrevati.runtime.sinks import (
+    DEFAULT_RING_CAPACITY,
+    EventSink,
+    NoopEventSink,
+    NoopUsageSink,
+    RingBufferEventSink,
+    RingBufferUsageSink,
+    UsageSink,
+)
 from techrevati.runtime.usage_tracking import (
     PRICING_TABLE,
     BudgetExceededError,
@@ -111,7 +120,9 @@ __all__ = [
     "CircuitBreaker",
     "CircuitOpenError",
     "CircuitState",
+    "DEFAULT_RING_CAPACITY",
     "EscalationPolicy",
+    "EventSink",
     "FailureScenario",
     "Guardrail",
     "GuardrailOutcome",
@@ -121,6 +132,8 @@ __all__ = [
     "InvalidTransitionError",
     "MaxIterationsExceededError",
     "ModelPricing",
+    "NoopEventSink",
+    "NoopUsageSink",
     "OrchestrationSession",
     "Orchestrator",
     "PermissionDeniedError",
@@ -143,8 +156,11 @@ __all__ = [
     "RecoveryRecipe",
     "RecoveryResult",
     "RecoveryStep",
+    "RingBufferEventSink",
+    "RingBufferUsageSink",
     "RolePermissionConfig",
     "TurnTimeoutError",
+    "UsageSink",
     "UsageSnapshot",
     "UsageTracker",
     "__version__",

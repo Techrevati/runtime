@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "techrevati-runtime"
-version = "0.1.0.dev2"
+version = "0.1.0.dev3"
 description = "Production runtime primitives for multi-step LLM agent loops."
 readme = "README.md"
 license = "MIT"
@@ -31,8 +31,18 @@ dev = [
     "pytest-asyncio==1.3.0",
     "mypy==1.18.2",
     "ruff==0.14.5",
+    # Optional integrations need to be importable so we can type-check
+    # and test the optional modules under mypy --strict.
+    "opentelemetry-api>=1.27",
+    "opentelemetry-sdk>=1.27",
+    "opentelemetry-semantic-conventions>=0.48b0",
 ]
 docs = ["mkdocs-material>=9.5", "mkdocstrings[python]>=0.25"]
+otel = [
+    "opentelemetry-api>=1.27",
+    "opentelemetry-sdk>=1.27",
+    "opentelemetry-semantic-conventions>=0.48b0",
+]
 
 [project.urls]
 Homepage = "https://github.com/Techrevati/runtime"

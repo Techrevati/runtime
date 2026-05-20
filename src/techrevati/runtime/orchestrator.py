@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import asyncio
 import concurrent.futures
+import logging
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
 from contextlib import asynccontextmanager, contextmanager
@@ -73,11 +74,20 @@ from techrevati.runtime.retry_policy import (
     attempt_recovery,
     classify_exception,
 )
+from techrevati.runtime.sinks import (
+    EventSink,
+    NoopEventSink,
+    NoopUsageSink,
+    UsageSink,
+)
 from techrevati.runtime.usage_tracking import (
     BudgetExceededError,
     UsageSnapshot,
     UsageTracker,
 )
+
+logger = logging.getLogger("techrevati.runtime.orchestrator")
+logger.addHandler(logging.NullHandler())
 
 T = TypeVar("T")
 
@@ -126,12 +136,22 @@ def _record_recovery_event(session: OrchestrationSession, exc: Exception) -> Non
     """
     scenario = classify_exception(exc)
     recovery_result = attempt_recovery(scenario, session.recovery)
-    session.events.append(
+    session._emit_event(
         AgentEvent.recovery_attempted(
             session.role,
             session.phase,
             detail=f"{scenario.value}: {recovery_result.outcome}",
         )
+    )
+    logger.info(
+        "recovery_attempted",
+        extra={
+            "role": session.role,
+            "phase": session.phase,
+            "project_id": session.project_id,
+            "scenario": scenario.value,
+            "outcome": recovery_result.outcome,
+        },
     )
 
 
@@ -141,12 +161,22 @@ async def _arecord_recovery_event(
     """Async sibling of _record_recovery_event."""
     scenario = classify_exception(exc)
     recovery_result = await aattempt_recovery(scenario, session.recovery)
-    session.events.append(
+    session._emit_event(
         AgentEvent.recovery_attempted(
             session.role,
             session.phase,
             detail=f"{scenario.value}: {recovery_result.outcome}",
         )
+    )
+    logger.info(
+        "recovery_attempted",
+        extra={
+            "role": session.role,
+            "phase": session.phase,
+            "project_id": session.project_id,
+            "scenario": scenario.value,
+            "outcome": recovery_result.outcome,
+        },
     )
 
 
@@ -173,6 +203,8 @@ class Orchestrator:
     enforce_budget: bool = False
     max_iterations: int = 25
     guardrails: list[Guardrail] = field(default_factory=list)
+    event_sink: EventSink = field(default_factory=NoopEventSink)
+    usage_sink: UsageSink = field(default_factory=NoopUsageSink)
 
     @contextmanager
     def session(self) -> Iterator[OrchestrationSession]:
@@ -195,6 +227,8 @@ class Orchestrator:
             enforce_budget=self.enforce_budget,
             max_iterations=self.max_iterations,
             guardrails=list(self.guardrails),
+            event_sink=self.event_sink,
+            usage_sink=self.usage_sink,
             phase=self.phase,
             role=self.role,
             project_id=self.project_id,
@@ -232,6 +266,8 @@ class Orchestrator:
             enforce_budget=self.enforce_budget,
             max_iterations=self.max_iterations,
             guardrails=list(self.guardrails),
+            event_sink=self.event_sink,
+            usage_sink=self.usage_sink,
             phase=self.phase,
             role=self.role,
             project_id=self.project_id,
@@ -278,6 +314,8 @@ class _SessionBase:
     enforce_budget: bool = False
     max_iterations: int = 25
     guardrails: list[Guardrail] = field(default_factory=list)
+    event_sink: EventSink = field(default_factory=NoopEventSink)
+    usage_sink: UsageSink = field(default_factory=NoopUsageSink)
     events: list[AgentEvent] = field(default_factory=list)
     _started_at: float = field(default_factory=time.monotonic, init=False, repr=False)
     _iteration_count: int = field(default=0, init=False, repr=False)
@@ -349,9 +387,18 @@ class _SessionBase:
         outcome = self.quality_gate.evaluate(observed)
         detail = f"observed={observed.name}"
         if outcome.satisfied:
-            self.events.append(AgentEvent.gate_passed(self.phase, detail=detail))
+            self._emit_event(AgentEvent.gate_passed(self.phase, detail=detail))
         else:
-            self.events.append(AgentEvent.gate_failed(self.phase, detail=detail))
+            self._emit_event(AgentEvent.gate_failed(self.phase, detail=detail))
+            logger.info(
+                "quality_gate_failed",
+                extra={
+                    "role": self.role,
+                    "phase": self.phase,
+                    "project_id": self.project_id,
+                    "observed": observed.name,
+                },
+            )
         return outcome
 
     # -- Lifecycle --
@@ -359,7 +406,7 @@ class _SessionBase:
     def complete(self, detail: str | None = None) -> None:
         if not self.worker.is_terminal:
             self.worker.transition(AgentStatus.COMPLETED, detail=detail)
-        self.events.append(AgentEvent.completed(self.role, self.phase, detail=detail))
+        self._emit_event(AgentEvent.completed(self.role, self.phase, detail=detail))
 
     def fail(
         self,
@@ -368,15 +415,25 @@ class _SessionBase:
     ) -> None:
         if not self.worker.is_terminal:
             self.worker.transition(AgentStatus.FAILED, detail=detail)
-        self.events.append(
+        self._emit_event(
             AgentEvent.failed(self.role, self.phase, failure_class, detail=detail)
+        )
+        logger.info(
+            "session_failed",
+            extra={
+                "role": self.role,
+                "phase": self.phase,
+                "project_id": self.project_id,
+                "failure_class": failure_class.value,
+                "detail": detail,
+            },
         )
 
     def cancel(self, detail: str | None = None) -> None:
         """Mark the worker as cancelled (e.g. from asyncio.CancelledError)."""
         if not self.worker.is_terminal:
             self.worker.transition(AgentStatus.CANCELLED, detail=detail)
-        self.events.append(
+        self._emit_event(
             AgentEvent.failed(
                 self.role,
                 self.phase,
@@ -410,6 +467,21 @@ class _SessionBase:
         if estimate_usage is not None:
             return estimate_usage(result)
         return UsageSnapshot()
+
+    def _emit_event(self, event: AgentEvent) -> None:
+        """Append to the session event log AND forward to the configured sink.
+
+        Use this everywhere instead of ``self.events.append(event)`` so
+        observability stays consistent. The sink call is wrapped in a
+        try/except so a misbehaving sink can't break the session.
+        """
+        self.events.append(event)
+        try:
+            self.event_sink.emit(event)
+        except Exception:
+            logger.exception(
+                "event_sink.emit raised; suppressing to keep session alive"
+            )
 
     def _check_iteration_cap(self) -> None:
         """Raise MaxIterationsExceededError if this turn would exceed the cap.
@@ -461,12 +533,23 @@ class _SessionBase:
             project_id=self.project_id,
             target_worker_id=new_worker.worker_id,
         )
-        self.events.append(
+        self._emit_event(
             AgentEvent.completed(
                 self.role,
                 self.phase,
                 detail=f"handoff → {target_role}: {reason}",
             ).with_data({"handoff": handoff.to_dict()})
+        )
+        logger.info(
+            "handoff_issued",
+            extra={
+                "role": self.role,
+                "phase": self.phase,
+                "project_id": self.project_id,
+                "target_role": target_role,
+                "reason": reason,
+                "target_worker_id": new_worker.worker_id,
+            },
         )
         return handoff
 
@@ -475,16 +558,34 @@ class _SessionBase:
     ) -> None:
         if model:
             self.tracker.record_turn(model, snapshot)
+            cost = self.tracker.cost_for_turn(model, snapshot)
+            try:
+                self.usage_sink.record(model, snapshot, cost)
+            except Exception:
+                logger.exception(
+                    "usage_sink.record raised; suppressing to keep session alive"
+                )
 
         budget = self.budget_usd
         if budget is not None and self.tracker.is_over_budget(budget):
-            self.events.append(
+            self._emit_event(
                 AgentEvent.failed(
                     self.role,
                     self.phase,
                     AgentFailureClass.UNKNOWN,
                     detail=f"budget exceeded: {self.tracker.format_cost()}",
                 ).with_data({"budget_usd": budget})
+            )
+            logger.warning(
+                "budget_exceeded",
+                extra={
+                    "role": self.role,
+                    "phase": self.phase,
+                    "project_id": self.project_id,
+                    "budget_usd": budget,
+                    "current_cost_usd": self.tracker.total_cost(),
+                    "enforced": self.enforce_budget,
+                },
             )
             if self.enforce_budget:
                 raise BudgetExceededError(
