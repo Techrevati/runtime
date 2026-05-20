@@ -11,7 +11,7 @@ Durable execution, token-aware rate limiting, OTel agent-level span
 nesting, granular usage limits, supply-chain hardening. Zero new
 runtime dependencies. Two soft-breaking changes: OTel sink wire format
 (one-shot → nested) and `UsageLimitExceededError` for non-cost
-overruns (see [docs/migrating-from-0.1.x.md](docs/migrating-from-0.1.x.md)).
+overruns (see [Migrating from 0.1.x](migrating-from-0.1.x.md)).
 
 ### Added — Sprint 6 (supply chain + release polish)
 
