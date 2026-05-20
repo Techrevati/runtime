@@ -8,7 +8,7 @@ to install instead of getting an obscure ``AttributeError`` later.
 
 The sink emits **OpenTelemetry GenAI semantic conventions** attributes
 (https://opentelemetry.io/docs/specs/semconv/gen-ai/) so any GenAI-aware
-APM ingest (the same one consuming Anthropic SDK / OpenAI Agents SDK)
+APM ingest (the same one consuming OpenAI Agents SDK telemetry)
 will surface our runtime as a first-class agent.
 
 What gets emitted today (v1):
@@ -51,7 +51,7 @@ if TYPE_CHECKING:  # pragma: no cover - type-only
 
 
 # Provider name surfaced on every span/metric. Override per-instance
-# if you wrap a specific upstream (e.g. provider_name="anthropic").
+# if you wrap a specific upstream (e.g. provider_name="openai").
 DEFAULT_PROVIDER_NAME = "techrevati"
 
 # Mapping from our AgentEventName to OTel GenAI operation name.

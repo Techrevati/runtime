@@ -78,14 +78,14 @@ Consolidates the work of pre-release tags `0.1.0.dev1`, `0.1.0.dev2`,
 ### Added — Industry primitive parity
 - `MaxIterationsExceededError` + `Orchestrator(max_iterations=25)`
   cap. Default matches OpenAI Agents SDK; counted across both
-  `run_turn` and `arun_turn`. Anthropic explicitly names stopping
-  conditions as a production-readiness requirement.
+  `run_turn` and `arun_turn`. Stopping conditions are an industry
+  production-readiness requirement.
 - `Handoff` immutable dataclass (`techrevati.runtime.handoffs`) +
   `OrchestrationSession.handoff_to(target_role, reason, context)`.
   Finalizes the source worker as COMPLETED, registers a fresh worker
   for the target role under the same project_id, returns a Handoff
-  describing the delegation. Enables Anthropic's orchestrator-workers
-  pattern on top of our primitives.
+  describing the delegation. Enables the orchestrator-workers
+  delegation pattern on top of our primitives.
 - `Guardrail` Protocol + `GuardrailOutcome` + `GuardrailViolatedError`
   (`techrevati.runtime.guardrails`). `Orchestrator(guardrails=[...])`
   auto-runs `check_pre` before and `check_post` after every
@@ -135,13 +135,13 @@ Consolidates the work of pre-release tags `0.1.0.dev1`, `0.1.0.dev2`,
 - `examples/tiny_agent.py` runnable companion (not bundled in
   wheel). Smoke-tested end-to-end.
 - `examples/pricing.json` reference template with illustrative
-  Claude / GPT pricing (not normative).
+  vendor pricing (not normative).
 - `docs/api/*.md` eight `mkdocstrings`-backed API reference pages
   via the Python handler.
 - `docs/patterns/orchestrator.md` rewritten with
   When-to-use / Anti-patterns / Tuning template + a prominent
   naming-disambiguation callout separating our `Orchestrator` from
-  Anthropic's *orchestrator-workers* delegation pattern.
+  the *orchestrator-workers* delegation pattern.
 - `CONTRIBUTING.md`, `SECURITY.md`, `CODEOWNERS`,
   `.github/dependabot.yml`, `.github/ISSUE_TEMPLATE/{bug,feature}.md`.
 

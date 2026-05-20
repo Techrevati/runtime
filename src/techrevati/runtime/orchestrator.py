@@ -117,7 +117,7 @@ class MaxIterationsExceededError(Exception):
     """Raised when a session attempts more turns than ``max_iterations`` allows.
 
     Default cap of 25 matches the OpenAI Agents SDK convention and prevents
-    runaway agent loops — Anthropic explicitly names stopping conditions as a
+    runaway agent loops — stopping conditions are an industry
     production-readiness requirement.
     """
 

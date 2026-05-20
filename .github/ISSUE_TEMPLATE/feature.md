@@ -20,6 +20,6 @@ labels: enhancement
 <!-- What would you do today as a workaround? Why doesn't it scale? -->
 
 **Industry priors**
-<!-- Has another agent SDK (OpenAI Agents SDK, LangGraph, Anthropic
-     Claude Agent SDK, etc.) shipped something similar? Link it. We
-     prefer landing primitives that match industry conventions. -->
+<!-- Has another agent SDK (OpenAI Agents SDK, LangGraph, etc.)
+     shipped something similar? Link it. We prefer landing
+     primitives that match industry conventions. -->

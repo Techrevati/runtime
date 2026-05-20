@@ -3,8 +3,8 @@
 Run with: ``python -m examples.tiny_agent``
 
 This file mocks the model call and a tool — replace the two functions
-marked ``# REPLACE`` with your real Anthropic / OpenAI / custom SDK
-calls. Everything else (lifecycle, cost tracking, retry, breaker,
+marked ``# REPLACE`` with your real OpenAI / custom SDK calls.
+Everything else (lifecycle, cost tracking, retry, breaker,
 permission gating, policy, handoff, OTel) is real production code.
 """
 
@@ -49,7 +49,7 @@ def lookup_term(term: str) -> str:
 
 def main() -> None:
     register_pricing(
-        "claude-sonnet-4-6",
+        "your-model",
         ModelPricing(input_per_million=3.0, output_per_million=15.0),
     )
 
@@ -87,7 +87,7 @@ def main() -> None:
         # 1. Call the model.
         text, _usage = session.run_turn(
             lambda: call_model("write me an intro paragraph"),
-            model="claude-sonnet-4-6",
+            model="your-model",
             usage=UsageSnapshot(input_tokens=5_000, output_tokens=1_200),
             timeout=30.0,
         )
@@ -117,7 +117,7 @@ def main() -> None:
     with editor_orch.session() as editor_session:
         review, _ = editor_session.run_turn(
             lambda: call_model(f"polish: {text}"),
-            model="claude-sonnet-4-6",
+            model="your-model",
             usage=UsageSnapshot(input_tokens=2_000, output_tokens=400),
         )
         print(f"editor produced: {review!r}")

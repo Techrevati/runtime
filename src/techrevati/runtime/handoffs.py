@@ -11,8 +11,8 @@ The caller resolves the handoff by opening a new session for the
 target role. This module does not run the target agent — it just
 records and routes.
 
-The pattern mirrors OpenAI Agents SDK handoffs and Anthropic's
-orchestrator-workers workflow.
+The pattern mirrors OpenAI Agents SDK handoffs and the
+orchestrator-workers delegation workflow.
 """
 
 from __future__ import annotations

@@ -19,7 +19,7 @@ runtime knows about and what they cost.
 from techrevati.runtime import ModelPricing, register_pricing
 
 register_pricing(
-    "claude-sonnet-4-6",
+    "your-model",
     ModelPricing(input_per_million=3.0, output_per_million=15.0),
 )
 ```
@@ -85,7 +85,7 @@ def call_model() -> str:
 with orch.session() as session:
     text, usage = session.run_turn(
         call_model,
-        model="claude-sonnet-4-6",
+        model="your-model",
         usage=UsageSnapshot(input_tokens=5_000, output_tokens=1_200),
         timeout=30.0,
     )
@@ -127,7 +127,7 @@ editor_orch = Orchestrator(role="editor", phase="draft", project_id=42, registry
 with editor_orch.session() as editor_session:
     review_text, _ = editor_session.run_turn(
         lambda: "polished",
-        model="claude-sonnet-4-6",
+        model="your-model",
         usage=UsageSnapshot(input_tokens=2_000, output_tokens=400),
     )
 ```

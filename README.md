@@ -147,7 +147,7 @@ print(tracker.format_cost())
 
 - **LangGraph** is a *workflow engine* with durable execution, checkpointer protocols, and a graph model. Use it when your agent flow is a graph that needs to survive restarts and you're OK with the LangChain ecosystem footprint.
 - **OpenAI Agents SDK** is a *cohesive runtime* tied to OpenAI's models, with default tracing through their dashboards. Use it when you're committed to OpenAI and want the smoothest path.
-- **`techrevati-runtime`** is a *zero-dep primitive set*. Sync + async. Vendor-neutral. Emits OpenTelemetry GenAI semantic conventions so the same APM dashboards that consume Anthropic SDK and OpenAI Agents SDK telemetry will pick us up too. Bring your own model client and your own persistence — the runtime stays opinion-free.
+- **`techrevati-runtime`** is a *zero-dep primitive set*. Sync + async. Vendor-neutral. Emits OpenTelemetry GenAI semantic conventions so the same APM dashboards that consume OpenAI Agents SDK telemetry will pick us up too. Bring your own model client and your own persistence — the runtime stays opinion-free.
 
 The runtime is **not** a durable workflow engine. Sessions are in-memory; a pluggable checkpointer is on the 0.2.0 roadmap. If you need restart-resumable workflows today, pair this with [Temporal](https://temporal.io/), [dbos](https://www.dbos.dev/), or LangGraph's checkpointer.
 

@@ -178,9 +178,9 @@ def test_backoff_delay_invalid_mode_raises():
 
 
 def test_next_provider():
-    assert next_provider(["claude", "gpt4", "test-local"], "claude") == "gpt4"
-    assert next_provider(["claude"], "claude") is None
-    assert next_provider([], "claude") is None
+    assert next_provider(["provider-a", "gpt4", "test-local"], "provider-a") == "gpt4"
+    assert next_provider(["provider-a"], "provider-a") is None
+    assert next_provider([], "provider-a") is None
 
 
 def test_smaller_context_budget():

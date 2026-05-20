@@ -8,15 +8,14 @@ guardrails, max-iterations cap, OTel sinks, and cost accounting in
 one place.
 
 > **Naming note (be careful here).** In the broader 2026 agent
-> literature *Anthropic's "Building Effective Agents"*, OpenAI Agents
-> SDK), **"orchestrator-workers"** is a *delegation* pattern where one
-> LLM dynamically dispatches subtasks to worker LLMs. Our
-> `Orchestrator` is a **session wrapper** for a single agent. You
-> implement the Anthropic-style pattern *on top* of our primitives by
-> calling `session.handoff_to(...)` between sessions. The
-> `Orchestrator` class is being kept for backward compatibility;
-> `AgentSession` is the forward-looking name, becoming canonical
-> in 0.2.0.
+> literature (e.g. OpenAI Agents SDK), **"orchestrator-workers"** is
+> a *delegation* pattern where one LLM dynamically dispatches
+> subtasks to worker LLMs. Our `Orchestrator` is a **session
+> wrapper** for a single agent. You implement the delegation pattern
+> *on top* of our primitives by calling `session.handoff_to(...)`
+> between sessions. The `Orchestrator` class is being kept for
+> backward compatibility; `AgentSession` is the forward-looking
+> name, becoming canonical in 0.2.0.
 
 ## Quick example (sync)
 
@@ -77,7 +76,7 @@ Same parameters; `coro_factory` instead of `fn`. See
   `Orchestrator` instead.
 - **You need agent-level handoffs**: `session.handoff_to(target_role, ...)`
   finalizes the source worker and registers a new one under the same
-  project_id — Anthropic's orchestrator-workers pattern, built up
+  project_id — the orchestrator-workers delegation pattern, built up
   from our primitives.
 
 ## When *not* to use this
