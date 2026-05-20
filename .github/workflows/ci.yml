@@ -41,6 +41,9 @@ jobs:
       - name: Run tests
         run: pytest tests/ -v --cov=src/techrevati --cov-report=term-missing --cov-report=xml
 
+      - name: Per-module coverage floor (>= 85%)
+        run: python scripts/check_module_coverage.py --threshold 85
+
       - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:

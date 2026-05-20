@@ -5,6 +5,39 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the project
 follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html), with the
 caveat that 0.x APIs are explicitly unstable.
 
+## [Unreleased] — Sprint 6 (testing rigor)
+
+Hardening work between 0.1.0 and 0.2.0. Public API is unchanged; this is
+test-suite and CI-only.
+
+### Added
+- **Hypothesis** as a dev dependency. Two new property test modules:
+  `tests/test_property_retry_policy.py` exercises `classify_exception` over
+  arbitrary strings and verifies `backoff_delay` invariants across all four
+  jitter modes; `tests/test_property_circuit_breaker.py` drives the
+  `CircuitBreaker` state machine through random op sequences with the
+  injectable `ManualClock` and asserts invariants the example-based tests
+  could not enumerate.
+- **pytest-randomly** as a dev dependency. The default test runner now
+  shuffles test order on every invocation, surfacing hidden order
+  dependencies. Suite passes deterministically under shuffled ordering.
+- **`ManualClock`** test double promoted from per-module duplication in
+  `test_circuit_breaker.py` / `test_async_circuit_breaker.py` to
+  `tests/conftest.py` as both an importable class and a `manual_clock`
+  fixture. Sprint 8 rate-limiter / scheduler primitives that accept an
+  injectable monotonic clock will plug into it without re-inventing the
+  type.
+- **`scripts/check_module_coverage.py`** — per-module coverage floor
+  checker. Wired into `.github/workflows/ci.yml` to fail builds when any
+  module in `src/techrevati/` drops below 85% statement coverage. The
+  global `--cov-fail-under=90` did not catch `permissions.py` slipping to
+  82% in 0.1.0; this closes that gap.
+
+### Changed
+- `tests/test_permissions.py` now covers `PermissionOutcome.to_dict()` for
+  both the minimal and fully-populated cases. `permissions.py` moves from
+  82% → 100% statement coverage; aggregate suite coverage 93.79% → 94.91%.
+
 ## [0.1.0] — 2026-05-20
 
 First beta release. Closes the primitive-parity gap with 2026 agent
