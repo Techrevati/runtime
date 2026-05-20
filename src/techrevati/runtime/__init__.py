@@ -9,7 +9,7 @@ Zero runtime dependencies.
 >>> from techrevati.runtime import CircuitBreaker, PolicyEngine
 """
 
-__version__ = "0.1.0.rc1"
+__version__ = "0.1.0"
 
 from techrevati.runtime.agent_events import (
     AgentEvent,

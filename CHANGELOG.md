@@ -5,182 +5,139 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the project
 follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html), with the
 caveat that 0.x APIs are explicitly unstable.
 
-## [0.1.0.rc1] — 2026-05-20
+## [0.1.0] — 2026-05-20
 
-Sprint 5 milestone. Documentation, examples, and repo hygiene catch up
-to the runtime that Sprints 2-4 built. The shape of 0.1.0 is now
-locked; this is a release candidate.
+First beta release. Closes the primitive-parity gap with 2026 agent
+SDKs and ships the async path the 0.0.x docstring had been falsely
+advertising. APIs in this release are intended to be stable; breaking
+changes between 0.1.x and 0.2.0 will be documented in
+[`docs/migrating-from-0.0.x.md`](docs/migrating-from-0.0.x.md) and
+gated by deprecation warnings.
 
-### Added
-- `docs/tutorials/end-to-end.md` — a guided 30-line tour of every
-  primitive composed together: pricing → orchestrator → permissions
-  → circuit breaker → budget → guardrails → tool gating → handoff →
-  summary. Includes the async path and OTel switchover.
-- `examples/tiny_agent.py` — runnable companion to the tutorial.
-  Two functions marked `# REPLACE` swap mocks for real SDK calls.
-  Not bundled in the wheel.
-- `examples/pricing.json` — reference template with illustrative
-  values for current-generation Claude and GPT models. Not bundled;
-  not normative.
-- `docs/api/*.md` — eight `mkdocstrings`-backed API reference pages
-  (one per public module). `mkdocs.yml` now wires the `mkdocstrings`
-  plugin with the Python handler; `docs build --strict` will catch
-  drift between code and reference.
-- Pattern doc template applied to `docs/patterns/orchestrator.md`:
-  *Quick example (sync + async)*, *When to use this*,
-  *When not to use this*, *Anti-patterns*, *Tuning the knobs*,
-  *See also*. Includes a prominent naming-disambiguation callout
-  separating our `Orchestrator` (session wrapper) from Anthropic's
-  *orchestrator-workers* delegation pattern (which is now
-  expressible via `session.handoff_to()`).
-- `CONTRIBUTING.md` — setup, local checks, primitive-addition recipe,
-  async-vs-sync invariants, release process.
-- `SECURITY.md` — disclosure policy + explicit threat model
-  documenting that `PermissionEnforcer` and `Guardrail` are *gates,
-  not sandboxes*.
-- `CODEOWNERS` — auto-review for public API, security primitives,
-  release infrastructure.
-- `.github/dependabot.yml` — weekly pip and github-actions updates,
-  grouped so the dev-tools bump together.
-- `.github/ISSUE_TEMPLATE/{bug,feature}.md` — structured intake
-  forms with environment + reproduction prompts.
+Consolidates the work of pre-release tags `0.1.0.dev1`, `0.1.0.dev2`,
+`0.1.0.dev3`, and `0.1.0.rc1`. Per-sprint detail is in the git log.
 
-### Changed
-- README revised end-to-end. Headline pitch now matches what the
-  package actually does in 0.1.0 (sync **and** async, four standard
-  primitives, OTel GenAI semconv). Added a *"Why not LangGraph /
-  OpenAI Agents SDK?"* positioning section that admits where each
-  alternative is the better choice. Limitations list pared down to
-  what still applies after Sprint 4.
+### Added — Async path
+- `AsyncCircuitBreaker` mirrors `CircuitBreaker` semantics with
+  `asyncio.Lock`, same `half_open_max_probes` serialization,
+  injectable monotonic `clock`. State independent of the sync
+  variant.
+- `Orchestrator.asession()` returns an `AsyncOrchestrationSession`.
+  `arun_turn` and `arun_tool` drive async coro factories; sync
+  helpers (`authorize`, `evaluate_policy`, `evaluate_gate`,
+  `summary`, lifecycle methods) shared with the sync session via
+  `_SessionBase`.
+- `aattempt_recovery(scenario, ctx, *, sleeper=asyncio.sleep)` async
+  sibling of `attempt_recovery` with injectable sleeper contract.
+- `arun_turn(timeout=...)` enforces deadlines with
+  `asyncio.wait_for`; sync `run_turn(timeout=...)` uses a one-shot
+  `ThreadPoolExecutor`. Both raise `TurnTimeoutError` for a single
+  catchable error class across code paths.
+- `AgentStatus.CANCELLED` terminal state. `asyncio.CancelledError`
+  out of `async with orch.asession()` transitions the worker to
+  CANCELLED and re-raises.
+- `AsyncOrchestrationSession.pause_for_input(prompt)` async
+  human-in-the-loop hook. Transitions worker to `WAITING_FOR_INPUT`;
+  resolve from elsewhere via `session.provide_input(value)`.
+- `RUNNING → WAITING_FOR_INPUT` is now a valid transition (was
+  missing in 0.0.x).
 
-## [0.1.0.dev3] — 2026-05-20
-
-Sprint 4 milestone. Hooks the runtime into OpenTelemetry GenAI
-semantic conventions so any GenAI-aware APM (the same dashboard
-consuming Anthropic SDK or OpenAI Agents SDK) surfaces it as a
-first-class agent.
-
-### Added
-- `EventSink` and `UsageSink` Protocols (`techrevati.runtime.sinks`),
-  plus `NoopEventSink`, `NoopUsageSink`, `RingBufferEventSink`,
-  `RingBufferUsageSink` defaults. `RingBufferEventSink` enforces a
-  configurable capacity (default 1000) so long-running sessions can't
-  balloon memory — closes the unbounded-tracker gap from 0.0.x.
-- `Orchestrator(event_sink=..., usage_sink=...)` plumbs the configured
-  sinks through to every session. Every `AgentEvent` the session
-  records is forwarded to the event sink; every recorded turn is
-  forwarded to the usage sink with its computed cost.
-- `OpenTelemetrySink` and `OpenTelemetryUsageSink`
-  (`techrevati.runtime.otel`, available via the new `[otel]` extra).
-  Mirrors every event as a one-shot OTel span with `gen_ai.operation.name`,
-  `gen_ai.provider.name`, `gen_ai.agent.name`, optional `gen_ai.agent.id`,
-  and `error.type` on failures. Records `gen_ai.client.token.usage`
-  histogram (with `gen_ai.token.type=input|output` discriminator) and
-  a `techrevati.cost.usd` counter. Span names follow the GenAI agent
-  spans convention (`create_agent` / `invoke_agent` / `execute_tool` /
-  `invoke_workflow`).
-- `[otel]` optional dependency group:
-  `opentelemetry-api>=1.27`, `opentelemetry-sdk>=1.27`,
-  `opentelemetry-semantic-conventions>=0.48b0`.
-- Structured `logger.info` calls at five decision points: recovery
-  attempted, session failed, quality gate failed, handoff issued,
-  budget exceeded. All with `extra={role, phase, project_id, ...}` so
-  log shippers can pivot by role.
-- `_emit_event` helper on sessions wraps every event emission in a
-  try/except so a misbehaving sink can't tear down the running
-  session — it logs and continues.
-
-### Notes
-- Sinks are synchronous by design. OpenTelemetry's batch processors
-  already absorb the latency cost; if your custom sink does network
-  I/O, wrap it in a queue + worker thread before plugging it in.
-- Span nesting (parent/child relationships across agent/turn/tool)
-  is not yet emitted — discrete spans + `gen_ai.agent.id` correlation
-  suffice for v1 dashboards. Nesting is targeted for Sprint 5.
-
-## [0.1.0.dev2] — 2026-05-20
-
-Sprint 3 milestone. Closes the primitive-parity gap with mainstream
-2026 agent SDKs (OpenAI Agents SDK, LangGraph) by adding the three
-missing standard primitives — *Handoffs*, *Guardrails*,
-*max_iterations* — plus the forward-looking `AgentSession` name.
-
-### Added
-- `MaxIterationsExceededError` + `Orchestrator(max_iterations=25)` cap.
-  Counted across both `run_turn` and `arun_turn`. Anthropic explicitly
-  names stopping conditions as a production-readiness requirement; this
-  closes the runaway-agent gap.
+### Added — Industry primitive parity
+- `MaxIterationsExceededError` + `Orchestrator(max_iterations=25)`
+  cap. Default matches OpenAI Agents SDK; counted across both
+  `run_turn` and `arun_turn`. Anthropic explicitly names stopping
+  conditions as a production-readiness requirement.
 - `Handoff` immutable dataclass (`techrevati.runtime.handoffs`) +
   `OrchestrationSession.handoff_to(target_role, reason, context)`.
   Finalizes the source worker as COMPLETED, registers a fresh worker
-  for the target role under the same project_id, and returns a Handoff
-  describing the delegation. Available on both sync and async sessions.
-  Enables Anthropic's orchestrator-workers workflow on top of our
-  primitives.
+  for the target role under the same project_id, returns a Handoff
+  describing the delegation. Enables Anthropic's orchestrator-workers
+  pattern on top of our primitives.
 - `Guardrail` Protocol + `GuardrailOutcome` + `GuardrailViolatedError`
   (`techrevati.runtime.guardrails`). `Orchestrator(guardrails=[...])`
   auto-runs `check_pre` before and `check_post` after every
-  `run_tool` / `arun_tool` invocation; first violation raises with the
-  guardrail name, stage, role, and tool. Mirrors the OpenAI Agents SDK
+  `run_tool` / `arun_tool` invocation; first violation raises with
+  guardrail name, stage, role, tool. Mirrors the OpenAI Agents SDK
   guardrail model.
-- `AllowAllGuardrail` reference no-op implementation for tests and
-  defaults.
+- `AllowAllGuardrail` reference no-op implementation.
 - `AgentSession` alias for `Orchestrator`. The 0.2.0 rename will
   promote `AgentSession` to the canonical name with `Orchestrator`
-  kept as a deprecation alias; adopting the new name now is forward-
-  compatible.
+  kept as a deprecation alias; adopting the new name now is
+  forward-compatible.
 
-### Notes
-- Tool input gating is post-call value gating + pre-call site (role
-  + tool name) gating. True input-value gating arrives when we have
-  a typed tool input model (post-0.2.0).
-- Guardrail violations are not retried automatically — they raise.
-  Add recovery logic at the orchestrator level if a guardrail block
-  should be tolerated.
+### Added — Observability
+- `EventSink` and `UsageSink` Protocols (`techrevati.runtime.sinks`),
+  plus `NoopEventSink`, `NoopUsageSink`, `RingBufferEventSink`,
+  `RingBufferUsageSink` defaults. `RingBufferEventSink` enforces a
+  configurable capacity (default 1000) so long-running sessions
+  can't balloon memory — closes the unbounded-tracker gap from
+  0.0.x.
+- `Orchestrator(event_sink=..., usage_sink=...)` plumbs the
+  configured sinks through every session. Every `AgentEvent` the
+  session records is forwarded to the event sink; every recorded
+  turn is forwarded to the usage sink with its computed cost. A
+  misbehaving sink cannot tear down the session — emit failures
+  log and are swallowed.
+- `OpenTelemetrySink` and `OpenTelemetryUsageSink`
+  (`techrevati.runtime.otel`, available via the new `[otel]`
+  extra). Mirrors every event as a one-shot OTel span with
+  `gen_ai.operation.name`, `gen_ai.provider.name`,
+  `gen_ai.agent.name`, optional `gen_ai.agent.id`, and `error.type`
+  on failures. Records `gen_ai.client.token.usage` histogram (with
+  `gen_ai.token.type=input|output` discriminator) and a
+  `techrevati.cost.usd` counter. Span names follow the GenAI agent
+  spans convention (`create_agent` / `invoke_agent` /
+  `execute_tool` / `invoke_workflow`).
+- `[otel]` extra: `opentelemetry-api>=1.27`,
+  `opentelemetry-sdk>=1.27`,
+  `opentelemetry-semantic-conventions>=0.48b0`.
+- Structured `logger.info` calls at five decision points: recovery
+  attempted, session failed, quality gate failed, handoff issued,
+  budget exceeded. All with `extra={role, phase, project_id, ...}`
+  so log shippers can pivot by role.
 
-## [0.1.0.dev1] — 2026-05-20
-
-Sprint 2 milestone toward the 0.1.0 async-first release. APIs added here
-are unstable; the contract becomes stable when 0.1.0 ships.
-
-### Added
-- `AsyncCircuitBreaker` — `asyncio.Lock`-based sibling of `CircuitBreaker`
-  with the same `half_open_max_probes` serialization semantics and
-  injectable monotonic `clock`. Independent state from the sync variant.
-- `AsyncOrchestrationSession` + `Orchestrator.asession()` async context
-  manager. Mirrors the sync session API; `arun_turn` and `arun_tool`
-  drive async coro factories. Sync helpers (`authorize`, `evaluate_policy`,
-  `evaluate_gate`, `summary`, lifecycle methods) are inherited from a
-  shared `_SessionBase` so behavior stays in lock-step.
-- `arun_turn(timeout=...)` enforces the deadline with `asyncio.wait_for`.
-  `run_turn(timeout=...)` enforces it via a one-shot
-  `ThreadPoolExecutor`. Both raise `TurnTimeoutError`.
-- `TurnTimeoutError` — single error class spanning both code paths so
-  callers don't need to catch `concurrent.futures.TimeoutError` and
-  `asyncio.TimeoutError` separately.
-- `AgentStatus.CANCELLED` terminal state. `asyncio.CancelledError`
-  bubbling out of an `async with orch.asession()` body transitions the
-  worker to CANCELLED instead of FAILED, then re-raises.
-- `aattempt_recovery(scenario, ctx, *, sleeper=asyncio.sleep)` — async
-  sibling of `attempt_recovery`. Accepts an injectable sleeper today
-  (no recipe currently sleeps, but the contract is fixed for future
-  steps).
-- `AsyncOrchestrationSession.pause_for_input(prompt)` — async
-  human-in-the-loop hook. Transitions worker to `WAITING_FOR_INPUT`,
-  returns an awaitable that the caller resolves via
-  `session.provide_input(value)`.
-- `AgentRegistry` and `_SessionBase` now record session start time on
-  construction; `evaluate_policy()` auto-computes `elapsed_seconds` when
-  the caller does not provide one. Closes the `TimedOut`-never-fires
-  gap from 0.0.x.
-- `RUNNING → WAITING_FOR_INPUT` transition is now valid (was missing).
-- `pytest-asyncio==1.3.0` added to the `[dev]` extras.
+### Added — Docs and DX
+- `docs/tutorials/end-to-end.md` walks every primitive composed
+  together with sync, async, and OTel switchover.
+- `examples/tiny_agent.py` runnable companion (not bundled in
+  wheel). Smoke-tested end-to-end.
+- `examples/pricing.json` reference template with illustrative
+  Claude / GPT pricing (not normative).
+- `docs/api/*.md` eight `mkdocstrings`-backed API reference pages
+  via the Python handler.
+- `docs/patterns/orchestrator.md` rewritten with
+  When-to-use / Anti-patterns / Tuning template + a prominent
+  naming-disambiguation callout separating our `Orchestrator` from
+  Anthropic's *orchestrator-workers* delegation pattern.
+- `CONTRIBUTING.md`, `SECURITY.md`, `CODEOWNERS`,
+  `.github/dependabot.yml`, `.github/ISSUE_TEMPLATE/{bug,feature}.md`.
 
 ### Changed
-- `evaluate_policy(elapsed_seconds=...)` parameter is now `float | None`
-  (default `None`). Behavior change: when omitted, time-based policies
-  finally see real elapsed seconds. Explicit `elapsed_seconds=0.0`
-  callers will need to migrate; pass the value you want.
+- `evaluate_policy(elapsed_seconds=...)` is now `float | None`
+  (default `None`). When omitted, elapsed is auto-computed from
+  session start so `TimedOut` conditions finally fire. Callers
+  passing explicit `0.0` previously must migrate to pass the value
+  they actually want.
+- `AgentRegistry` and `_SessionBase` record session start time on
+  construction.
+- README revised end-to-end. Headline pitch matches what the
+  package now does (sync **and** async, four standard primitives,
+  OTel GenAI semconv). New *"Why not LangGraph / OpenAI Agents
+  SDK?"* positioning section. Classifier bumped from `3 - Alpha`
+  to `4 - Beta`.
+- README tagline reflects beta status.
+
+### Notes
+- Tool input gating is pre-call site (role + tool name) gating +
+  post-call value gating. True input-value gating arrives when we
+  have a typed tool input model (post-0.2.0).
+- Guardrail violations are not retried automatically — they raise.
+- Span nesting (parent/child relationships across agent/turn/tool)
+  is not yet emitted — discrete spans + `gen_ai.agent.id` give
+  correlation. Nesting is targeted for 0.2.0.
+- The `[dev]` extra now installs OpenTelemetry SDK packages so the
+  optional `otel` module type-checks and tests run under
+  `mypy --strict`.
 
 ## [0.0.1] — 2026-05-20
 
@@ -257,9 +214,6 @@ loops with reliability and cost visibility:
 - `PermissionPolicy` + `PermissionEnforcer` — deny-first role × tool gating.
 - `PolicyEngine` + composable conditions — declarative rule evaluator.
 
-[0.1.0.rc1]: https://github.com/Techrevati/runtime/releases/tag/v0.1.0.rc1
-[0.1.0.dev3]: https://github.com/Techrevati/runtime/releases/tag/v0.1.0.dev3
-[0.1.0.dev2]: https://github.com/Techrevati/runtime/releases/tag/v0.1.0.dev2
-[0.1.0.dev1]: https://github.com/Techrevati/runtime/releases/tag/v0.1.0.dev1
+[0.1.0]: https://github.com/Techrevati/runtime/releases/tag/v0.1.0
 [0.0.1]: https://github.com/Techrevati/runtime/releases/tag/v0.0.1
 [0.0.0]: https://github.com/Techrevati/runtime/releases/tag/v0.0.0
