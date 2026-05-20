@@ -5,6 +5,51 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the project
 follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html), with the
 caveat that 0.x APIs are explicitly unstable.
 
+## [0.1.0.dev3] — 2026-05-20
+
+Sprint 4 milestone. Hooks the runtime into OpenTelemetry GenAI
+semantic conventions so any GenAI-aware APM (the same dashboard
+consuming Anthropic SDK or OpenAI Agents SDK) surfaces it as a
+first-class agent.
+
+### Added
+- `EventSink` and `UsageSink` Protocols (`techrevati.runtime.sinks`),
+  plus `NoopEventSink`, `NoopUsageSink`, `RingBufferEventSink`,
+  `RingBufferUsageSink` defaults. `RingBufferEventSink` enforces a
+  configurable capacity (default 1000) so long-running sessions can't
+  balloon memory — closes the unbounded-tracker gap from 0.0.x.
+- `Orchestrator(event_sink=..., usage_sink=...)` plumbs the configured
+  sinks through to every session. Every `AgentEvent` the session
+  records is forwarded to the event sink; every recorded turn is
+  forwarded to the usage sink with its computed cost.
+- `OpenTelemetrySink` and `OpenTelemetryUsageSink`
+  (`techrevati.runtime.otel`, available via the new `[otel]` extra).
+  Mirrors every event as a one-shot OTel span with `gen_ai.operation.name`,
+  `gen_ai.provider.name`, `gen_ai.agent.name`, optional `gen_ai.agent.id`,
+  and `error.type` on failures. Records `gen_ai.client.token.usage`
+  histogram (with `gen_ai.token.type=input|output` discriminator) and
+  a `techrevati.cost.usd` counter. Span names follow the GenAI agent
+  spans convention (`create_agent` / `invoke_agent` / `execute_tool` /
+  `invoke_workflow`).
+- `[otel]` optional dependency group:
+  `opentelemetry-api>=1.27`, `opentelemetry-sdk>=1.27`,
+  `opentelemetry-semantic-conventions>=0.48b0`.
+- Structured `logger.info` calls at five decision points: recovery
+  attempted, session failed, quality gate failed, handoff issued,
+  budget exceeded. All with `extra={role, phase, project_id, ...}` so
+  log shippers can pivot by role.
+- `_emit_event` helper on sessions wraps every event emission in a
+  try/except so a misbehaving sink can't tear down the running
+  session — it logs and continues.
+
+### Notes
+- Sinks are synchronous by design. OpenTelemetry's batch processors
+  already absorb the latency cost; if your custom sink does network
+  I/O, wrap it in a queue + worker thread before plugging it in.
+- Span nesting (parent/child relationships across agent/turn/tool)
+  is not yet emitted — discrete spans + `gen_ai.agent.id` correlation
+  suffice for v1 dashboards. Nesting is targeted for Sprint 5.
+
 ## [0.1.0.dev2] — 2026-05-20
 
 Sprint 3 milestone. Closes the primitive-parity gap with mainstream
@@ -164,6 +209,7 @@ loops with reliability and cost visibility:
 - `PermissionPolicy` + `PermissionEnforcer` — deny-first role × tool gating.
 - `PolicyEngine` + composable conditions — declarative rule evaluator.
 
+[0.1.0.dev3]: https://github.com/Techrevati/runtime/releases/tag/v0.1.0.dev3
 [0.1.0.dev2]: https://github.com/Techrevati/runtime/releases/tag/v0.1.0.dev2
 [0.1.0.dev1]: https://github.com/Techrevati/runtime/releases/tag/v0.1.0.dev1
 [0.0.1]: https://github.com/Techrevati/runtime/releases/tag/v0.0.1
