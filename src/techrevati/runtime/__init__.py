@@ -9,7 +9,7 @@ Zero runtime dependencies.
 >>> from techrevati.runtime import CircuitBreaker, PolicyEngine
 """
 
-__version__ = "0.1.0.dev1"
+__version__ = "0.1.0.dev2"
 
 from techrevati.runtime.agent_events import (
     AgentEvent,
@@ -30,8 +30,18 @@ from techrevati.runtime.circuit_breaker import (
     CircuitOpenError,
     CircuitState,
 )
+from techrevati.runtime.guardrails import (
+    AllowAllGuardrail,
+    Guardrail,
+    GuardrailOutcome,
+    GuardrailStage,
+    GuardrailViolatedError,
+)
+from techrevati.runtime.handoffs import Handoff
 from techrevati.runtime.orchestrator import (
+    AgentSession,
     AsyncOrchestrationSession,
+    MaxIterationsExceededError,
     OrchestrationSession,
     Orchestrator,
     PermissionDeniedError,
@@ -90,9 +100,11 @@ __all__ = [
     "AgentEventStatus",
     "AgentFailureClass",
     "AgentRegistry",
+    "AgentSession",
     "AgentStatus",
     "AgentWorker",
     "AgentWorkerEvent",
+    "AllowAllGuardrail",
     "AsyncCircuitBreaker",
     "AsyncOrchestrationSession",
     "BudgetExceededError",
@@ -101,7 +113,13 @@ __all__ = [
     "CircuitState",
     "EscalationPolicy",
     "FailureScenario",
+    "Guardrail",
+    "GuardrailOutcome",
+    "GuardrailStage",
+    "GuardrailViolatedError",
+    "Handoff",
     "InvalidTransitionError",
+    "MaxIterationsExceededError",
     "ModelPricing",
     "OrchestrationSession",
     "Orchestrator",
