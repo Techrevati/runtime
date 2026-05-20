@@ -13,7 +13,7 @@ import threading
 from dataclasses import dataclass, field
 from importlib import resources
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 logger = logging.getLogger("techrevati.runtime.usage_tracking")
 logger.addHandler(logging.NullHandler())
@@ -160,13 +160,47 @@ def has_pricing(model: str) -> bool:
     return any(model_lower.startswith(key) for key in PRICING_TABLE)
 
 
-def register_pricing(model: str, pricing: ModelPricing) -> None:
+class PricingAlreadyRegisteredError(ValueError):
+    """Raised on re-registration when ``on_conflict='error'``."""
+
+    def __init__(self, model: str) -> None:
+        super().__init__(
+            f"Pricing for model {model!r} is already registered. "
+            "Pass on_conflict='overwrite' to replace, or 'keep' to "
+            "retain the existing entry."
+        )
+        self.model = model
+
+
+def register_pricing(
+    model: str,
+    pricing: ModelPricing,
+    *,
+    on_conflict: Literal["overwrite", "error", "keep"] = "overwrite",
+) -> None:
     """Register or override pricing for a model. Thread-safe.
 
     Matches are case-insensitive; the key is normalized to lower-case.
+
+    ``on_conflict`` controls behavior when ``model`` is already in the
+    pricing table:
+
+    - ``"overwrite"`` (default, preserves 0.2.0 behavior) — replace the
+      existing entry.
+    - ``"error"`` — raise ``PricingAlreadyRegisteredError``. Use this in
+      startup wiring where double-registration signals a configuration
+      bug.
+    - ``"keep"`` — leave the existing entry; the new pricing is dropped
+      silently. Useful for "register defaults if not present" patterns.
     """
+    model_lower = model.lower()
     with _pricing_lock:
-        PRICING_TABLE[model.lower()] = pricing
+        if model_lower in PRICING_TABLE:
+            if on_conflict == "error":
+                raise PricingAlreadyRegisteredError(model)
+            if on_conflict == "keep":
+                return
+        PRICING_TABLE[model_lower] = pricing
 
 
 def load_pricing_from_file(path: str | Path) -> None:

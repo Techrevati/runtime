@@ -10,8 +10,8 @@ from techrevati.runtime import (
     AgentEvent,
     AgentEventName,
     AgentEventStatus,
+    AgentSession,
     ModelPricing,
-    Orchestrator,
     RingBufferEventSink,
     RingBufferUsageSink,
     UsageSnapshot,
@@ -73,7 +73,7 @@ def test_noop_usage_sink_discards():
 
 def test_orchestrator_emits_events_to_event_sink():
     sink = RingBufferEventSink()
-    orch = Orchestrator(role="writer", phase="draft", event_sink=sink)
+    orch = AgentSession(role="writer", phase="draft", event_sink=sink)
     with orch.session() as session:
         session.run_turn(
             lambda: "ok",
@@ -87,7 +87,7 @@ def test_orchestrator_emits_events_to_event_sink():
 
 def test_orchestrator_records_usage_to_usage_sink():
     sink = RingBufferUsageSink()
-    orch = Orchestrator(role="writer", phase="draft", usage_sink=sink)
+    orch = AgentSession(role="writer", phase="draft", usage_sink=sink)
     with orch.session() as session:
         session.run_turn(
             lambda: "ok",
@@ -105,7 +105,7 @@ def test_orchestrator_records_usage_to_usage_sink():
 async def test_async_orchestrator_emits_to_sinks():
     event_sink = RingBufferEventSink()
     usage_sink = RingBufferUsageSink()
-    orch = Orchestrator(
+    orch = AgentSession(
         role="r", phase="p", event_sink=event_sink, usage_sink=usage_sink
     )
 
@@ -126,7 +126,7 @@ def test_misbehaving_event_sink_does_not_break_session(caplog):
         def emit(self, event: AgentEvent) -> None:
             raise RuntimeError("sink down")
 
-    orch = Orchestrator(role="r", phase="p", event_sink=_BoomSink())
+    orch = AgentSession(role="r", phase="p", event_sink=_BoomSink())
     with caplog.at_level(logging.ERROR, logger="techrevati.runtime.orchestrator"):
         with orch.session() as session:
             session.run_turn(lambda: "ok", model="test-model")
@@ -139,7 +139,7 @@ def test_misbehaving_usage_sink_does_not_break_session(caplog):
         def record(self, model: str, usage: UsageSnapshot, cost_usd: float) -> None:
             raise RuntimeError("sink down")
 
-    orch = Orchestrator(role="r", phase="p", usage_sink=_BoomSink())
+    orch = AgentSession(role="r", phase="p", usage_sink=_BoomSink())
     with caplog.at_level(logging.ERROR, logger="techrevati.runtime.orchestrator"):
         with orch.session() as session:
             session.run_turn(

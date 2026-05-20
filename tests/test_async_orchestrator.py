@@ -7,13 +7,13 @@ import asyncio
 import pytest
 
 from techrevati.runtime import (
+    AgentSession,
     AgentStatus,
     AsyncCircuitBreaker,
     AsyncOrchestrationSession,
     BudgetExceededError,
     CircuitOpenError,
     ModelPricing,
-    Orchestrator,
     PermissionDeniedError,
     PermissionEnforcer,
     PermissionMode,
@@ -35,7 +35,7 @@ def _register_test_pricing():
 
 @pytest.mark.asyncio
 async def test_asession_happy_path_completes_worker():
-    orch = Orchestrator(role="writer", phase="draft", project_id=1)
+    orch = AgentSession(role="writer", phase="draft", project_id=1)
 
     async def model_call():
         return "ok"
@@ -56,7 +56,7 @@ async def test_asession_happy_path_completes_worker():
 
 @pytest.mark.asyncio
 async def test_asession_failure_path_marks_failed():
-    orch = Orchestrator(role="writer", phase="draft")
+    orch = AgentSession(role="writer", phase="draft")
 
     async def boom():
         raise RuntimeError("boom")
@@ -74,7 +74,7 @@ async def test_asession_failure_path_marks_failed():
 @pytest.mark.asyncio
 async def test_arun_turn_with_async_circuit_breaker():
     cb = AsyncCircuitBreaker("svc", failure_threshold=1, recovery_timeout_seconds=10)
-    orch = Orchestrator(role="writer", phase="draft", async_circuit_breaker=cb)
+    orch = AgentSession(role="writer", phase="draft", async_circuit_breaker=cb)
 
     async def boom():
         raise RuntimeError("svc down")
@@ -98,7 +98,7 @@ async def test_arun_turn_with_async_circuit_breaker():
 
 @pytest.mark.asyncio
 async def test_arun_turn_timeout_raises_turn_timeout_error():
-    orch = Orchestrator(role="writer", phase="draft")
+    orch = AgentSession(role="writer", phase="draft")
 
     async def slow():
         await asyncio.sleep(0.5)
@@ -113,7 +113,7 @@ async def test_arun_turn_timeout_raises_turn_timeout_error():
 
 @pytest.mark.asyncio
 async def test_arun_turn_no_timeout_completes():
-    orch = Orchestrator(role="writer", phase="draft")
+    orch = AgentSession(role="writer", phase="draft")
 
     async def fast():
         return "fast"
@@ -136,7 +136,7 @@ async def test_arun_tool_blocks_when_denied():
             tool_requirements={"write_db": PermissionMode.FULL_ACCESS},
         )
     )
-    orch = Orchestrator(role="reader", phase="draft", permissions=enforcer)
+    orch = AgentSession(role="reader", phase="draft", permissions=enforcer)
 
     async def attempt():
         return "leak"
@@ -156,7 +156,7 @@ async def test_arun_tool_passes_when_allowed():
             tool_requirements={"write_db": PermissionMode.FULL_ACCESS},
         )
     )
-    orch = Orchestrator(role="writer", phase="draft", permissions=enforcer)
+    orch = AgentSession(role="writer", phase="draft", permissions=enforcer)
 
     async def writer():
         return "wrote"
@@ -170,7 +170,7 @@ async def test_arun_tool_passes_when_allowed():
 
 @pytest.mark.asyncio
 async def test_cancelled_error_marks_worker_cancelled():
-    orch = Orchestrator(role="writer", phase="draft")
+    orch = AgentSession(role="writer", phase="draft")
 
     async def slow():
         await asyncio.sleep(10)
@@ -194,7 +194,7 @@ async def test_cancelled_error_marks_worker_cancelled():
 
 @pytest.mark.asyncio
 async def test_arun_turn_respects_enforce_budget():
-    orch = Orchestrator(
+    orch = AgentSession(
         role="writer",
         phase="draft",
         budget_usd=0.001,
@@ -218,7 +218,7 @@ async def test_arun_turn_respects_enforce_budget():
 
 @pytest.mark.asyncio
 async def test_pause_for_input_resumes_with_provided_value():
-    orch = Orchestrator(role="writer", phase="draft")
+    orch = AgentSession(role="writer", phase="draft")
 
     async def flow():
         async with orch.asession() as session:
@@ -242,7 +242,7 @@ async def test_pause_for_input_resumes_with_provided_value():
 
 @pytest.mark.asyncio
 async def test_pause_for_input_rejects_double_pause():
-    orch = Orchestrator(role="writer", phase="draft")
+    orch = AgentSession(role="writer", phase="draft")
     async with orch.asession() as session:
         first = asyncio.create_task(session.pause_for_input("a?"))
         await asyncio.sleep(0.01)
@@ -272,7 +272,7 @@ async def test_evaluate_policy_auto_elapsed():
         actions=[PolicyActionData(PolicyAction.ABORT_PHASE)],
         priority=10,
     )
-    orch = Orchestrator(
+    orch = AgentSession(
         role="writer",
         phase="draft",
         policy_engine=PolicyEngine([timed_out_rule]),

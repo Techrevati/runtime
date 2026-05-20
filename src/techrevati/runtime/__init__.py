@@ -50,6 +50,7 @@ from techrevati.runtime.guardrails import (
     GuardrailOutcome,
     GuardrailStage,
     GuardrailViolatedError,
+    GuardrailViolation,
 )
 from techrevati.runtime.handoffs import Handoff
 from techrevati.runtime.orchestrator import (
@@ -132,6 +133,7 @@ from techrevati.runtime.usage_tracking import (
     PRICING_TABLE,
     BudgetExceededError,
     ModelPricing,
+    PricingAlreadyRegisteredError,
     UsageBoundExceededError,
     UsageLimitExceededError,
     UsageLimits,
@@ -172,6 +174,7 @@ __all__ = [
     "GuardrailOutcome",
     "GuardrailStage",
     "GuardrailViolatedError",
+    "GuardrailViolation",
     "Handoff",
     "InMemorySaver",
     "InvalidTransitionError",
@@ -194,6 +197,7 @@ __all__ = [
     "PolicyEngine",
     "PolicyRule",
     "PRICING_TABLE",
+    "PricingAlreadyRegisteredError",
     "ProviderRouter",
     "QualityGate",
     "QualityGateOutcome",

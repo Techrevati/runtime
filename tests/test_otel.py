@@ -21,8 +21,8 @@ from opentelemetry.sdk.trace.export.in_memory_span_exporter import (  # noqa: E4
 )
 
 from techrevati.runtime import (  # noqa: E402
+    AgentSession,
     ModelPricing,
-    Orchestrator,
     UsageSnapshot,
     register_pricing,
 )
@@ -57,7 +57,7 @@ def _register_pricing():
 def test_otel_event_sink_emits_invoke_agent_span(in_memory_tracer):
     tracer, exporter = in_memory_tracer
     sink = OpenTelemetrySink(tracer=tracer, agent_id="abc")
-    orch = Orchestrator(role="writer", phase="draft", event_sink=sink)
+    orch = AgentSession(role="writer", phase="draft", event_sink=sink)
 
     with orch.session() as session:
         session.run_turn(
@@ -80,7 +80,7 @@ def test_otel_event_sink_emits_invoke_agent_span(in_memory_tracer):
 def test_otel_event_sink_sets_error_type_on_failure(in_memory_tracer):
     tracer, exporter = in_memory_tracer
     sink = OpenTelemetrySink(tracer=tracer)
-    orch = Orchestrator(role="writer", phase="draft", event_sink=sink)
+    orch = AgentSession(role="writer", phase="draft", event_sink=sink)
 
     with pytest.raises(RuntimeError):
         with orch.session() as session:
@@ -94,7 +94,7 @@ def test_otel_event_sink_sets_error_type_on_failure(in_memory_tracer):
 def test_otel_usage_sink_records_token_and_cost_metrics(in_memory_meter):
     meter, reader = in_memory_meter
     usage_sink = OpenTelemetryUsageSink(meter=meter)
-    orch = Orchestrator(role="writer", phase="draft", usage_sink=usage_sink)
+    orch = AgentSession(role="writer", phase="draft", usage_sink=usage_sink)
 
     with orch.session() as session:
         session.run_turn(

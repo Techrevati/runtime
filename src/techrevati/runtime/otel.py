@@ -29,6 +29,8 @@ non-parent event is a leaf under the agent span.
 
 from __future__ import annotations
 
+import atexit
+import weakref
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
@@ -101,7 +103,34 @@ _PARENT_CLOSE_EVENTS = frozenset(
 )
 
 
-@dataclass
+# Process-wide registry of live OpenTelemetrySink instances. Used by the
+# atexit hook below to flush orphan parent spans on abrupt termination.
+# WeakSet so that sinks the user has dropped don't pin themselves in
+# memory until interpreter shutdown.
+_LIVE_SINKS: weakref.WeakSet[OpenTelemetrySink] = weakref.WeakSet()
+
+
+def _flush_orphan_parent_spans_at_exit() -> None:
+    """Close any parent spans the runtime didn't get a chance to close.
+
+    If a process dies between ``AGENT_STARTED`` and ``AGENT_COMPLETED``
+    — e.g. a crash, SIGTERM, or simply ``sys.exit()`` mid-session — the
+    parent span otherwise stays open and the resulting trace is
+    corrupted in the APM dashboard. This hook marks every still-open
+    parent as ``ERROR`` with ``error.type=abrupt_termination`` and ends
+    it so the trace tree closes cleanly.
+    """
+    for sink in list(_LIVE_SINKS):
+        try:
+            sink._close_orphan_parent_spans()
+        except Exception:  # noqa: BLE001 - atexit must never raise
+            pass
+
+
+atexit.register(_flush_orphan_parent_spans_at_exit)
+
+
+@dataclass(eq=False)
 class OpenTelemetrySink:
     """EventSink that mirrors AgentEvents into nested OTel spans.
 
@@ -126,7 +155,29 @@ class OpenTelemetrySink:
     def __post_init__(self) -> None:
         _require_otel()
         if self.tracer is None:
-            self.tracer = trace.get_tracer("techrevati.runtime", "0.2.0")
+            self.tracer = trace.get_tracer("techrevati.runtime", "0.2.1")
+        _LIVE_SINKS.add(self)
+
+    def _close_orphan_parent_spans(self) -> None:
+        """Mark every still-open parent span as abruptly terminated and end it.
+
+        Called by the ``atexit`` hook on interpreter shutdown. Safe to
+        call multiple times — second invocation finds an empty dict.
+        Never raises.
+        """
+        while self._active_spans:
+            _key, parent = self._active_spans.popitem()
+            try:
+                parent.set_attribute("error.type", "abrupt_termination")
+                parent.set_status(
+                    Status(
+                        StatusCode.ERROR,
+                        "process exited before AGENT_COMPLETED / PHASE_COMPLETED",
+                    )
+                )
+                parent.end()
+            except Exception:  # noqa: BLE001 - last-chance cleanup
+                pass
 
     @staticmethod
     def _span_key(event: AgentEvent) -> tuple[str, str]:

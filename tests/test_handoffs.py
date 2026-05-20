@@ -5,14 +5,14 @@ from __future__ import annotations
 import pytest
 
 from techrevati.runtime import (
+    AgentSession,
     AgentStatus,
     Handoff,
-    Orchestrator,
 )
 
 
 def test_handoff_to_creates_target_worker_and_finalizes_source():
-    orch = Orchestrator(role="writer", phase="draft", project_id=42)
+    orch = AgentSession(role="writer", phase="draft", project_id=42)
     with orch.session() as session:
         handoff = session.handoff_to(
             "editor", reason="review please", context={"draft_id": 7}
@@ -38,7 +38,7 @@ def test_handoff_to_creates_target_worker_and_finalizes_source():
 
 
 def test_handoff_event_is_recorded_on_source_session():
-    orch = Orchestrator(role="writer", phase="draft")
+    orch = AgentSession(role="writer", phase="draft")
     with orch.session() as session:
         session.handoff_to("editor", reason="review")
     completed_with_handoff = [
@@ -67,7 +67,7 @@ def test_handoff_serialization_roundtrip():
 
 
 def test_handoff_default_context_is_empty_dict():
-    orch = Orchestrator(role="writer", phase="draft")
+    orch = AgentSession(role="writer", phase="draft")
     with orch.session() as session:
         handoff = session.handoff_to("editor", reason="r")
     assert handoff.context == {}
@@ -75,7 +75,7 @@ def test_handoff_default_context_is_empty_dict():
 
 @pytest.mark.asyncio
 async def test_async_handoff_to_finalizes_source():
-    orch = Orchestrator(role="writer", phase="draft", project_id=99)
+    orch = AgentSession(role="writer", phase="draft", project_id=99)
     async with orch.asession() as session:
         handoff = session.handoff_to("editor", reason="async review")
     assert handoff.target_role == "editor"

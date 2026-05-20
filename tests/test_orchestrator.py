@@ -5,12 +5,12 @@ import time
 import pytest
 
 from techrevati.runtime import (
+    AgentSession,
     AgentStatus,
     BudgetExceededError,
     CircuitBreaker,
     CircuitOpenError,
     ModelPricing,
-    Orchestrator,
     PermissionDeniedError,
     PermissionEnforcer,
     PermissionMode,
@@ -38,7 +38,7 @@ def _model_pricing_for_cost_assertions():
 
 
 def test_session_happy_path_completes_worker():
-    orch = Orchestrator(role="writer", phase="draft", project_id=42)
+    orch = AgentSession(role="writer", phase="draft", project_id=42)
     with orch.session() as session:
         result, usage = session.run_turn(
             lambda: "ok",
@@ -54,7 +54,7 @@ def test_session_happy_path_completes_worker():
 
 
 def test_session_failure_path_marks_worker_failed():
-    orch = Orchestrator(role="writer", phase="draft")
+    orch = AgentSession(role="writer", phase="draft")
     with pytest.raises(RuntimeError):
         with orch.session() as session:
             session.run_turn(lambda: (_ for _ in ()).throw(RuntimeError("boom")))
@@ -72,7 +72,7 @@ def test_permission_denied_blocks_run_tool():
             tool_requirements={"expand_features": PermissionMode.FULL_ACCESS},
         )
     )
-    orch = Orchestrator(role="reader", phase="draft", permissions=enforcer)
+    orch = AgentSession(role="reader", phase="draft", permissions=enforcer)
     with orch.session() as session:
         with pytest.raises(PermissionDeniedError):
             session.run_tool("expand_features", lambda: "should not run")
@@ -87,7 +87,7 @@ def test_run_tool_passes_when_allowed():
             tool_requirements={"expand_features": PermissionMode.FULL_ACCESS},
         )
     )
-    orch = Orchestrator(role="writer", phase="draft", permissions=enforcer)
+    orch = AgentSession(role="writer", phase="draft", permissions=enforcer)
     with orch.session() as session:
         result = session.run_tool("expand_features", lambda: "result")
         assert result == "result"
@@ -95,7 +95,7 @@ def test_run_tool_passes_when_allowed():
 
 def test_circuit_breaker_short_circuits_turn():
     cb = CircuitBreaker("svc", failure_threshold=1, recovery_timeout_seconds=10)
-    orch = Orchestrator(role="writer", phase="draft", circuit_breaker=cb)
+    orch = AgentSession(role="writer", phase="draft", circuit_breaker=cb)
 
     with pytest.raises(RuntimeError):
         with orch.session() as session:
@@ -107,7 +107,7 @@ def test_circuit_breaker_short_circuits_turn():
 
 
 def test_evaluate_gate_records_event_on_pass():
-    orch = Orchestrator(
+    orch = AgentSession(
         role="writer",
         phase="draft",
         quality_gate=QualityGate(QualityLevel.STANDARD),
@@ -119,7 +119,7 @@ def test_evaluate_gate_records_event_on_pass():
 
 
 def test_evaluate_gate_records_event_on_fail():
-    orch = Orchestrator(
+    orch = AgentSession(
         role="writer",
         phase="draft",
         quality_gate=QualityGate(QualityLevel.STRICT),
@@ -131,7 +131,7 @@ def test_evaluate_gate_records_event_on_fail():
 
 
 def test_evaluate_gate_without_configured_gate_returns_none():
-    orch = Orchestrator(role="writer", phase="draft")
+    orch = AgentSession(role="writer", phase="draft")
     with orch.session() as session:
         assert session.evaluate_gate(QualityLevel.STRICT) is None
 
@@ -143,7 +143,7 @@ def test_evaluate_policy_returns_actions():
         actions=[PolicyActionData(PolicyAction.ADVANCE_PHASE)],
         priority=10,
     )
-    orch = Orchestrator(
+    orch = AgentSession(
         role="writer",
         phase="draft",
         policy_engine=PolicyEngine([rule]),
@@ -159,7 +159,7 @@ def test_evaluate_policy_returns_actions():
 
 
 def test_summary_includes_worker_and_usage():
-    orch = Orchestrator(role="writer", phase="draft")
+    orch = AgentSession(role="writer", phase="draft")
     with orch.session() as session:
         session.run_turn(
             lambda: "ok",
@@ -174,7 +174,7 @@ def test_summary_includes_worker_and_usage():
 
 def test_enforce_budget_raises_when_over():
     """enforce_budget=True converts over-budget into BudgetExceededError."""
-    orch = Orchestrator(
+    orch = AgentSession(
         role="writer",
         phase="draft",
         budget_usd=0.001,
@@ -193,7 +193,7 @@ def test_enforce_budget_raises_when_over():
 
 def test_enforce_budget_default_is_informational_only():
     """Without enforce_budget=True, over-budget logs an event but doesn't raise."""
-    orch = Orchestrator(
+    orch = AgentSession(
         role="writer",
         phase="draft",
         budget_usd=0.001,
@@ -209,7 +209,7 @@ def test_enforce_budget_default_is_informational_only():
 
 
 def test_enforce_budget_does_not_fire_when_under_budget():
-    orch = Orchestrator(
+    orch = AgentSession(
         role="writer",
         phase="draft",
         budget_usd=100.0,
@@ -228,7 +228,7 @@ def test_enforce_budget_does_not_fire_when_under_budget():
 
 
 def test_run_turn_timeout_raises_turn_timeout_error():
-    orch = Orchestrator(role="writer", phase="draft")
+    orch = AgentSession(role="writer", phase="draft")
 
     def slow():
         time.sleep(0.5)
@@ -242,7 +242,7 @@ def test_run_turn_timeout_raises_turn_timeout_error():
 
 
 def test_run_turn_no_timeout_completes():
-    orch = Orchestrator(role="writer", phase="draft")
+    orch = AgentSession(role="writer", phase="draft")
     with orch.session() as session:
         result, _ = session.run_turn(lambda: "fast", timeout=1.0)
     assert result == "fast"
@@ -260,7 +260,7 @@ def test_evaluate_policy_auto_elapsed_sync():
         actions=[PolicyActionData(PolicyAction.ABORT_PHASE)],
         priority=10,
     )
-    orch = Orchestrator(
+    orch = AgentSession(
         role="writer", phase="draft", policy_engine=PolicyEngine([rule])
     )
     with orch.session() as session:
@@ -278,7 +278,7 @@ def test_evaluate_policy_explicit_elapsed_overrides_auto():
         actions=[PolicyActionData(PolicyAction.ABORT_PHASE)],
         priority=10,
     )
-    orch = Orchestrator(
+    orch = AgentSession(
         role="writer", phase="draft", policy_engine=PolicyEngine([rule])
     )
     with orch.session() as session:

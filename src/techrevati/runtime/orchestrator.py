@@ -38,7 +38,7 @@ import time
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterator, Sequence
 from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass, field
-from typing import Any, TypeVar
+from typing import Any, ClassVar, TypeVar
 
 from techrevati.runtime.agent_events import AgentEvent, AgentFailureClass
 from techrevati.runtime.agent_lifecycle import (
@@ -1024,11 +1024,28 @@ def _scenario_to_class(scenario: FailureScenario) -> AgentFailureClass:
     return mapping.get(scenario, AgentFailureClass.UNKNOWN)
 
 
-# `Orchestrator` is the legacy 0.1.x name; `AgentSession` is now
-# canonical (see class definition above). The alias is intentionally a
-# bare assignment — same class, same constructor, same identity. It
-# will be removed in 0.3.0; consumers should migrate imports now.
-Orchestrator = AgentSession
+# `Orchestrator` is the legacy 0.1.x name; `AgentSession` is canonical.
+# Subclass (not bare alias) so we can emit DeprecationWarning on the
+# first instantiation in a process. Removed in 0.3.0.
+class Orchestrator(AgentSession):
+    """Deprecated alias for ``AgentSession``. Removed in 0.3.0."""
+
+    _deprecation_emitted: ClassVar[bool] = False
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        if not Orchestrator._deprecation_emitted:
+            import warnings
+
+            warnings.warn(
+                "Orchestrator is a deprecated alias for AgentSession and will "
+                "be removed in 0.3.0. Replace `Orchestrator(...)` with "
+                "`AgentSession(...)` — the constructor and behavior are "
+                "identical.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            Orchestrator._deprecation_emitted = True
+        super().__init__(*args, **kwargs)
 
 
 __all__ = [

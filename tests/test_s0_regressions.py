@@ -16,9 +16,9 @@ import time
 import pytest
 
 from techrevati.runtime import (
+    AgentSession,
     FailureScenario,
     OrchestrationSession,
-    Orchestrator,
     RecoveryContext,
     RecoveryRecipe,
     RecoveryStep,
@@ -165,7 +165,7 @@ def test_run_turn_timeout_does_not_block_on_slow_fn() -> None:
     slow function to return. The fix bypasses the context manager and
     calls ``shutdown(wait=False, cancel_futures=True)`` in finally.
     """
-    orch = Orchestrator(role="writer", phase="draft")
+    orch = AgentSession(role="writer", phase="draft")
 
     def slow_fn() -> str:
         time.sleep(2.0)
@@ -197,7 +197,7 @@ def test_version_is_a_pep440_like_string() -> None:
 
 @pytest.mark.asyncio
 async def test_arun_turn_smoke_still_passes() -> None:
-    orch = Orchestrator(role="writer", phase="draft")
+    orch = AgentSession(role="writer", phase="draft")
 
     async def fast_coro() -> str:
         await asyncio.sleep(0)

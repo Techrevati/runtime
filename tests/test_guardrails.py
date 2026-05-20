@@ -8,11 +8,11 @@ from typing import Any
 import pytest
 
 from techrevati.runtime import (
+    AgentSession,
     AllowAllGuardrail,
     Guardrail,
     GuardrailOutcome,
     GuardrailViolatedError,
-    Orchestrator,
 )
 
 
@@ -51,13 +51,13 @@ class _BlockOutputContaining(Guardrail):
 
 
 def test_no_guardrails_means_no_checks():
-    orch = Orchestrator(role="writer", phase="draft")
+    orch = AgentSession(role="writer", phase="draft")
     with orch.session() as session:
         assert session.run_tool("any_tool", lambda: "ok") == "ok"
 
 
 def test_allow_all_guardrail_passes_through():
-    orch = Orchestrator(role="writer", phase="draft", guardrails=[AllowAllGuardrail()])
+    orch = AgentSession(role="writer", phase="draft", guardrails=[AllowAllGuardrail()])
     with orch.session() as session:
         assert session.run_tool("any_tool", lambda: "ok") == "ok"
 
@@ -70,7 +70,7 @@ def test_pre_guardrail_blocks_before_invocation():
         invocations += 1
         return "ran"
 
-    orch = Orchestrator(
+    orch = AgentSession(
         role="writer",
         phase="draft",
         guardrails=[_BlockToolPre(blocked="dangerous")],
@@ -85,7 +85,7 @@ def test_pre_guardrail_blocks_before_invocation():
 
 
 def test_post_guardrail_blocks_after_invocation():
-    orch = Orchestrator(
+    orch = AgentSession(
         role="writer",
         phase="draft",
         guardrails=[_BlockOutputContaining(needle="secret")],
@@ -98,8 +98,13 @@ def test_post_guardrail_blocks_after_invocation():
     assert "secret" in (exc_info.value.outcome.reason or "")
 
 
-def test_first_violating_guardrail_short_circuits():
-    """Multiple guardrails: first failure stops the chain."""
+def test_all_guardrails_run_when_first_blocks():
+    """0.2.1 change: collect-all semantics so audit logs see every violation.
+
+    Previously the first failing guardrail short-circuited; this is a
+    EU AI Act Article 12 prerequisite (record-keeping must reflect the
+    full set of guardrails that fired, not just the first hit).
+    """
 
     @dataclass
     class _Counting(Guardrail):
@@ -120,18 +125,50 @@ def test_first_violating_guardrail_short_circuits():
 
     blocking = _BlockToolPre(blocked="bad")
     counting = _Counting()
-    orch = Orchestrator(role="writer", phase="draft", guardrails=[blocking, counting])
+    orch = AgentSession(role="writer", phase="draft", guardrails=[blocking, counting])
     with pytest.raises(GuardrailViolatedError):
         with orch.session() as session:
             session.run_tool("bad", lambda: "x")
 
-    # Counting never saw the pre-call because blocking guardrail short-circuited.
-    assert counting.calls == []
+    # Counting saw the pre-call even though blocking guardrail violated;
+    # the orchestrator runs every pre-check before raising.
+    assert counting.calls == ["pre:bad"]
+
+
+def test_multiple_simultaneous_violations_aggregated():
+    """When two guardrails block at the same stage, both surface in .violations."""
+
+    @dataclass
+    class _AlwaysBlock(Guardrail):
+        name: str = "always_block"
+
+        def check_pre(self, *, role: str, tool: str) -> GuardrailOutcome:
+            return GuardrailOutcome(allowed=False, reason=f"{self.name} says no")
+
+        def check_post(self, value: Any, *, role: str, tool: str) -> GuardrailOutcome:
+            return GuardrailOutcome(allowed=True)
+
+    g1 = _AlwaysBlock(name="g1")
+    g2 = _AlwaysBlock(name="g2")
+    orch = AgentSession(role="writer", phase="draft", guardrails=[g1, g2])
+
+    with pytest.raises(GuardrailViolatedError) as exc_info:
+        with orch.session() as session:
+            session.run_tool("anything", lambda: "x")
+
+    err = exc_info.value
+    assert len(err.violations) == 2
+    names = {v.guardrail for v in err.violations}
+    assert names == {"g1", "g2"}
+    # First-violation mirror still works for legacy callers
+    assert err.outcome is err.violations[0].outcome
+    assert err.guardrail == err.violations[0].guardrail
+    assert err.stage == "pre"
 
 
 @pytest.mark.asyncio
 async def test_async_run_tool_runs_guardrails():
-    orch = Orchestrator(
+    orch = AgentSession(
         role="writer",
         phase="draft",
         guardrails=[_BlockOutputContaining(needle="leak")],

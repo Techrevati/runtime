@@ -60,12 +60,26 @@ class EscalationPolicy(str, Enum):
 class RecoveryRecipe:
     """Recovery plan for a failure scenario.
 
-    ``step_retries`` is an optional per-step retry budget the caller is
-    expected to honor when actually executing a step. The default empty
-    mapping preserves the 0.1.0 single-attempt semantics; populate it
-    when you want, e.g. ``RETRY_WITH_BACKOFF`` to fire three times
-    before the recipe moves on to ``SWITCH_PROVIDER``. This module
-    only records the budget — execution happens in the caller.
+    ``step_retries`` is an optional per-step retry budget. When a step
+    fails (the recovery context's ``_fail_at_attempt`` hook returns
+    True), the executor retries that same step up to ``step_retries[step]``
+    times before declaring it a failure and moving on to the next step
+    (which becomes ``remaining_steps`` in partial recovery). Missing keys
+    default to a budget of 1 (single attempt) — preserving 0.1.0 / 0.2.0
+    semantics.
+
+    Example::
+
+        RecoveryRecipe(
+            scenario=FailureScenario.LLM_ERROR,
+            steps=(RecoveryStep.RETRY_WITH_BACKOFF, RecoveryStep.SWITCH_PROVIDER),
+            max_attempts=2,
+            escalation_policy=EscalationPolicy.ALERT_HUMAN,
+            step_retries={RecoveryStep.RETRY_WITH_BACKOFF: 3},
+        )
+
+    fires the backoff step up to three times before failing over to the
+    provider switch.
     """
 
     scenario: FailureScenario
@@ -189,8 +203,26 @@ class RecoveryContext:
         return list(self._events)
 
     def _fail_at_step(self) -> int | None:
-        """Override in test subclasses to simulate partial recovery."""
+        """Override in test subclasses to simulate partial recovery.
+
+        Returns the index of the first step that should fail (all
+        subsequent steps also fail), or None if every step succeeds.
+        """
         return None
+
+    def _fail_at_attempt(
+        self, step: RecoveryStep, step_index: int, attempt: int
+    ) -> bool:
+        """Return True if this specific (step, attempt) should fail.
+
+        Default semantics layered on top of ``_fail_at_step`` so the
+        legacy hook keeps working: every attempt of a "failing" step
+        fails. Override in test subclasses to simulate "fails on
+        attempt 0, succeeds on attempt 1" for ``step_retries`` testing.
+        """
+        del step, attempt  # silence unused-argument lint in default impl
+        fail_at = self._fail_at_step()
+        return fail_at is not None and step_index >= fail_at
 
     def _emit(
         self,
@@ -236,13 +268,20 @@ def attempt_recovery(
     # Increment attempt counter (even before escalation on future calls)
     ctx._attempts[scenario] = current + 1
 
-    # Execute steps
+    # Execute steps, honoring per-step retry budgets.
     recovered_steps: list[str] = []
     remaining_steps: list[str] = []
-    fail_at = ctx._fail_at_step()
 
     for i, step in enumerate(recipe.steps):
-        if fail_at is not None and i >= fail_at:
+        budget = recipe.step_retries.get(step, 1)
+        step_succeeded = False
+        for step_attempt in range(budget):
+            if ctx._fail_at_attempt(step, i, step_attempt):
+                continue
+            step_succeeded = True
+            break
+
+        if not step_succeeded:
             remaining_steps = [s.value for s in recipe.steps[i:]]
             result = RecoveryResult(
                 outcome="partial_recovery",

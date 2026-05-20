@@ -14,10 +14,10 @@ from typing import cast
 import pytest
 
 from techrevati.runtime import (
+    AgentSession,
     Checkpoint,
     CheckpointSaver,
     InMemorySaver,
-    Orchestrator,
     SqliteSaver,
     UsageSnapshot,
 )
@@ -202,13 +202,13 @@ def test_sqlite_context_manager_closes() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Orchestrator integration: idempotency_key replay
+# AgentSession integration: idempotency_key replay
 # ---------------------------------------------------------------------------
 
 
 def test_run_turn_replays_cached_result_on_idempotency_hit() -> None:
     saver = InMemorySaver()
-    orch = Orchestrator(role="writer", phase="draft", saver=saver)
+    orch = AgentSession(role="writer", phase="draft", saver=saver)
 
     call_count = 0
 
@@ -245,7 +245,7 @@ def test_run_turn_replays_cached_result_on_idempotency_hit() -> None:
 
 def test_run_turn_without_idempotency_key_does_not_cache_replay() -> None:
     saver = InMemorySaver()
-    orch = Orchestrator(role="writer", phase="draft", saver=saver)
+    orch = AgentSession(role="writer", phase="draft", saver=saver)
     call_count = 0
 
     def fn() -> int:
@@ -263,7 +263,7 @@ def test_run_turn_without_idempotency_key_does_not_cache_replay() -> None:
 
 def test_run_turn_skips_persist_when_no_thread_id() -> None:
     saver = InMemorySaver()
-    orch = Orchestrator(role="writer", phase="draft", saver=saver)
+    orch = AgentSession(role="writer", phase="draft", saver=saver)
     with orch.session() as session:
         session.run_turn(lambda: "x", idempotency_key="ignored")
     # No thread_id → no checkpoints written under any thread.
@@ -274,7 +274,7 @@ def test_run_turn_logs_and_skips_non_json_result(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     saver = InMemorySaver()
-    orch = Orchestrator(role="writer", phase="draft", saver=saver)
+    orch = AgentSession(role="writer", phase="draft", saver=saver)
 
     class NotJsonable:
         def __repr__(self) -> str:
@@ -294,7 +294,7 @@ def test_run_turn_logs_and_skips_non_json_result(
 @pytest.mark.asyncio
 async def test_arun_turn_replays_on_idempotency_hit() -> None:
     saver = InMemorySaver()
-    orch = Orchestrator(role="writer", phase="draft", saver=saver)
+    orch = AgentSession(role="writer", phase="draft", saver=saver)
 
     call_count = 0
 
@@ -322,7 +322,7 @@ async def test_arun_turn_replays_on_idempotency_hit() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Orchestrator integration: restart-resumable across processes
+# AgentSession integration: restart-resumable across processes
 # ---------------------------------------------------------------------------
 
 
@@ -331,14 +331,14 @@ def test_sqlite_backed_session_resumes_across_saver_reopen(tmp_path: Path) -> No
 
     # First "process": run turn-1 only.
     saver1 = SqliteSaver(db)
-    orch1 = Orchestrator(role="writer", phase="draft", saver=saver1)
+    orch1 = AgentSession(role="writer", phase="draft", saver=saver1)
     with orch1.session(thread_id="resumable") as session:
         session.run_turn(lambda: "turn-1", idempotency_key="t1")
     saver1.close()
 
     # Second "process": same thread_id picks up turn-1's checkpoint, runs turn-2.
     saver2 = SqliteSaver(db)
-    orch2 = Orchestrator(role="writer", phase="draft", saver=saver2)
+    orch2 = AgentSession(role="writer", phase="draft", saver=saver2)
     invocations = 0
 
     def turn_1_replacement() -> str:
@@ -366,12 +366,12 @@ def test_sqlite_backed_session_resumes_across_saver_reopen(tmp_path: Path) -> No
 
 
 # ---------------------------------------------------------------------------
-# Type-narrowing smoke: the saver field on Orchestrator accepts the protocol
+# Type-narrowing smoke: the saver field on AgentSession accepts the protocol
 # ---------------------------------------------------------------------------
 
 
 def test_orchestrator_saver_field_accepts_protocol_subtypes() -> None:
     saver: CheckpointSaver = InMemorySaver()
-    orch = Orchestrator(role="r", phase="p", saver=saver)
+    orch = AgentSession(role="r", phase="p", saver=saver)
     # Round-trip through the dataclass field.
     assert cast(CheckpointSaver, orch.saver) is saver

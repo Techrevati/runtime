@@ -15,9 +15,9 @@ import time
 import pytest
 
 from techrevati.runtime import (
+    AgentSession,
     AsyncRateLimiter,
     AsyncTokenBucket,
-    Orchestrator,
     RateLimiter,
     RateLimitExceededError,
     TokenBucket,
@@ -190,7 +190,7 @@ async def test_async_rate_limiter_pre_and_usage() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Orchestrator integration
+# AgentSession integration
 # ---------------------------------------------------------------------------
 
 
@@ -204,7 +204,7 @@ def test_orchestrator_consumes_rpm_pre_call_and_tpm_post_call() -> None:
         "output_tpm", capacity=10_000.0, refill_per_second=0.001, clock=clk
     )
     lim = RateLimiter({"rpm": rpm, "input_tpm": in_b, "output_tpm": out_b})
-    orch = Orchestrator(role="writer", phase="draft", rate_limiter=lim)
+    orch = AgentSession(role="writer", phase="draft", rate_limiter=lim)
     with orch.session() as session:
         session.run_turn(
             lambda: "ok",
@@ -223,7 +223,7 @@ async def test_orchestrator_async_session_consumes_async_limiter() -> None:
         "input_tpm", capacity=10_000.0, refill_per_second=0.001, clock=clk
     )
     lim = AsyncRateLimiter({"rpm": rpm, "input_tpm": in_b})
-    orch = Orchestrator(role="writer", phase="draft", async_rate_limiter=lim)
+    orch = AgentSession(role="writer", phase="draft", async_rate_limiter=lim)
 
     async def call() -> str:
         return "ok"

@@ -153,7 +153,7 @@ def test_budget_and_limit_share_base_class() -> None:
 
 
 # --------------------------------------------------------------------------
-# Orchestrator integration
+# AgentSession integration
 # --------------------------------------------------------------------------
 
 

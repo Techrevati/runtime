@@ -11,12 +11,12 @@ import asyncio
 
 import pytest
 
-from techrevati.runtime import Orchestrator, TurnTimeoutError
+from techrevati.runtime import AgentSession, TurnTimeoutError
 
 
 @pytest.mark.asyncio
 async def test_parallel_tools_returns_results_in_order() -> None:
-    orch = Orchestrator(role="writer", phase="draft")
+    orch = AgentSession(role="writer", phase="draft")
 
     async def make_a() -> str:
         await asyncio.sleep(0.01)
@@ -36,7 +36,7 @@ async def test_parallel_tools_returns_results_in_order() -> None:
 
 @pytest.mark.asyncio
 async def test_parallel_tools_empty_input_returns_empty_list() -> None:
-    orch = Orchestrator(role="writer", phase="draft")
+    orch = AgentSession(role="writer", phase="draft")
     async with orch.asession() as session:
         assert await session.arun_parallel_tools([]) == []
 
@@ -44,7 +44,7 @@ async def test_parallel_tools_empty_input_returns_empty_list() -> None:
 @pytest.mark.asyncio
 async def test_parallel_tools_failure_cancels_siblings() -> None:
     """One child raising must cancel the others and re-raise as ExceptionGroup."""
-    orch = Orchestrator(role="writer", phase="draft")
+    orch = AgentSession(role="writer", phase="draft")
     sibling_was_cancelled = False
 
     async def sibling_long() -> str:
@@ -73,7 +73,7 @@ async def test_parallel_tools_failure_cancels_siblings() -> None:
 
 @pytest.mark.asyncio
 async def test_parallel_tools_timeout_maps_to_turn_timeout_error() -> None:
-    orch = Orchestrator(role="writer", phase="draft")
+    orch = AgentSession(role="writer", phase="draft")
 
     async def slow() -> str:
         await asyncio.sleep(5.0)

@@ -5,6 +5,62 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the project
 follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html), with the
 caveat that 0.x APIs are explicitly unstable.
 
+## [0.2.1] — 2026-05-20
+
+Sharp-edges patch landed the same day as 0.2.0 to close silent footguns
+identified in the 0.3.0 migration audit. No new primitives; one
+intentional soft-breaking semantic change to `GuardrailViolatedError`
+(callers reading the legacy single-violation fields still work — see
+"Changed" below).
+
+### Fixed
+
+- **`RecoveryRecipe.step_retries` is now honored** by `attempt_recovery`
+  and `aattempt_recovery`. Previously the field existed on the dataclass
+  but the recovery executors did not consume it — a recipe that set
+  `step_retries={RecoveryStep.RETRY_WITH_BACKOFF: 3}` silently ran the
+  step exactly once. Now the executor retries the step up to the
+  budgeted count before moving to the next step. Missing keys default
+  to a single attempt, preserving 0.2.0 behavior.
+- **`OpenTelemetrySink` cleans up orphan parent spans on interpreter
+  exit.** If a process died between `AGENT_STARTED` / `PHASE_STARTED`
+  and the matching `AGENT_COMPLETED` / `AGENT_FAILED` / `PHASE_COMPLETED`,
+  the parent span previously stayed open in the exporter buffer and
+  corrupted the APM trace tree. An `atexit` hook now marks every
+  still-open parent with `error.type=abrupt_termination` and an `ERROR`
+  status before ending it. The hook is no-op on the clean-exit path.
+
+### Added
+
+- **`register_pricing(model, pricing, *, on_conflict="overwrite")`** — explicit
+  merge semantics. `"overwrite"` (default) preserves 0.2.0 behavior;
+  `"error"` raises `PricingAlreadyRegisteredError` on re-registration;
+  `"keep"` retains the existing entry and drops the new pricing silently.
+  Useful for "register defaults if not present" startup patterns.
+- **`PricingAlreadyRegisteredError`** — exported from
+  `techrevati.runtime`. Subclass of `ValueError`, carries `.model`.
+- **`GuardrailViolation`** dataclass — one entry in the new
+  `GuardrailViolatedError.violations` tuple. Carries `outcome`,
+  `guardrail` (name), `stage` (`"pre"` / `"post"`). Has `to_dict()` for
+  audit-log serialization.
+- **`DeprecationWarning` on `Orchestrator(...)` instantiation** — emitted
+  once per process. `AgentSession` has been the canonical class name
+  since 0.2.0; the alias remains for a deprecation window and will be
+  removed in 0.3.0. Silent in import — only the first construction
+  warns.
+
+### Changed
+
+- **`GuardrailViolatedError.violations`** — every guardrail that fires
+  at the same stage is now collected and surfaced as a tuple on the
+  raised error, instead of short-circuiting on the first violation.
+  Required for EU AI Act Article 12 record-keeping (audit logs must
+  reflect the full set of guardrails that fired). Legacy callers that
+  read `error.outcome` / `error.guardrail` / `error.stage` still work —
+  those attributes mirror the first violation. The orchestrator now
+  runs every pre-check and post-check before raising; tests that
+  asserted short-circuit behavior have been updated.
+
 ## [0.2.0] — 2026-05-20
 
 Durable execution, token-aware rate limiting, OTel agent-level span
