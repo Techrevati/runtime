@@ -6,7 +6,7 @@
 [![Zero Dependencies](https://img.shields.io/badge/dependencies-zero-green.svg)](#design-goals)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Production runtime primitives for multi-step LLM agent loops — retry classification, circuit-breaker protection, per-model cost tracking, role-based tool gating, declarative policies, and a unifying `Orchestrator` session.
+Runtime primitives for multi-step LLM agent loops — retry classification, circuit-breaker protection, per-model cost tracking, role-based tool gating, declarative policies, and a unifying `Orchestrator` session. **Alpha; API unstable until 0.2.0.**
 
 ```bash
 pip install techrevati-runtime
@@ -134,9 +134,19 @@ for action in engine.evaluate(PhaseContext(...)):
     dispatch(action)
 ```
 
+## Limitations (be honest with yourself before adopting)
+
+- **Sync only.** Every primitive uses `threading.Lock`; there is no `asyncio` story. Async-first redesign is the next milestone (`0.1.0`).
+- **In-memory usage tracker.** `UsageTracker.turns` grows without bound for long-running sessions. Externalize via a sink in `0.1.0`.
+- **Pricing must be registered.** The bundled `pricing.json` is intentionally empty. Without `register_pricing()` or `load_pricing_from_file()`, every cost calculation returns $0.00 (you will see a one-time warning per model).
+- **Budget enforcement is opt-in.** Set `Orchestrator(enforce_budget=True)` to raise `BudgetExceededError`; the default merely records an event and continues.
+- **Permissions are advisory.** `OrchestrationSession.run_tool()` enforces; `run_turn()` does not gate model calls. There is no sandbox.
+- **No durable execution.** Sessions are ephemeral; there is no checkpointer. Pair with Temporal / dbos if you need restart-resumable workflows.
+- **No OpenTelemetry yet.** Lifecycle events are recorded but not emitted as OTel spans. Targeted for `0.1.0` via the optional `[otel]` extra.
+
 ## Status
 
-`techrevati-runtime` is at version `0.0.0`. APIs are explicitly unstable. Async-first redesign is the next milestone (`0.1.0`). Issues and PRs welcome.
+`techrevati-runtime` is at version `0.0.1`. APIs are explicitly unstable. The roadmap targets async-first + industry-standard primitives (handoffs, guardrails, OTel GenAI semconv) for `0.1.0`. Issues and PRs welcome.
 
 ## License
 

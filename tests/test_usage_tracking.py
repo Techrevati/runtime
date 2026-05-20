@@ -1,6 +1,7 @@
 """Tests for techrevati.runtime.usage_tracking"""
 
 import json
+import logging
 import os
 import tempfile
 
@@ -8,9 +9,12 @@ import pytest
 
 from techrevati.runtime.usage_tracking import (
     PRICING_TABLE,
+    BudgetExceededError,
     ModelPricing,
     UsageSnapshot,
     UsageTracker,
+    _warned_unpriced_models,
+    has_pricing,
     load_pricing_from_file,
     register_pricing,
 )
@@ -20,9 +24,12 @@ from techrevati.runtime.usage_tracking import (
 def _isolate_pricing_table():
     """Snapshot and restore the global PRICING_TABLE around each test."""
     snapshot = dict(PRICING_TABLE)
+    warned_snapshot = set(_warned_unpriced_models)
     yield
     PRICING_TABLE.clear()
     PRICING_TABLE.update(snapshot)
+    _warned_unpriced_models.clear()
+    _warned_unpriced_models.update(warned_snapshot)
 
 
 def test_pricing_table_starts_empty():
@@ -189,3 +196,57 @@ def test_per_model_summary_aggregates():
 
 def test_per_model_summary_empty_tracker():
     assert UsageTracker().per_model_summary() == {}
+
+
+def test_has_pricing_returns_false_for_unregistered_model():
+    PRICING_TABLE.clear()
+    _warned_unpriced_models.clear()
+    assert has_pricing("never-heard-of-it") is False
+
+
+def test_has_pricing_exact_match():
+    register_pricing("model-z", ModelPricing(1.0, 4.0))
+    assert has_pricing("model-z") is True
+    assert has_pricing("Model-Z") is True
+
+
+def test_has_pricing_prefix_match():
+    register_pricing("family", ModelPricing(3.0, 15.0))
+    assert has_pricing("family-20260514") is True
+
+
+def test_record_turn_warns_once_for_unpriced_model(caplog):
+    PRICING_TABLE.clear()
+    _warned_unpriced_models.clear()
+    tracker = UsageTracker()
+    with caplog.at_level(logging.WARNING, logger="techrevati.runtime.usage_tracking"):
+        tracker.record_turn("ghost-model", UsageSnapshot(input_tokens=100))
+        tracker.record_turn("ghost-model", UsageSnapshot(input_tokens=200))
+    warnings = [r for r in caplog.records if "ghost-model" in r.getMessage()]
+    assert len(warnings) == 1
+
+
+def test_record_turn_does_not_warn_for_priced_model(caplog):
+    register_pricing("priced", ModelPricing(1.0, 4.0))
+    _warned_unpriced_models.clear()
+    tracker = UsageTracker()
+    with caplog.at_level(logging.WARNING, logger="techrevati.runtime.usage_tracking"):
+        tracker.record_turn("priced", UsageSnapshot(input_tokens=100))
+    assert not any("no pricing" in r.getMessage() for r in caplog.records)
+
+
+def test_record_turn_with_empty_model_does_not_warn(caplog):
+    """Empty model string is the 'no model' sentinel; don't spam warnings."""
+    _warned_unpriced_models.clear()
+    tracker = UsageTracker()
+    with caplog.at_level(logging.WARNING, logger="techrevati.runtime.usage_tracking"):
+        tracker.record_turn("", UsageSnapshot(input_tokens=100))
+    assert not any("no pricing" in r.getMessage() for r in caplog.records)
+
+
+def test_budget_exceeded_error_carries_values():
+    err = BudgetExceededError(budget_usd=10.0, current_cost_usd=12.5)
+    assert err.budget_usd == 10.0
+    assert err.current_cost_usd == 12.5
+    assert "10.0000" in str(err)
+    assert "12.5000" in str(err)
