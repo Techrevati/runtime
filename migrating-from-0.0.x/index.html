@@ -1657,8 +1657,8 @@ working.</p>
 <p><code>Orchestrator(event_sink=..., usage_sink=...)</code> accepts any
 <code>EventSink</code> / <code>UsageSink</code> implementation. Install
 <code>techrevati-runtime[otel]</code> and wire <code>OpenTelemetrySink</code> if you want
-your APM dashboard to surface the runtime alongside Anthropic SDK and
-OpenAI Agents SDK traces:</p>
+your APM dashboard to surface the runtime alongside OpenAI Agents
+SDK traces:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">techrevati.runtime.otel</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenTelemetrySink</span><span class="p">,</span> <span class="n">OpenTelemetryUsageSink</span>
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
 <a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">orch</span> <span class="o">=</span> <span class="n">Orchestrator</span><span class="p">(</span>

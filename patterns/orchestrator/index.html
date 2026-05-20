@@ -1379,15 +1379,14 @@ guardrails, max-iterations cap, OTel sinks, and cost accounting in
 one place.</p>
 <blockquote>
 <p><strong>Naming note (be careful here).</strong> In the broader 2026 agent
-literature <em>Anthropic's "Building Effective Agents"</em>, OpenAI Agents
-SDK), <strong>"orchestrator-workers"</strong> is a <em>delegation</em> pattern where one
-LLM dynamically dispatches subtasks to worker LLMs. Our
-<code>Orchestrator</code> is a <strong>session wrapper</strong> for a single agent. You
-implement the Anthropic-style pattern <em>on top</em> of our primitives by
-calling <code>session.handoff_to(...)</code> between sessions. The
-<code>Orchestrator</code> class is being kept for backward compatibility;
-<code>AgentSession</code> is the forward-looking name, becoming canonical
-in 0.2.0.</p>
+literature (e.g. OpenAI Agents SDK), <strong>"orchestrator-workers"</strong> is
+a <em>delegation</em> pattern where one LLM dynamically dispatches
+subtasks to worker LLMs. Our <code>Orchestrator</code> is a <strong>session
+wrapper</strong> for a single agent. You implement the delegation pattern
+<em>on top</em> of our primitives by calling <code>session.handoff_to(...)</code>
+between sessions. The <code>Orchestrator</code> class is being kept for
+backward compatibility; <code>AgentSession</code> is the forward-looking
+name, becoming canonical in 0.2.0.</p>
 </blockquote>
 <h2 id="quick-example-sync">Quick example (sync)<a class="headerlink" href="#quick-example-sync" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">techrevati.runtime</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -1440,7 +1439,7 @@ On <code>asyncio.CancelledError</code>, to <code>CANCELLED</code>.</p>
   <code>Orchestrator</code> instead.</li>
 <li><strong>You need agent-level handoffs</strong>: <code>session.handoff_to(target_role, ...)</code>
   finalizes the source worker and registers a new one under the same
-  project_id — Anthropic's orchestrator-workers pattern, built up
+  project_id — the orchestrator-workers delegation pattern, built up
   from our primitives.</li>
 </ul>
 <h2 id="when-not-to-use-this">When <em>not</em> to use this<a class="headerlink" href="#when-not-to-use-this" title="Permanent link">&para;</a></h2>

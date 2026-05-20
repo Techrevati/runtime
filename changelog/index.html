@@ -1654,14 +1654,14 @@ gated by deprecation warnings.</p>
 <ul>
 <li><code>MaxIterationsExceededError</code> + <code>Orchestrator(max_iterations=25)</code>
   cap. Default matches OpenAI Agents SDK; counted across both
-  <code>run_turn</code> and <code>arun_turn</code>. Anthropic explicitly names stopping
-  conditions as a production-readiness requirement.</li>
+  <code>run_turn</code> and <code>arun_turn</code>. Stopping conditions are an industry
+  production-readiness requirement.</li>
 <li><code>Handoff</code> immutable dataclass (<code>techrevati.runtime.handoffs</code>) +
   <code>OrchestrationSession.handoff_to(target_role, reason, context)</code>.
   Finalizes the source worker as COMPLETED, registers a fresh worker
   for the target role under the same project_id, returns a Handoff
-  describing the delegation. Enables Anthropic's orchestrator-workers
-  pattern on top of our primitives.</li>
+  describing the delegation. Enables the orchestrator-workers
+  delegation pattern on top of our primitives.</li>
 <li><code>Guardrail</code> Protocol + <code>GuardrailOutcome</code> + <code>GuardrailViolatedError</code>
   (<code>techrevati.runtime.guardrails</code>). <code>Orchestrator(guardrails=[...])</code>
   auto-runs <code>check_pre</code> before and <code>check_post</code> after every
@@ -1713,13 +1713,13 @@ gated by deprecation warnings.</p>
 <li><code>examples/tiny_agent.py</code> runnable companion (not bundled in
   wheel). Smoke-tested end-to-end.</li>
 <li><code>examples/pricing.json</code> reference template with illustrative
-  Claude / GPT pricing (not normative).</li>
+  vendor pricing (not normative).</li>
 <li><code>docs/api/*.md</code> eight <code>mkdocstrings</code>-backed API reference pages
   via the Python handler.</li>
 <li><code>docs/patterns/orchestrator.md</code> rewritten with
   When-to-use / Anti-patterns / Tuning template + a prominent
   naming-disambiguation callout separating our <code>Orchestrator</code> from
-  Anthropic's <em>orchestrator-workers</em> delegation pattern.</li>
+  the <em>orchestrator-workers</em> delegation pattern.</li>
 <li><code>CONTRIBUTING.md</code>, <code>SECURITY.md</code>, <code>CODEOWNERS</code>,
   <code>.github/dependabot.yml</code>, <code>.github/ISSUE_TEMPLATE/{bug,feature}.md</code>.</li>
 </ul>
