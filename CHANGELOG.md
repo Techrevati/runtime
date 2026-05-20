@@ -5,6 +5,46 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the project
 follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html), with the
 caveat that 0.x APIs are explicitly unstable.
 
+## [0.1.0.dev2] — 2026-05-20
+
+Sprint 3 milestone. Closes the primitive-parity gap with mainstream
+2026 agent SDKs (OpenAI Agents SDK, LangGraph) by adding the three
+missing standard primitives — *Handoffs*, *Guardrails*,
+*max_iterations* — plus the forward-looking `AgentSession` name.
+
+### Added
+- `MaxIterationsExceededError` + `Orchestrator(max_iterations=25)` cap.
+  Counted across both `run_turn` and `arun_turn`. Anthropic explicitly
+  names stopping conditions as a production-readiness requirement; this
+  closes the runaway-agent gap.
+- `Handoff` immutable dataclass (`techrevati.runtime.handoffs`) +
+  `OrchestrationSession.handoff_to(target_role, reason, context)`.
+  Finalizes the source worker as COMPLETED, registers a fresh worker
+  for the target role under the same project_id, and returns a Handoff
+  describing the delegation. Available on both sync and async sessions.
+  Enables Anthropic's orchestrator-workers workflow on top of our
+  primitives.
+- `Guardrail` Protocol + `GuardrailOutcome` + `GuardrailViolatedError`
+  (`techrevati.runtime.guardrails`). `Orchestrator(guardrails=[...])`
+  auto-runs `check_pre` before and `check_post` after every
+  `run_tool` / `arun_tool` invocation; first violation raises with the
+  guardrail name, stage, role, and tool. Mirrors the OpenAI Agents SDK
+  guardrail model.
+- `AllowAllGuardrail` reference no-op implementation for tests and
+  defaults.
+- `AgentSession` alias for `Orchestrator`. The 0.2.0 rename will
+  promote `AgentSession` to the canonical name with `Orchestrator`
+  kept as a deprecation alias; adopting the new name now is forward-
+  compatible.
+
+### Notes
+- Tool input gating is post-call value gating + pre-call site (role
+  + tool name) gating. True input-value gating arrives when we have
+  a typed tool input model (post-0.2.0).
+- Guardrail violations are not retried automatically — they raise.
+  Add recovery logic at the orchestrator level if a guardrail block
+  should be tolerated.
+
 ## [0.1.0.dev1] — 2026-05-20
 
 Sprint 2 milestone toward the 0.1.0 async-first release. APIs added here
@@ -124,6 +164,7 @@ loops with reliability and cost visibility:
 - `PermissionPolicy` + `PermissionEnforcer` — deny-first role × tool gating.
 - `PolicyEngine` + composable conditions — declarative rule evaluator.
 
+[0.1.0.dev2]: https://github.com/Techrevati/runtime/releases/tag/v0.1.0.dev2
 [0.1.0.dev1]: https://github.com/Techrevati/runtime/releases/tag/v0.1.0.dev1
 [0.0.1]: https://github.com/Techrevati/runtime/releases/tag/v0.0.1
 [0.0.0]: https://github.com/Techrevati/runtime/releases/tag/v0.0.0

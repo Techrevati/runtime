@@ -49,6 +49,12 @@ from techrevati.runtime.circuit_breaker import (
     CircuitBreaker,
     CircuitOpenError,
 )
+from techrevati.runtime.guardrails import (
+    Guardrail,
+    run_post_checks,
+    run_pre_checks,
+)
+from techrevati.runtime.handoffs import Handoff
 from techrevati.runtime.permissions import PermissionEnforcer, PermissionOutcome
 from techrevati.runtime.policy_engine import (
     PhaseContext,
@@ -95,6 +101,22 @@ class TurnTimeoutError(Exception):
     def __init__(self, timeout_seconds: float) -> None:
         self.timeout_seconds = timeout_seconds
         super().__init__(f"turn exceeded timeout of {timeout_seconds:.3f}s")
+
+
+class MaxIterationsExceededError(Exception):
+    """Raised when a session attempts more turns than ``max_iterations`` allows.
+
+    Default cap of 25 matches the OpenAI Agents SDK convention and prevents
+    runaway agent loops — Anthropic explicitly names stopping conditions as a
+    production-readiness requirement.
+    """
+
+    def __init__(self, max_iterations: int) -> None:
+        self.max_iterations = max_iterations
+        super().__init__(
+            f"session reached max_iterations={max_iterations}; "
+            "raise the cap or shorten the loop"
+        )
 
 
 def _record_recovery_event(session: OrchestrationSession, exc: Exception) -> None:
@@ -149,6 +171,8 @@ class Orchestrator:
     quality_gate: QualityGate | None = None
     budget_usd: float | None = None
     enforce_budget: bool = False
+    max_iterations: int = 25
+    guardrails: list[Guardrail] = field(default_factory=list)
 
     @contextmanager
     def session(self) -> Iterator[OrchestrationSession]:
@@ -169,6 +193,8 @@ class Orchestrator:
             quality_gate=self.quality_gate,
             budget_usd=self.budget_usd,
             enforce_budget=self.enforce_budget,
+            max_iterations=self.max_iterations,
+            guardrails=list(self.guardrails),
             phase=self.phase,
             role=self.role,
             project_id=self.project_id,
@@ -204,6 +230,8 @@ class Orchestrator:
             quality_gate=self.quality_gate,
             budget_usd=self.budget_usd,
             enforce_budget=self.enforce_budget,
+            max_iterations=self.max_iterations,
+            guardrails=list(self.guardrails),
             phase=self.phase,
             role=self.role,
             project_id=self.project_id,
@@ -248,8 +276,11 @@ class _SessionBase:
     quality_gate: QualityGate | None = None
     budget_usd: float | None = None
     enforce_budget: bool = False
+    max_iterations: int = 25
+    guardrails: list[Guardrail] = field(default_factory=list)
     events: list[AgentEvent] = field(default_factory=list)
     _started_at: float = field(default_factory=time.monotonic, init=False, repr=False)
+    _iteration_count: int = field(default=0, init=False, repr=False)
 
     # -- Tool authorization (sync; safe to call from async context too) --
 
@@ -380,6 +411,65 @@ class _SessionBase:
             return estimate_usage(result)
         return UsageSnapshot()
 
+    def _check_iteration_cap(self) -> None:
+        """Raise MaxIterationsExceededError if this turn would exceed the cap.
+
+        Called BEFORE the user's fn runs so the cap means "we will not make
+        a (max+1)th call", not "we just made one too many".
+        """
+        if self._iteration_count >= self.max_iterations:
+            raise MaxIterationsExceededError(self.max_iterations)
+        self._iteration_count += 1
+
+    def handoff_to(
+        self,
+        target_role: str,
+        reason: str,
+        context: dict[str, Any] | None = None,
+    ) -> Handoff:
+        """Finalize this session's worker and register a target worker.
+
+        Returns a ``Handoff`` value describing the delegation. The caller
+        is responsible for opening a new session against ``target_role``
+        to actually run the target agent — this method only routes.
+
+        The current worker transitions to ``COMPLETED`` (so the
+        surrounding ``with`` / ``async with`` block does not double-fire
+        completion). The new worker is created in the same registry under
+        the same ``project_id`` and is left in ``INITIALIZING``.
+        """
+        ctx_copy = dict(context or {})
+        new_worker = self.registry.create(
+            role=target_role, phase=self.phase, project_id=self.project_id
+        )
+        new_worker.transition(
+            AgentStatus.INITIALIZING,
+            detail=f"handoff from {self.role}: {reason}",
+        )
+
+        if not self.worker.is_terminal:
+            self.worker.transition(
+                AgentStatus.COMPLETED, detail=f"handoff to {target_role}"
+            )
+
+        handoff = Handoff(
+            source_role=self.role,
+            target_role=target_role,
+            phase=self.phase,
+            reason=reason,
+            context=ctx_copy,
+            project_id=self.project_id,
+            target_worker_id=new_worker.worker_id,
+        )
+        self.events.append(
+            AgentEvent.completed(
+                self.role,
+                self.phase,
+                detail=f"handoff → {target_role}: {reason}",
+            ).with_data({"handoff": handoff.to_dict()})
+        )
+        return handoff
+
     def _apply_usage_and_check_budget(
         self, model: str, snapshot: UsageSnapshot
     ) -> None:
@@ -414,11 +504,17 @@ class OrchestrationSession(_SessionBase):
         tool_name: str,
         fn: Callable[[], T],
     ) -> T:
-        """Execute a tool with a permission check around it."""
+        """Execute a tool with permission + guardrail checks around it.
+
+        Order: permission → pre-guardrails → fn() → post-guardrails.
+        """
         outcome = self.authorize(tool_name)
         if not outcome.allowed:
             raise PermissionDeniedError(outcome)
-        return fn()
+        run_pre_checks(self.guardrails, role=self.role, tool=tool_name)
+        result = fn()
+        run_post_checks(self.guardrails, result, role=self.role, tool=tool_name)
+        return result
 
     def run_turn(
         self,
@@ -438,6 +534,7 @@ class OrchestrationSession(_SessionBase):
         On exception: classifies the failure, attempts recovery once,
         and re-raises so the caller decides whether to retry.
         """
+        self._check_iteration_cap()
         try:
             result = self._invoke_fn(fn, timeout=timeout)
         except CircuitOpenError:
@@ -494,11 +591,17 @@ class AsyncOrchestrationSession(_SessionBase):
         tool_name: str,
         coro_factory: Callable[[], Awaitable[T]],
     ) -> T:
-        """Async sibling of run_tool. Permission check is sync; the call is awaited."""
+        """Async sibling of run_tool.
+
+        Permission + guardrails are sync; the call itself is awaited.
+        """
         outcome = self.authorize(tool_name)
         if not outcome.allowed:
             raise PermissionDeniedError(outcome)
-        return await coro_factory()
+        run_pre_checks(self.guardrails, role=self.role, tool=tool_name)
+        result = await coro_factory()
+        run_post_checks(self.guardrails, result, role=self.role, tool=tool_name)
+        return result
 
     async def arun_turn(
         self,
@@ -514,6 +617,7 @@ class AsyncOrchestrationSession(_SessionBase):
         from outside (parent task) is propagated as CancelledError; an
         internal timeout becomes ``TurnTimeoutError``.
         """
+        self._check_iteration_cap()
         try:
             result = await self._ainvoke(coro_factory, timeout=timeout)
         except CircuitOpenError:
@@ -605,8 +709,17 @@ def _scenario_to_class(scenario: FailureScenario) -> AgentFailureClass:
     return mapping.get(scenario, AgentFailureClass.UNKNOWN)
 
 
+# Forward-looking name. 0.2.0 will promote ``AgentSession`` to the canonical
+# class name with ``Orchestrator`` kept as a deprecation alias. Adding the
+# alias now lets new code adopt the future name while existing code keeps
+# working unchanged.
+AgentSession = Orchestrator
+
+
 __all__ = [
+    "AgentSession",
     "AsyncOrchestrationSession",
+    "MaxIterationsExceededError",
     "OrchestrationSession",
     "Orchestrator",
     "PermissionDeniedError",
