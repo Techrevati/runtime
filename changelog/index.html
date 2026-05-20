@@ -1,0 +1,1779 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Runtime primitives for multi-step LLM agent loops (alpha)">
+      
+      
+      
+        <link rel="canonical" href="https://Techrevati.github.io/runtime/changelog/">
+      
+      
+        <link rel="prev" href="../api/otel/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Changelog - techrevati-runtime</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#changelog" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="techrevati-runtime" class="md-header__button md-logo" aria-label="techrevati-runtime" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            techrevati-runtime
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Changelog
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Techrevati/runtime" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Techrevati/runtime
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../getting-started/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting Started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../tutorials/end-to-end/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  End-to-End Tutorial
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../migrating-from-0.0.x/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Migrating from 0.0.x
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../patterns/orchestrator/" class="md-tabs__link">
+          
+  
+  
+  Patterns
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/orchestrator/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="techrevati-runtime" class="md-nav__button md-logo" aria-label="techrevati-runtime" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    techrevati-runtime
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Techrevati/runtime" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Techrevati/runtime
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/end-to-end/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    End-to-End Tutorial
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../migrating-from-0.0.x/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from 0.0.x
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Patterns
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Patterns
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../patterns/orchestrator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Orchestrator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../patterns/retry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retry Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../patterns/circuit-breaker/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Circuit Breaker
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../patterns/quality-gate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quality Gate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../patterns/lifecycle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Lifecycle
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../patterns/agent-events/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Events
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../patterns/permissions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Permissions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../patterns/policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Policy Engine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../patterns/usage-tracking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage Tracking
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/orchestrator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Orchestrator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/circuit_breaker/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Circuit Breaker
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/retry_policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retry Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/usage_tracking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage Tracking
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/guardrails/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guardrails
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/handoffs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Handoffs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/sinks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sinks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/otel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenTelemetry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#010-2026-05-20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.0 — 2026-05-20
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.1.0 — 2026-05-20">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added-async-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added — Async path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added-industry-primitive-parity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added — Industry primitive parity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added-observability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added — Observability
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added-docs-and-dx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added — Docs and DX
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#001-2026-05-20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.0.1 — 2026-05-20
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.0.1 — 2026-05-20">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#000-2026-05-20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.0.0 — 2026-05-20
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#010-2026-05-20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.0 — 2026-05-20
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.1.0 — 2026-05-20">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added-async-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added — Async path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added-industry-primitive-parity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added — Industry primitive parity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added-observability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added — Observability
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added-docs-and-dx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added — Docs and DX
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#001-2026-05-20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.0.1 — 2026-05-20
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.0.1 — 2026-05-20">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#000-2026-05-20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.0.0 — 2026-05-20
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
+<p>All notable changes to <code>techrevati-runtime</code> are documented here. The format
+follows <a href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>; the project
+follows <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>, with the
+caveat that 0.x APIs are explicitly unstable.</p>
+<h2 id="010-2026-05-20"><a href="https://github.com/Techrevati/runtime/releases/tag/v0.1.0">0.1.0</a> — 2026-05-20<a class="headerlink" href="#010-2026-05-20" title="Permanent link">&para;</a></h2>
+<p>First beta release. Closes the primitive-parity gap with 2026 agent
+SDKs and ships the async path the 0.0.x docstring had been falsely
+advertising. APIs in this release are intended to be stable; breaking
+changes between 0.1.x and 0.2.0 will be documented in
+<a href="https://github.com/Techrevati/runtime/blob/main/docs/migrating-from-0.0.x.md"><code>docs/migrating-from-0.0.x.md</code></a> and
+gated by deprecation warnings.</p>
+<p>Consolidates the work of pre-release tags <code>0.1.0.dev1</code>, <code>0.1.0.dev2</code>,
+<code>0.1.0.dev3</code>, and <code>0.1.0.rc1</code>. Per-sprint detail is in the git log.</p>
+<h3 id="added-async-path">Added — Async path<a class="headerlink" href="#added-async-path" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>AsyncCircuitBreaker</code> mirrors <code>CircuitBreaker</code> semantics with
+  <code>asyncio.Lock</code>, same <code>half_open_max_probes</code> serialization,
+  injectable monotonic <code>clock</code>. State independent of the sync
+  variant.</li>
+<li><code>Orchestrator.asession()</code> returns an <code>AsyncOrchestrationSession</code>.
+  <code>arun_turn</code> and <code>arun_tool</code> drive async coro factories; sync
+  helpers (<code>authorize</code>, <code>evaluate_policy</code>, <code>evaluate_gate</code>,
+  <code>summary</code>, lifecycle methods) shared with the sync session via
+  <code>_SessionBase</code>.</li>
+<li><code>aattempt_recovery(scenario, ctx, *, sleeper=asyncio.sleep)</code> async
+  sibling of <code>attempt_recovery</code> with injectable sleeper contract.</li>
+<li><code>arun_turn(timeout=...)</code> enforces deadlines with
+  <code>asyncio.wait_for</code>; sync <code>run_turn(timeout=...)</code> uses a one-shot
+  <code>ThreadPoolExecutor</code>. Both raise <code>TurnTimeoutError</code> for a single
+  catchable error class across code paths.</li>
+<li><code>AgentStatus.CANCELLED</code> terminal state. <code>asyncio.CancelledError</code>
+  out of <code>async with orch.asession()</code> transitions the worker to
+  CANCELLED and re-raises.</li>
+<li><code>AsyncOrchestrationSession.pause_for_input(prompt)</code> async
+  human-in-the-loop hook. Transitions worker to <code>WAITING_FOR_INPUT</code>;
+  resolve from elsewhere via <code>session.provide_input(value)</code>.</li>
+<li><code>RUNNING → WAITING_FOR_INPUT</code> is now a valid transition (was
+  missing in 0.0.x).</li>
+</ul>
+<h3 id="added-industry-primitive-parity">Added — Industry primitive parity<a class="headerlink" href="#added-industry-primitive-parity" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>MaxIterationsExceededError</code> + <code>Orchestrator(max_iterations=25)</code>
+  cap. Default matches OpenAI Agents SDK; counted across both
+  <code>run_turn</code> and <code>arun_turn</code>. Anthropic explicitly names stopping
+  conditions as a production-readiness requirement.</li>
+<li><code>Handoff</code> immutable dataclass (<code>techrevati.runtime.handoffs</code>) +
+  <code>OrchestrationSession.handoff_to(target_role, reason, context)</code>.
+  Finalizes the source worker as COMPLETED, registers a fresh worker
+  for the target role under the same project_id, returns a Handoff
+  describing the delegation. Enables Anthropic's orchestrator-workers
+  pattern on top of our primitives.</li>
+<li><code>Guardrail</code> Protocol + <code>GuardrailOutcome</code> + <code>GuardrailViolatedError</code>
+  (<code>techrevati.runtime.guardrails</code>). <code>Orchestrator(guardrails=[...])</code>
+  auto-runs <code>check_pre</code> before and <code>check_post</code> after every
+  <code>run_tool</code> / <code>arun_tool</code> invocation; first violation raises with
+  guardrail name, stage, role, tool. Mirrors the OpenAI Agents SDK
+  guardrail model.</li>
+<li><code>AllowAllGuardrail</code> reference no-op implementation.</li>
+<li><code>AgentSession</code> alias for <code>Orchestrator</code>. The 0.2.0 rename will
+  promote <code>AgentSession</code> to the canonical name with <code>Orchestrator</code>
+  kept as a deprecation alias; adopting the new name now is
+  forward-compatible.</li>
+</ul>
+<h3 id="added-observability">Added — Observability<a class="headerlink" href="#added-observability" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>EventSink</code> and <code>UsageSink</code> Protocols (<code>techrevati.runtime.sinks</code>),
+  plus <code>NoopEventSink</code>, <code>NoopUsageSink</code>, <code>RingBufferEventSink</code>,
+  <code>RingBufferUsageSink</code> defaults. <code>RingBufferEventSink</code> enforces a
+  configurable capacity (default 1000) so long-running sessions
+  can't balloon memory — closes the unbounded-tracker gap from
+  0.0.x.</li>
+<li><code>Orchestrator(event_sink=..., usage_sink=...)</code> plumbs the
+  configured sinks through every session. Every <code>AgentEvent</code> the
+  session records is forwarded to the event sink; every recorded
+  turn is forwarded to the usage sink with its computed cost. A
+  misbehaving sink cannot tear down the session — emit failures
+  log and are swallowed.</li>
+<li><code>OpenTelemetrySink</code> and <code>OpenTelemetryUsageSink</code>
+  (<code>techrevati.runtime.otel</code>, available via the new <code>[otel]</code>
+  extra). Mirrors every event as a one-shot OTel span with
+  <code>gen_ai.operation.name</code>, <code>gen_ai.provider.name</code>,
+  <code>gen_ai.agent.name</code>, optional <code>gen_ai.agent.id</code>, and <code>error.type</code>
+  on failures. Records <code>gen_ai.client.token.usage</code> histogram (with
+  <code>gen_ai.token.type=input|output</code> discriminator) and a
+  <code>techrevati.cost.usd</code> counter. Span names follow the GenAI agent
+  spans convention (<code>create_agent</code> / <code>invoke_agent</code> /
+  <code>execute_tool</code> / <code>invoke_workflow</code>).</li>
+<li><code>[otel]</code> extra: <code>opentelemetry-api&gt;=1.27</code>,
+  <code>opentelemetry-sdk&gt;=1.27</code>,
+  <code>opentelemetry-semantic-conventions&gt;=0.48b0</code>.</li>
+<li>Structured <code>logger.info</code> calls at five decision points: recovery
+  attempted, session failed, quality gate failed, handoff issued,
+  budget exceeded. All with <code>extra={role, phase, project_id, ...}</code>
+  so log shippers can pivot by role.</li>
+</ul>
+<h3 id="added-docs-and-dx">Added — Docs and DX<a class="headerlink" href="#added-docs-and-dx" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>docs/tutorials/end-to-end.md</code> walks every primitive composed
+  together with sync, async, and OTel switchover.</li>
+<li><code>examples/tiny_agent.py</code> runnable companion (not bundled in
+  wheel). Smoke-tested end-to-end.</li>
+<li><code>examples/pricing.json</code> reference template with illustrative
+  Claude / GPT pricing (not normative).</li>
+<li><code>docs/api/*.md</code> eight <code>mkdocstrings</code>-backed API reference pages
+  via the Python handler.</li>
+<li><code>docs/patterns/orchestrator.md</code> rewritten with
+  When-to-use / Anti-patterns / Tuning template + a prominent
+  naming-disambiguation callout separating our <code>Orchestrator</code> from
+  Anthropic's <em>orchestrator-workers</em> delegation pattern.</li>
+<li><code>CONTRIBUTING.md</code>, <code>SECURITY.md</code>, <code>CODEOWNERS</code>,
+  <code>.github/dependabot.yml</code>, <code>.github/ISSUE_TEMPLATE/{bug,feature}.md</code>.</li>
+</ul>
+<h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>evaluate_policy(elapsed_seconds=...)</code> is now <code>float | None</code>
+  (default <code>None</code>). When omitted, elapsed is auto-computed from
+  session start so <code>TimedOut</code> conditions finally fire. Callers
+  passing explicit <code>0.0</code> previously must migrate to pass the value
+  they actually want.</li>
+<li><code>AgentRegistry</code> and <code>_SessionBase</code> record session start time on
+  construction.</li>
+<li>README revised end-to-end. Headline pitch matches what the
+  package now does (sync <strong>and</strong> async, four standard primitives,
+  OTel GenAI semconv). New <em>"Why not LangGraph / OpenAI Agents
+  SDK?"</em> positioning section. Classifier bumped from <code>3 - Alpha</code>
+  to <code>4 - Beta</code>.</li>
+<li>README tagline reflects beta status.</li>
+</ul>
+<h3 id="notes">Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Tool input gating is pre-call site (role + tool name) gating +
+  post-call value gating. True input-value gating arrives when we
+  have a typed tool input model (post-0.2.0).</li>
+<li>Guardrail violations are not retried automatically — they raise.</li>
+<li>Span nesting (parent/child relationships across agent/turn/tool)
+  is not yet emitted — discrete spans + <code>gen_ai.agent.id</code> give
+  correlation. Nesting is targeted for 0.2.0.</li>
+<li>The <code>[dev]</code> extra now installs OpenTelemetry SDK packages so the
+  optional <code>otel</code> module type-checks and tests run under
+  <code>mypy --strict</code>.</li>
+</ul>
+<h2 id="001-2026-05-20"><a href="https://github.com/Techrevati/runtime/releases/tag/v0.0.1">0.0.1</a> — 2026-05-20<a class="headerlink" href="#001-2026-05-20" title="Permanent link">&para;</a></h2>
+<h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>mypy --strict</code> now passes. Added <code>src/techrevati/__init__.py</code> namespace
+  marker (PEP 420) so the wheel layout no longer double-maps modules. Removed
+  <code>continue-on-error: true</code> from the CI mypy step, which had been silently
+  swallowing failures since 0.0.0.</li>
+<li><code>CircuitBreaker</code> uses <code>time.monotonic</code> instead of <code>time.time</code> for duration
+  checks. NTP/clock jumps no longer stick the breaker open or close it early.</li>
+<li>Removed inaccurate <code>"Production async runtime"</code> claim from the package
+  docstring. Async support is targeted for 0.1.0; this version is sync only.</li>
+</ul>
+<h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>BudgetExceededError</code> plus <code>Orchestrator(enforce_budget=True)</code> flag. When
+  enabled, <code>run_turn</code> raises after the cumulative cost exceeds <code>budget_usd</code>.
+  The default remains backwards-compatible (records an event, returns
+  normally) so existing callers see no behavior change unless they opt in.</li>
+<li><code>has_pricing(model)</code> helper. <code>UsageTracker.record_turn</code> now emits a one-time
+  <code>WARNING</code> per process per model when pricing has not been registered. This
+  closes the silent-$0 footgun where unregistered models produced no cost
+  signal.</li>
+<li><code>CircuitBreaker.half_open_max_probes</code> (default <code>1</code>). Concurrent half-open
+  probes are now serialized; previously the lock was released before <code>fn()</code>
+  ran, letting unbounded threads stampede a recovering service. Probe in-flight
+  counting is tracked under the same lock as state transitions. Conforms to
+  the Polly default; raise to N for Resilience4j-style behavior.</li>
+<li><code>CircuitBreaker.clock</code> parameter accepting a <code>Callable[[], float]</code>. Defaults
+  to <code>time.monotonic</code>. Test code injects a manual clock to make recovery-window
+  tests deterministic; <code>time.sleep</code> is no longer used in the test suite.</li>
+<li><code>backoff_delay(jitter=...)</code> accepts <code>"none"</code>, <code>"full"</code>, <code>"equal"</code>, or
+  <code>"decorrelated"</code> mode strings. Bool values are still accepted for backward
+  compatibility (<code>True</code> maps to <code>"full"</code>, <code>False</code> to <code>"none"</code>). New <code>cap</code> and
+  <code>prev_delay</code> parameters support standard AWS Architecture Blog formulas
+  (Marc Brooker, exponential backoff &amp; jitter).</li>
+<li>README "Limitations" section documenting sync-only constraint, in-memory
+  tracker growth, pricing-not-bundled default, advisory permissions, lack of
+  durable execution, and lack of OTel integration.</li>
+</ul>
+<h3 id="changed_1">Changed<a class="headerlink" href="#changed_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Default jitter algorithm is now decorrelated</strong> (was full-additive 25%
+  jitter). Per AWS Builders' Library, decorrelated is the fastest of the four
+  documented algorithms. The change affects code calling <code>backoff_delay()</code>
+  with default jitter; pass <code>jitter="equal"</code> for behavior closest to the
+  previous default.</li>
+<li>README tagline reflects alpha status until 0.2.0 (was "Production runtime
+  primitives ...").</li>
+<li><code>[project.optional-dependencies] dev</code> now pins <code>pytest</code>, <code>pytest-cov</code>,
+  <code>mypy</code>, and <code>ruff</code> to exact versions matching <code>.pre-commit-config.yaml</code>.
+  Local lint and CI lint can no longer disagree.</li>
+<li>CI now installs the package with <code>pip install -e ".[dev]"</code> instead of
+  unpinned <code>pip install pytest pytest-cov ruff mypy</code>. <code>actions/setup-python</code>
+  bumped from v4 to v5 with pip caching. <code>codecov/codecov-action</code> bumped from
+  v3 to v4. The <code>PYTHONPATH=src</code> workaround in pytest is gone (now resolved
+  by the namespace marker).</li>
+</ul>
+<h2 id="000-2026-05-20"><a href="https://github.com/Techrevati/runtime/releases/tag/v0.0.0">0.0.0</a> — 2026-05-20<a class="headerlink" href="#000-2026-05-20" title="Permanent link">&para;</a></h2>
+<p>Initial public release under the <code>techrevati-runtime</code> namespace.</p>
+<p>Provides the foundational primitives for orchestrating multi-step LLM agent
+loops with reliability and cost visibility:</p>
+<ul>
+<li><code>Orchestrator</code> + <code>OrchestrationSession</code> — single-loop wiring of lifecycle,
+  usage, retry classification, circuit breaker, permissions, and policy.</li>
+<li><code>CircuitBreaker</code> — three-state fault-tolerant execution wrapper.</li>
+<li><code>RecoveryContext</code> + <code>attempt_recovery</code> + <code>classify_exception</code> — failure
+  classification and recipe lookup.</li>
+<li><code>UsageTracker</code> + <code>register_pricing</code> + <code>load_pricing_from_file</code> — per-model
+  cost tracking with caller-provided pricing (no bundled pricing data).</li>
+<li><code>QualityGate</code> + <code>QualityLevel</code> — graduated pass/fail evaluation.</li>
+<li><code>AgentRegistry</code> + <code>AgentWorker</code> — validated lifecycle state machine.</li>
+<li><code>AgentEvent</code> — typed lifecycle events with an OpenTelemetry attribute bridge.</li>
+<li><code>PermissionPolicy</code> + <code>PermissionEnforcer</code> — deny-first role × tool gating.</li>
+<li><code>PolicyEngine</code> + composable conditions — declarative rule evaluator.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 TechRevati doo
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

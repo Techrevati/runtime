@@ -6,14 +6,14 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Production runtime primitives for multi-step LLM agent loops">
+        <meta name="description" content="Runtime primitives for multi-step LLM agent loops (alpha)">
       
       
       
         <link rel="canonical" href="https://Techrevati.github.io/runtime/patterns/orchestrator/">
       
       
-        <link rel="prev" href="../../getting-started/">
+        <link rel="prev" href="../../migrating-from-0.0.x/">
       
       
         <link rel="next" href="../retry/">
@@ -52,6 +52,8 @@
         <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
       
     
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -245,6 +247,44 @@
   
   
   
+  
+    <li class="md-tabs__item">
+      <a href="../../tutorials/end-to-end/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  End-to-End Tutorial
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../migrating-from-0.0.x/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Migrating from 0.0.x
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
     
   
   
@@ -255,7 +295,27 @@
           
   
   
-  Primitives
+  Patterns
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/orchestrator/" class="md-tabs__link">
+          
+  
+  
+  API Reference
 
         </a>
       </li>
@@ -269,7 +329,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../changelog.md" class="md-tabs__link">
+      <a href="../../changelog/" class="md-tabs__link">
         
   
   
@@ -385,6 +445,60 @@
       
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/end-to-end/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    End-to-End Tutorial
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../migrating-from-0.0.x/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from 0.0.x
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
     
   
   
@@ -406,17 +520,17 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
             
   
   
   <span class="md-ellipsis">
     
   
-    Primitives
+    Patterns
   
 
     
@@ -427,12 +541,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
   
-    Primitives
+    Patterns
   
 
           </label>
@@ -505,10 +619,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#quick-example" class="md-nav__link">
+  <a href="#quick-example-sync" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Quick example
+        Quick example (sync)
       
     </span>
   </a>
@@ -516,10 +630,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#construction" class="md-nav__link">
+  <a href="#quick-example-async" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Construction
+        Quick example (async)
       
     </span>
   </a>
@@ -527,10 +641,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#session-methods" class="md-nav__link">
+  <a href="#when-to-use-this" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Session methods
+        When to use this
       
     </span>
   </a>
@@ -538,10 +652,43 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#when-not-to-use-it" class="md-nav__link">
+  <a href="#when-not-to-use-this" class="md-nav__link">
     <span class="md-ellipsis">
       
-        When not to use it
+        When not to use this
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anti-patterns
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tuning-the-knobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tuning the knobs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
       
     </span>
   </a>
@@ -794,8 +941,293 @@
   
   
   
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
-      <a href="../../changelog.md" class="md-nav__link">
+      <a href="../../api/orchestrator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Orchestrator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/circuit_breaker/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Circuit Breaker
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/retry_policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retry Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/usage_tracking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage Tracking
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/guardrails/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guardrails
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/handoffs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Handoffs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/sinks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sinks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/otel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenTelemetry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
         
   
   
@@ -842,10 +1274,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#quick-example" class="md-nav__link">
+  <a href="#quick-example-sync" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Quick example
+        Quick example (sync)
       
     </span>
   </a>
@@ -853,10 +1285,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#construction" class="md-nav__link">
+  <a href="#quick-example-async" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Construction
+        Quick example (async)
       
     </span>
   </a>
@@ -864,10 +1296,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#session-methods" class="md-nav__link">
+  <a href="#when-to-use-this" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Session methods
+        When to use this
       
     </span>
   </a>
@@ -875,10 +1307,43 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#when-not-to-use-it" class="md-nav__link">
+  <a href="#when-not-to-use-this" class="md-nav__link">
     <span class="md-ellipsis">
       
-        When not to use it
+        When not to use this
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anti-patterns
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tuning-the-knobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tuning the knobs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
       
     </span>
   </a>
@@ -906,8 +1371,25 @@
 
 
 <h1 id="orchestrator">Orchestrator<a class="headerlink" href="#orchestrator" title="Permanent link">&para;</a></h1>
-<p><code>Orchestrator</code> and <code>OrchestrationSession</code> wire the other primitives into a single execution loop. Use it when you want lifecycle tracking, retry classification, circuit-breaker protection, permission gating, and cost accounting in one place.</p>
-<h2 id="quick-example">Quick example<a class="headerlink" href="#quick-example" title="Permanent link">&para;</a></h2>
+<p><code>Orchestrator</code> and <code>OrchestrationSession</code> (sync) /
+<code>AsyncOrchestrationSession</code> (async) wire the other primitives into a
+single execution loop. Use them when you want lifecycle tracking,
+retry classification, circuit-breaker protection, permission gating,
+guardrails, max-iterations cap, OTel sinks, and cost accounting in
+one place.</p>
+<blockquote>
+<p><strong>Naming note (be careful here).</strong> In the broader 2026 agent
+literature <em>Anthropic's "Building Effective Agents"</em>, OpenAI Agents
+SDK), <strong>"orchestrator-workers"</strong> is a <em>delegation</em> pattern where one
+LLM dynamically dispatches subtasks to worker LLMs. Our
+<code>Orchestrator</code> is a <strong>session wrapper</strong> for a single agent. You
+implement the Anthropic-style pattern <em>on top</em> of our primitives by
+calling <code>session.handoff_to(...)</code> between sessions. The
+<code>Orchestrator</code> class is being kept for backward compatibility;
+<code>AgentSession</code> is the forward-looking name, becoming canonical
+in 0.2.0.</p>
+</blockquote>
+<h2 id="quick-example-sync">Quick example (sync)<a class="headerlink" href="#quick-example-sync" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">techrevati.runtime</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">Orchestrator</span><span class="p">,</span> <span class="n">UsageSnapshot</span><span class="p">,</span> <span class="n">CircuitBreaker</span><span class="p">,</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">register_pricing</span><span class="p">,</span> <span class="n">ModelPricing</span><span class="p">,</span>
@@ -921,73 +1403,122 @@
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">project_id</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
 <a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">circuit_breaker</span><span class="o">=</span><span class="n">CircuitBreaker</span><span class="p">(</span><span class="s2">&quot;model-api&quot;</span><span class="p">,</span> <span class="n">failure_threshold</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span>
 <a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="n">budget_usd</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="p">)</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="k">with</span> <span class="n">orch</span><span class="o">.</span><span class="n">session</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    <span class="n">result</span><span class="p">,</span> <span class="n">usage</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">run_turn</span><span class="p">(</span>
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>        <span class="k">lambda</span><span class="p">:</span> <span class="n">call_model</span><span class="p">(</span><span class="n">prompt</span><span class="p">),</span>
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>        <span class="n">model</span><span class="o">=</span><span class="s2">&quot;model-a&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>        <span class="n">usage</span><span class="o">=</span><span class="n">UsageSnapshot</span><span class="p">(</span><span class="n">input_tokens</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span> <span class="n">output_tokens</span><span class="o">=</span><span class="mi">1200</span><span class="p">),</span>
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    <span class="p">)</span>
-<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>
-<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="n">enforce_budget</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="n">max_iterations</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="p">)</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="k">with</span> <span class="n">orch</span><span class="o">.</span><span class="n">session</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="n">result</span><span class="p">,</span> <span class="n">usage</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">run_turn</span><span class="p">(</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>        <span class="k">lambda</span><span class="p">:</span> <span class="n">call_model</span><span class="p">(</span><span class="n">prompt</span><span class="p">),</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>        <span class="n">model</span><span class="o">=</span><span class="s2">&quot;model-a&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>        <span class="n">usage</span><span class="o">=</span><span class="n">UsageSnapshot</span><span class="p">(</span><span class="n">input_tokens</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span> <span class="n">output_tokens</span><span class="o">=</span><span class="mi">1200</span><span class="p">),</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>        <span class="n">timeout</span><span class="o">=</span><span class="mf">30.0</span><span class="p">,</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>    <span class="p">)</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>
 </code></pre></div>
-<p>Entering the session transitions the worker through <code>INITIALIZING → RUNNING</code>. On clean exit, to <code>COMPLETED</code>. On exception, to <code>FAILED</code> with the error classified into an <code>AgentFailureClass</code>.</p>
-<h2 id="construction">Construction<a class="headerlink" href="#construction" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">Orchestrator</span><span class="p">(</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">role</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">phase</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">project_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">registry</span><span class="p">:</span> <span class="n">AgentRegistry</span> <span class="o">=</span> <span class="n">AgentRegistry</span><span class="p">(),</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">permissions</span><span class="p">:</span> <span class="n">PermissionEnforcer</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">circuit_breaker</span><span class="p">:</span> <span class="n">CircuitBreaker</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">policy_engine</span><span class="p">:</span> <span class="n">PolicyEngine</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="n">quality_gate</span><span class="p">:</span> <span class="n">QualityGate</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="n">budget_usd</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="p">)</span>
+<p>Entering the session transitions the worker through
+<code>INITIALIZING → RUNNING</code>. On clean exit, to <code>COMPLETED</code>. On exception,
+to <code>FAILED</code> with the error classified into an <code>AgentFailureClass</code>.
+On <code>asyncio.CancelledError</code>, to <code>CANCELLED</code>.</p>
+<h2 id="quick-example-async">Quick example (async)<a class="headerlink" href="#quick-example-async" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">async</span> <span class="k">with</span> <span class="n">orch</span><span class="o">.</span><span class="n">asession</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">text</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">arun_turn</span><span class="p">(</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>        <span class="k">lambda</span><span class="p">:</span> <span class="n">acall_model</span><span class="p">(</span><span class="n">prompt</span><span class="p">),</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>        <span class="n">model</span><span class="o">=</span><span class="s2">&quot;model-a&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        <span class="n">timeout</span><span class="o">=</span><span class="mf">30.0</span><span class="p">,</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="p">)</span>
 </code></pre></div>
-<p>Every dependency is optional. Pass only what you use; the session degrades gracefully (e.g. no <code>permissions</code> means <code>run_tool</code> always allows).</p>
-<h2 id="session-methods">Session methods<a class="headerlink" href="#session-methods" title="Permanent link">&para;</a></h2>
+<p>Same parameters; <code>coro_factory</code> instead of <code>fn</code>. See
+<a href="../../api/orchestrator/"><code>AsyncOrchestrationSession</code></a>.</p>
+<h2 id="when-to-use-this">When to use this<a class="headerlink" href="#when-to-use-this" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>You want a single object to compose with</strong>: the orchestrator
+  threads worker lifecycle, breaker state, retry classification,
+  permissions, guardrails, and cost accounting through one session.</li>
+<li><strong>You're stitching multiple primitives manually</strong>: stop, use
+  <code>Orchestrator</code> instead.</li>
+<li><strong>You need agent-level handoffs</strong>: <code>session.handoff_to(target_role, ...)</code>
+  finalizes the source worker and registers a new one under the same
+  project_id — Anthropic's orchestrator-workers pattern, built up
+  from our primitives.</li>
+</ul>
+<h2 id="when-not-to-use-this">When <em>not</em> to use this<a class="headerlink" href="#when-not-to-use-this" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>You need just one primitive</strong> (only cost tracking, only a
+  circuit breaker): import it directly. The orchestrator is a
+  convenience layer, not a required entry point.</li>
+<li><strong>You need true durable execution</strong> (workflows that survive process
+  restart): the orchestrator is in-memory. Pair with Temporal / dbos.
+  A pluggable checkpointer is on the 0.2.0 roadmap.</li>
+<li><strong>You're orchestrating across machines</strong>: this is a single-process
+  primitive. Run one per machine and coordinate externally.</li>
+</ul>
+<h2 id="anti-patterns">Anti-patterns<a class="headerlink" href="#anti-patterns" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>One orchestrator instance reused across unrelated agents.</strong> Build
+  a new <code>Orchestrator(role=..., phase=..., ...)</code> per logical agent;
+  pass the same <code>registry</code> and <code>event_sink</code> to keep observability
+  joined.</li>
+<li><strong>Swallowing <code>BudgetExceededError</code> instead of acting on it.</strong> The
+  error carries <code>budget_usd</code> and <code>current_cost_usd</code>; route it to
+  human review or a cheaper model rather than re-running blindly.</li>
+<li><strong>Wrapping <code>session.run_turn</code> in your own retry loop.</strong> Recovery is
+  already attempted once via <code>attempt_recovery</code>. Add caller-level
+  retry only if you need recipes the runtime doesn't ship.</li>
+</ul>
+<h2 id="tuning-the-knobs">Tuning the knobs<a class="headerlink" href="#tuning-the-knobs" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>Method</th>
-<th>Purpose</th>
+<th>Parameter</th>
+<th>Default</th>
+<th>When to raise</th>
+<th>When to lower</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>run_turn(fn, model="", usage=..., estimate_usage=...)</code></td>
-<td>Execute one model call wrapped in circuit breaker + recovery + usage recording</td>
+<td><code>max_iterations</code></td>
+<td>25</td>
+<td>Long planning loops with many small turns</td>
+<td>Cheap, latency-sensitive paths</td>
 </tr>
 <tr>
-<td><code>run_tool(tool_name, fn)</code></td>
-<td>Execute a tool, gated by <code>permissions</code></td>
+<td><code>budget_usd</code></td>
+<td>None</td>
+<td>Per-session caps for production</td>
+<td>Disable for batch / offline runs</td>
 </tr>
 <tr>
-<td><code>evaluate_gate(observed)</code></td>
-<td>Compare an observed <code>QualityLevel</code> to the configured <code>QualityGate</code>; emits an event</td>
+<td><code>enforce_budget</code></td>
+<td>False</td>
+<td>Production — raise on breach</td>
+<td>Dev — log and continue</td>
 </tr>
 <tr>
-<td><code>evaluate_policy(...)</code></td>
-<td>Run the configured <code>PolicyEngine</code> against current context</td>
+<td><code>timeout</code> (per turn)</td>
+<td>None</td>
+<td>Model API isn't reliable; needs a hard ceiling</td>
+<td>Tools that genuinely take minutes</td>
 </tr>
 <tr>
-<td><code>complete(detail=None)</code></td>
-<td>Mark worker COMPLETED</td>
-</tr>
-<tr>
-<td><code>fail(detail, failure_class=...)</code></td>
-<td>Mark worker FAILED with a typed failure class</td>
-</tr>
-<tr>
-<td><code>summary()</code></td>
-<td>Dict with worker, usage, per-model cost, recovery events, and emitted agent events</td>
+<td><code>event_sink</code></td>
+<td><code>NoopEventSink</code></td>
+<td>Production observability</td>
+<td>Tests, throwaway scripts</td>
 </tr>
 </tbody>
 </table>
-<h2 id="when-not-to-use-it">When <em>not</em> to use it<a class="headerlink" href="#when-not-to-use-it" title="Permanent link">&para;</a></h2>
-<p>If you need only one primitive (just cost tracking, just a circuit breaker), import that primitive directly. The Orchestrator is the convenience layer, not a required entry point.</p>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../circuit-breaker/"><code>CircuitBreaker</code></a> — breaker semantics.</li>
+<li><a href="../retry/"><code>Retry Policy</code></a> — recovery recipes invoked on failure.</li>
+<li><a href="../permissions/"><code>Permissions</code></a> — tool authorization.</li>
+<li><a href="../usage-tracking/"><code>Usage Tracking</code></a> — cost computation.</li>
+<li><a href="../policy/"><code>Policy Engine</code></a> — declarative phase actions.</li>
+<li>API reference: <a href="../../api/orchestrator/">Orchestrator</a></li>
+</ul>
 
 
 
