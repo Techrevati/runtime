@@ -6,7 +6,7 @@
 [![Zero Dependencies](https://img.shields.io/badge/dependencies-zero-green.svg)](#design-goals)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Production-grade runtime primitives for multi-step LLM agent loops — sync **and** async, with retry classification, circuit-breaker protection, per-model cost tracking, opt-in budget enforcement, role-based tool gating, content guardrails, agent-to-agent handoffs, declarative policy, and OpenTelemetry GenAI semantic conventions out of the box. **Beta — 0.1.x; minor breaking changes possible until 0.2.0.**
+Production-grade runtime primitives for multi-step LLM agent loops — sync **and** async, with retry classification, circuit-breaker protection, per-model cost tracking, opt-in budget enforcement, role-based tool gating, content guardrails, agent-to-agent handoffs, declarative policy, durable checkpointing, token-aware rate limiting, and OpenTelemetry GenAI semantic conventions out of the box. **Beta — 0.2.x; 0.x APIs remain explicitly unstable.**
 
 ```bash
 pip install techrevati-runtime
@@ -149,20 +149,20 @@ print(tracker.format_cost())
 - **OpenAI Agents SDK** is a *cohesive runtime* tied to OpenAI's models, with default tracing through their dashboards. Use it when you're committed to OpenAI and want the smoothest path.
 - **`techrevati-runtime`** is a *zero-dep primitive set*. Sync + async. Vendor-neutral. Emits OpenTelemetry GenAI semantic conventions so the same APM dashboards that consume OpenAI Agents SDK telemetry will pick us up too. Bring your own model client and your own persistence — the runtime stays opinion-free.
 
-The runtime is **not** a durable workflow engine. Sessions are in-memory; a pluggable checkpointer is on the 0.2.0 roadmap. If you need restart-resumable workflows today, pair this with [Temporal](https://temporal.io/), [dbos](https://www.dbos.dev/), or LangGraph's checkpointer.
+The runtime ships a pluggable `CheckpointSaver` protocol with `InMemorySaver` and `SqliteSaver` implementations (0.2.0) — enough for resume-from-checkpoint replay across restarts. It is still not a full durable workflow engine in the Temporal sense; pair with [Temporal](https://temporal.io/), [dbos](https://www.dbos.dev/), or LangGraph's checkpointer if you need cross-host scheduling, retries-as-history, or a durable timer service.
 
 ## Limitations (be honest with yourself before adopting)
 
 - **Pricing must be registered.** The bundled `pricing.json` is intentionally empty. Without `register_pricing()` or `load_pricing_from_file()`, every cost calculation returns $0.00 (you will see a one-time warning per model).
 - **Budget enforcement is opt-in.** Set `Orchestrator(enforce_budget=True)` to raise `BudgetExceededError`; the default merely records an event and continues.
 - **Permissions are advisory.** `OrchestrationSession.run_tool()` enforces; `run_turn()` does not gate model calls. There is no sandbox — pair with OS-level isolation if needed.
-- **No durable execution.** Sessions are in-memory and ephemeral. Pair with Temporal/dbos for restart-resumable workflows.
+- **Durable execution is opt-in.** Default sessions are in-memory; pass a `CheckpointSaver` (e.g. `SqliteSaver`) plus a stable `thread_id` to get resume-from-checkpoint replay. Pair with Temporal/dbos if you need cross-host scheduling or durable timers.
 - **Default sinks are in-memory ring buffers.** Long-running sessions need a durable `EventSink` and `UsageSink` (e.g. `OpenTelemetrySink`, or your own).
 - **`CircuitBreaker` state is per-process.** Each replica counts its own failures. Add a shared coordinator if you need fleet-wide breaker state.
 
 ## Status
 
-`techrevati-runtime` is at version **0.1.0** (beta). This release ships async-first execution, the four standard primitives (Sessions, Tools, Handoffs, Guardrails), `max_iterations` cap, and OpenTelemetry GenAI semantic conventions. Minor breaking changes are possible between 0.1.x and 0.2.0 — they will be documented in [docs/migrating-from-0.0.x.md](docs/migrating-from-0.0.x.md) and gated by deprecation warnings. Pinning Python 3.11+ for `from __future__ import annotations` ergonomics and modern asyncio.
+`techrevati-runtime` is at version **0.2.0** (beta). This release ships durable execution (`CheckpointSaver` + `SqliteSaver`), token-aware rate limiting (`RateLimiter` / `AsyncRateLimiter`), provider routing, per-session `UsageLimits`, nested OTel agent spans, persistent SQLite sinks, and supply-chain hardening (CycloneDX SBOM + CodeQL + zero-deps smoke). The `AgentSession` rename and OTel wire-format change are the two soft-breaking items — see [docs/migrating-from-0.1.x.md](docs/migrating-from-0.1.x.md). 0.x APIs remain unstable; breaking changes will continue to be gated by deprecation warnings. Pinning Python 3.11+ for `from __future__ import annotations` ergonomics and modern asyncio.
 
 See [CHANGELOG.md](CHANGELOG.md) for the per-sprint release notes and [docs/tutorials/end-to-end.md](docs/tutorials/end-to-end.md) for a guided tour of every primitive.
 
