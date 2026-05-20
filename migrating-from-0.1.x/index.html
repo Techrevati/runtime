@@ -10,31 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://Techrevati.github.io/runtime/patterns/permissions/">
+        <link rel="canonical" href="https://Techrevati.github.io/runtime/migrating-from-0.1.x/">
       
       
-        <link rel="prev" href="../agent-events/">
+        <link rel="prev" href="../migrating-from-0.0.x/">
       
       
-        <link rel="next" href="../policy/">
+        <link rel="next" href="../patterns/orchestrator/">
       
       
         
       
       
-      <link rel="icon" href="../../assets/images/favicon.png">
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
-        <title>Permissions - techrevati-runtime</title>
+        <title>Migrating from 0.1.x - techrevati-runtime</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,9 +53,9 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#permissions" class="md-skip">
+        <a href="#migrating-from-01x" class="md-skip">
           Skip to content
         </a>
       
@@ -94,7 +94,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="techrevati-runtime" class="md-header__button md-logo" aria-label="techrevati-runtime" data-md-component="logo">
+    <a href=".." title="techrevati-runtime" class="md-header__button md-logo" aria-label="techrevati-runtime" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Permissions
+              Migrating from 0.1.x
             
           </span>
         </div>
@@ -211,7 +211,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../.." class="md-tabs__link">
+      <a href=".." class="md-tabs__link">
         
   
   
@@ -230,7 +230,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../getting-started/" class="md-tabs__link">
+      <a href="../getting-started/" class="md-tabs__link">
         
   
   
@@ -249,7 +249,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../tutorials/end-to-end/" class="md-tabs__link">
+      <a href="../tutorials/end-to-end/" class="md-tabs__link">
         
   
   
@@ -268,7 +268,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../migrating-from-0.0.x/" class="md-tabs__link">
+      <a href="../migrating-from-0.0.x/" class="md-tabs__link">
         
   
   
@@ -285,9 +285,11 @@
   
   
   
+    
   
-    <li class="md-tabs__item">
-      <a href="../../migrating-from-0.1.x/" class="md-tabs__link">
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
         
   
   
@@ -304,13 +306,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../orchestrator/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../patterns/orchestrator/" class="md-tabs__link">
           
   
   
@@ -330,7 +330,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../api/orchestrator/" class="md-tabs__link">
+        <a href="../api/orchestrator/" class="md-tabs__link">
           
   
   
@@ -348,7 +348,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../changelog/" class="md-tabs__link">
+      <a href="../changelog/" class="md-tabs__link">
         
   
   
@@ -383,7 +383,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="techrevati-runtime" class="md-nav__button md-logo" aria-label="techrevati-runtime" data-md-component="logo">
+    <a href=".." title="techrevati-runtime" class="md-nav__button md-logo" aria-label="techrevati-runtime" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -413,7 +413,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href=".." class="md-nav__link">
         
   
   
@@ -440,7 +440,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../getting-started/" class="md-nav__link">
+      <a href="../getting-started/" class="md-nav__link">
         
   
   
@@ -467,7 +467,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/end-to-end/" class="md-nav__link">
+      <a href="../tutorials/end-to-end/" class="md-nav__link">
         
   
   
@@ -494,7 +494,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../migrating-from-0.0.x/" class="md-nav__link">
+      <a href="../migrating-from-0.0.x/" class="md-nav__link">
         
   
   
@@ -518,10 +518,37 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../migrating-from-0.1.x/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from 0.1.x
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -537,6 +564,87 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#required-action-items" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Required action items
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Required action items">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-prefer-agentsession-over-orchestrator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Prefer AgentSession over Orchestrator
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-otel-sink-wire-format-one-shot-nested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. OTel sink wire format: one-shot → nested
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#likely-relevant-additions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Likely-relevant additions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#things-that-did-not-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Things that did NOT change
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -545,31 +653,28 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
             
   
   
@@ -587,7 +692,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
@@ -605,7 +710,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../orchestrator/" class="md-nav__link">
+      <a href="../patterns/orchestrator/" class="md-nav__link">
         
   
   
@@ -633,7 +738,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../retry/" class="md-nav__link">
+      <a href="../patterns/retry/" class="md-nav__link">
         
   
   
@@ -661,7 +766,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../circuit-breaker/" class="md-nav__link">
+      <a href="../patterns/circuit-breaker/" class="md-nav__link">
         
   
   
@@ -689,7 +794,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../durability/" class="md-nav__link">
+      <a href="../patterns/durability/" class="md-nav__link">
         
   
   
@@ -717,7 +822,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../rate-limiting/" class="md-nav__link">
+      <a href="../patterns/rate-limiting/" class="md-nav__link">
         
   
   
@@ -745,7 +850,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../routing/" class="md-nav__link">
+      <a href="../patterns/routing/" class="md-nav__link">
         
   
   
@@ -773,7 +878,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../quality-gate/" class="md-nav__link">
+      <a href="../patterns/quality-gate/" class="md-nav__link">
         
   
   
@@ -801,7 +906,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../lifecycle/" class="md-nav__link">
+      <a href="../patterns/lifecycle/" class="md-nav__link">
         
   
   
@@ -829,7 +934,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../agent-events/" class="md-nav__link">
+      <a href="../patterns/agent-events/" class="md-nav__link">
         
   
   
@@ -854,37 +959,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Permissions
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../patterns/permissions/" class="md-nav__link">
         
   
   
@@ -900,70 +978,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#usage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Usage
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#resolution-order" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Resolution order
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#api" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        API
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -976,7 +990,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../policy/" class="md-nav__link">
+      <a href="../patterns/policy/" class="md-nav__link">
         
   
   
@@ -1004,7 +1018,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../usage-tracking/" class="md-nav__link">
+      <a href="../patterns/usage-tracking/" class="md-nav__link">
         
   
   
@@ -1093,7 +1107,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/orchestrator/" class="md-nav__link">
+      <a href="../api/orchestrator/" class="md-nav__link">
         
   
   
@@ -1121,7 +1135,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/circuit_breaker/" class="md-nav__link">
+      <a href="../api/circuit_breaker/" class="md-nav__link">
         
   
   
@@ -1149,7 +1163,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/checkpoint/" class="md-nav__link">
+      <a href="../api/checkpoint/" class="md-nav__link">
         
   
   
@@ -1177,7 +1191,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/rate_limit/" class="md-nav__link">
+      <a href="../api/rate_limit/" class="md-nav__link">
         
   
   
@@ -1205,7 +1219,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/routing/" class="md-nav__link">
+      <a href="../api/routing/" class="md-nav__link">
         
   
   
@@ -1233,7 +1247,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/retry_policy/" class="md-nav__link">
+      <a href="../api/retry_policy/" class="md-nav__link">
         
   
   
@@ -1261,7 +1275,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/usage_tracking/" class="md-nav__link">
+      <a href="../api/usage_tracking/" class="md-nav__link">
         
   
   
@@ -1289,7 +1303,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/guardrails/" class="md-nav__link">
+      <a href="../api/guardrails/" class="md-nav__link">
         
   
   
@@ -1317,7 +1331,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/handoffs/" class="md-nav__link">
+      <a href="../api/handoffs/" class="md-nav__link">
         
   
   
@@ -1345,7 +1359,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/sinks/" class="md-nav__link">
+      <a href="../api/sinks/" class="md-nav__link">
         
   
   
@@ -1373,7 +1387,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/persistence/" class="md-nav__link">
+      <a href="../api/persistence/" class="md-nav__link">
         
   
   
@@ -1401,7 +1415,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/scheduler/" class="md-nav__link">
+      <a href="../api/scheduler/" class="md-nav__link">
         
   
   
@@ -1429,7 +1443,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/otel/" class="md-nav__link">
+      <a href="../api/otel/" class="md-nav__link">
         
   
   
@@ -1464,7 +1478,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../changelog/" class="md-nav__link">
+      <a href="../changelog/" class="md-nav__link">
         
   
   
@@ -1511,10 +1525,49 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#usage" class="md-nav__link">
+  <a href="#required-action-items" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Usage
+        Required action items
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Required action items">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-prefer-agentsession-over-orchestrator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Prefer AgentSession over Orchestrator
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-otel-sink-wire-format-one-shot-nested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. OTel sink wire format: one-shot → nested
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#likely-relevant-additions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Likely-relevant additions
       
     </span>
   </a>
@@ -1522,32 +1575,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#resolution-order" class="md-nav__link">
+  <a href="#things-that-did-not-change" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Resolution order
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#api" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        API
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
+        Things that did NOT change
       
     </span>
   </a>
@@ -1574,69 +1605,67 @@
   
 
 
-<h1 id="permissions">Permissions<a class="headerlink" href="#permissions" title="Permanent link">&para;</a></h1>
-<p>Deny-first role × tool authorization. <code>denied_tools</code> is checked first, then <code>mode</code> (a totally ordered <code>READ_ONLY &lt; WORKSPACE_WRITE &lt; FULL_ACCESS</code>), then an optional <code>allowed_tools</code> whitelist.</p>
-<p>This module ships configuration-free — define your own roles and tool requirements.</p>
-<h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">techrevati.runtime</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">PermissionMode</span><span class="p">,</span> <span class="n">RolePermissionConfig</span><span class="p">,</span> <span class="n">PermissionPolicy</span><span class="p">,</span> <span class="n">PermissionEnforcer</span><span class="p">,</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
+<h1 id="migrating-from-01x">Migrating from 0.1.x<a class="headerlink" href="#migrating-from-01x" title="Permanent link">&para;</a></h1>
+<p>0.2.0 is additive in most places, with two intentional changes you'll
+need to react to. Existing 0.1.x calls keep working unless you depend
+on the OTel sink's wire format or on <code>Orchestrator</code> being the canonical
+class name.</p>
+<h2 id="required-action-items">Required action items<a class="headerlink" href="#required-action-items" title="Permanent link">&para;</a></h2>
+<h3 id="1-prefer-agentsession-over-orchestrator">1. Prefer <code>AgentSession</code> over <code>Orchestrator</code><a class="headerlink" href="#1-prefer-agentsession-over-orchestrator" title="Permanent link">&para;</a></h3>
+<p>The canonical class name is now <code>AgentSession</code>. <code>Orchestrator</code> is still
+exported and constructs the same class — it's a bare alias — but it
+will be removed in 0.3.0. Update imports at your convenience:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Old (still works in 0.2.x; gone in 0.3.0):</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">techrevati.runtime</span><span class="w"> </span><span class="kn">import</span> <span class="n">Orchestrator</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">orch</span> <span class="o">=</span> <span class="n">Orchestrator</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="s2">&quot;writer&quot;</span><span class="p">,</span> <span class="n">phase</span><span class="o">=</span><span class="s2">&quot;draft&quot;</span><span class="p">)</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">policy</span> <span class="o">=</span> <span class="n">PermissionPolicy</span><span class="p">(</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">role_configs</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        <span class="s2">&quot;writer&quot;</span><span class="p">:</span> <span class="n">RolePermissionConfig</span><span class="p">(</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>            <span class="n">role</span><span class="o">=</span><span class="s2">&quot;writer&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>            <span class="n">mode</span><span class="o">=</span><span class="n">PermissionMode</span><span class="o">.</span><span class="n">FULL_ACCESS</span><span class="p">,</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>            <span class="n">denied_tools</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;dangerous_tool&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="p">),</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        <span class="s2">&quot;reader&quot;</span><span class="p">:</span> <span class="n">RolePermissionConfig</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="s2">&quot;reader&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">PermissionMode</span><span class="o">.</span><span class="n">READ_ONLY</span><span class="p">),</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        <span class="s2">&quot;reviewer&quot;</span><span class="p">:</span> <span class="n">RolePermissionConfig</span><span class="p">(</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>            <span class="n">role</span><span class="o">=</span><span class="s2">&quot;reviewer&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>            <span class="n">mode</span><span class="o">=</span><span class="n">PermissionMode</span><span class="o">.</span><span class="n">WORKSPACE_WRITE</span><span class="p">,</span>
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>            <span class="n">allowed_tools</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;review_code&quot;</span><span class="p">,</span> <span class="s2">&quot;comment&quot;</span><span class="p">],</span>  <span class="c1"># whitelist mode</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        <span class="p">),</span>
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="p">},</span>
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="n">tool_requirements</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>        <span class="s2">&quot;dangerous_tool&quot;</span><span class="p">:</span> <span class="n">PermissionMode</span><span class="o">.</span><span class="n">FULL_ACCESS</span><span class="p">,</span>
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>        <span class="s2">&quot;publish&quot;</span><span class="p">:</span>        <span class="n">PermissionMode</span><span class="o">.</span><span class="n">FULL_ACCESS</span><span class="p">,</span>
-<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    <span class="p">},</span>
-<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="p">)</span>
-<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="n">enforcer</span> <span class="o">=</span> <span class="n">PermissionEnforcer</span><span class="p">(</span><span class="n">policy</span><span class="p">)</span>
-<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>
-<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="n">outcome</span> <span class="o">=</span> <span class="n">enforcer</span><span class="o">.</span><span class="n">check</span><span class="p">(</span><span class="s2">&quot;writer&quot;</span><span class="p">,</span> <span class="s2">&quot;any_tool&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="k">if</span> <span class="ow">not</span> <span class="n">outcome</span><span class="o">.</span><span class="n">allowed</span><span class="p">:</span>
-<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">outcome</span><span class="o">.</span><span class="n">reason</span><span class="p">)</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># New (recommended):</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">techrevati.runtime</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentSession</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">agent</span> <span class="o">=</span> <span class="n">AgentSession</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="s2">&quot;writer&quot;</span><span class="p">,</span> <span class="n">phase</span><span class="o">=</span><span class="s2">&quot;draft&quot;</span><span class="p">)</span>
 </code></pre></div>
-<h2 id="resolution-order">Resolution order<a class="headerlink" href="#resolution-order" title="Permanent link">&para;</a></h2>
-<ol>
-<li><strong>Deny list.</strong> Any tool in <code>denied_tools</code> is rejected, regardless of mode.</li>
-<li><strong>Mode comparison.</strong> If the role's mode is lower than the tool's required mode, reject.</li>
-<li><strong>Allowed list.</strong> If <code>allowed_tools</code> is set, the tool must be in it.</li>
-<li><strong>Default-allow.</strong> If none of the above triggers a denial, allow.</li>
-</ol>
-<h2 id="api">API<a class="headerlink" href="#api" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">PermissionMode</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span> <span class="n">READ_ONLY</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">WORKSPACE_WRITE</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">FULL_ACCESS</span><span class="o">=</span><span class="mi">3</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nd">@dataclass</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">RolePermissionConfig</span><span class="p">:</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">role</span><span class="p">:</span> <span class="nb">str</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">mode</span><span class="p">:</span> <span class="n">PermissionMode</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">allowed_tools</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">denied_tools</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="k">class</span><span class="w"> </span><span class="nc">PermissionPolicy</span><span class="p">:</span>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">role_configs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tool_requirements</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span> <span class="o">...</span>
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">authorize</span><span class="p">(</span><span class="n">role</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tool_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PermissionOutcome</span>
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="k">class</span><span class="w"> </span><span class="nc">PermissionEnforcer</span><span class="p">:</span>
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">policy</span><span class="p">:</span> <span class="n">PermissionPolicy</span><span class="p">):</span> <span class="o">...</span>
-<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check</span><span class="p">(</span><span class="n">role</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tool_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PermissionOutcome</span>
-<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">is_allowed</span><span class="p">(</span><span class="n">role</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tool_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
-<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">filter_tools</span><span class="p">(</span><span class="n">role</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tools</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callable</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span>
-</code></pre></div>
-<p><code>filter_tools</code> reads <code>tool.__name__</code> from each callable.</p>
-<h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p><code>permissions</code> is intentionally thin: role × tool only. No argument-level restrictions, no quotas, no time-of-day rules. Compose with your own layer if you need those.</p>
+<p>The constructor signature is identical. <code>isinstance(x, Orchestrator)</code>
+and <code>isinstance(x, AgentSession)</code> are interchangeable in 0.2.x because
+they point at the same class object.</p>
+<h3 id="2-otel-sink-wire-format-one-shot-nested">2. OTel sink wire format: one-shot → nested<a class="headerlink" href="#2-otel-sink-wire-format-one-shot-nested" title="Permanent link">&para;</a></h3>
+<p><code>OpenTelemetrySink</code> in 0.1.x emitted one independent span per
+<code>AgentEvent</code>. In 0.2.0 it opens a long-lived parent span on
+<code>AGENT_STARTED</code> / <code>PHASE_STARTED</code> and ends it on
+<code>AGENT_COMPLETED</code> / <code>AGENT_FAILED</code> / <code>PHASE_COMPLETED</code>. Every other
+event emits as a child of the open parent.</p>
+<p>Practical implications:</p>
+<ul>
+<li>Your APM tool / dashboard now sees one root span per session with
+  recovery, gate, and tool events nested under it (instead of dozens
+  of unrelated roots). Tracing UIs render this as a real trace tree.</li>
+<li><code>gen_ai.operation.name</code> on the parent reflects what opened it
+  (<code>create_agent</code> for AGENT_STARTED, <code>invoke_workflow</code> for
+  PHASE_STARTED). Filters keyed on operation name may need to be
+  broadened.</li>
+<li>Failure events copy <code>error.type</code> and a <code>Status(StatusCode.ERROR, …)</code>
+  onto the parent before ending it, so a single span carries the
+  whole turn's outcome.</li>
+</ul>
+<p>If a downstream consumer was relying on every event being its own
+root, switch to filtering by <code>gen_ai.agent.name</code> instead.</p>
+<h2 id="likely-relevant-additions">Likely-relevant additions<a class="headerlink" href="#likely-relevant-additions" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong><code>CheckpointSaver</code></strong> + <code>thread_id</code> + <code>idempotency_key</code> give you
+  restart-resumable sessions. See <a href="../patterns/durability/">Durability</a>.</li>
+<li><strong><code>RateLimiter</code> / <code>AsyncRateLimiter</code></strong> + <code>TokenBucket</code> for token-aware
+  throttling. See <a href="../patterns/rate-limiting/">Rate limiting</a>.</li>
+<li><strong><code>ProviderRouter</code></strong> strategies for cross-provider failover. See
+  <a href="../patterns/routing/">Routing</a>.</li>
+<li><strong><code>arun_parallel_tools</code></strong> runs sibling tool coroutines under
+  <code>asyncio.TaskGroup</code> with proper structured-concurrency cancellation.</li>
+</ul>
+<h2 id="things-that-did-not-change">Things that did NOT change<a class="headerlink" href="#things-that-did-not-change" title="Permanent link">&para;</a></h2>
+<ul>
+<li>The constructor of <code>AgentSession</code> (formerly <code>Orchestrator</code>).</li>
+<li>The shape of <code>OrchestrationSession</code> / <code>AsyncOrchestrationSession</code>.</li>
+<li>All existing test patterns (the rename is alias-compatible).</li>
+<li>The zero-runtime-dependency promise — every new feature is stdlib-only
+  or behind an optional extra (<code>[otel]</code>).</li>
+</ul>
 
 
 
@@ -1690,10 +1719,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "search.highlight", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>

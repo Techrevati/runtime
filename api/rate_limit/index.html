@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://Techrevati.github.io/runtime/api/retry_policy/">
+        <link rel="canonical" href="https://Techrevati.github.io/runtime/api/rate_limit/">
       
       
-        <link rel="prev" href="../routing/">
+        <link rel="prev" href="../checkpoint/">
       
       
-        <link rel="next" href="../usage_tracking/">
+        <link rel="next" href="../routing/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Retry Policy - techrevati-runtime</title>
+        <title>Rate Limit - techrevati-runtime</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#retry-policy" class="md-skip">
+        <a href="#rate-limit" class="md-skip">
           Skip to content
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Retry Policy
+              Rate Limit
             
           </span>
         </div>
@@ -1083,10 +1083,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../rate_limit/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rate Limit
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1102,6 +1129,176 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#techrevati.runtime.rate_limit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        rate_limit
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="rate_limit">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.rate_limit.TokenBucket" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TokenBucket
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="TokenBucket">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.rate_limit.TokenBucket--parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.rate_limit.TokenBucket.available" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        available
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.rate_limit.TokenBucket.try_acquire" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        try_acquire
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.rate_limit.TokenBucket.acquire" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        acquire
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.rate_limit.AsyncTokenBucket" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AsyncTokenBucket
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.rate_limit.RateLimiter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RateLimiter
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="RateLimiter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.rate_limit.RateLimiter.acquire_pre_call" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        acquire_pre_call
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.rate_limit.RateLimiter.acquire_usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        acquire_usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.rate_limit.AsyncRateLimiter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AsyncRateLimiter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.rate_limit.RateLimitExceededError" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RateLimitExceededError
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1139,37 +1336,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Retry Policy
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../retry_policy/" class="md-nav__link">
         
   
   
@@ -1185,197 +1355,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        retry_policy
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="retry_policy">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy.FailureScenario" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        FailureScenario
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy.RecoveryStep" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RecoveryStep
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy.EscalationPolicy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        EscalationPolicy
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy.RecoveryRecipe" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RecoveryRecipe
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy.RecoveryResult" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RecoveryResult
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy.RecoveryEvent" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RecoveryEvent
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy.RecoveryContext" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RecoveryContext
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy.recipe_for" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        recipe_for
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy.attempt_recovery" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        attempt_recovery
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy.aattempt_recovery" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        aattempt_recovery
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy.backoff_delay" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        backoff_delay
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy.next_provider" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        next_provider
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy.smaller_context_budget" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        smaller_context_budget
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy.classify_exception" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        classify_exception
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1638,22 +1617,34 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy" class="md-nav__link">
+  <a href="#techrevati.runtime.rate_limit" class="md-nav__link">
     <span class="md-ellipsis">
       
-        retry_policy
+        rate_limit
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="retry_policy">
+    <nav class="md-nav" aria-label="rate_limit">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy.FailureScenario" class="md-nav__link">
+  <a href="#techrevati.runtime.rate_limit.TokenBucket" class="md-nav__link">
     <span class="md-ellipsis">
       
-        FailureScenario
+        TokenBucket
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="TokenBucket">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.rate_limit.TokenBucket--parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
       
     </span>
   </a>
@@ -1661,10 +1652,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy.RecoveryStep" class="md-nav__link">
+  <a href="#techrevati.runtime.rate_limit.TokenBucket.available" class="md-nav__link">
     <span class="md-ellipsis">
       
-        RecoveryStep
+        available
       
     </span>
   </a>
@@ -1672,10 +1663,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy.EscalationPolicy" class="md-nav__link">
+  <a href="#techrevati.runtime.rate_limit.TokenBucket.try_acquire" class="md-nav__link">
     <span class="md-ellipsis">
       
-        EscalationPolicy
+        try_acquire
       
     </span>
   </a>
@@ -1683,10 +1674,26 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy.RecoveryRecipe" class="md-nav__link">
+  <a href="#techrevati.runtime.rate_limit.TokenBucket.acquire" class="md-nav__link">
     <span class="md-ellipsis">
       
-        RecoveryRecipe
+        acquire
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.rate_limit.AsyncTokenBucket" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AsyncTokenBucket
       
     </span>
   </a>
@@ -1694,10 +1701,22 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy.RecoveryResult" class="md-nav__link">
+  <a href="#techrevati.runtime.rate_limit.RateLimiter" class="md-nav__link">
     <span class="md-ellipsis">
       
-        RecoveryResult
+        RateLimiter
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="RateLimiter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.rate_limit.RateLimiter.acquire_pre_call" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        acquire_pre_call
       
     </span>
   </a>
@@ -1705,10 +1724,26 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy.RecoveryEvent" class="md-nav__link">
+  <a href="#techrevati.runtime.rate_limit.RateLimiter.acquire_usage" class="md-nav__link">
     <span class="md-ellipsis">
       
-        RecoveryEvent
+        acquire_usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.rate_limit.AsyncRateLimiter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AsyncRateLimiter
       
     </span>
   </a>
@@ -1716,87 +1751,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy.RecoveryContext" class="md-nav__link">
+  <a href="#techrevati.runtime.rate_limit.RateLimitExceededError" class="md-nav__link">
     <span class="md-ellipsis">
       
-        RecoveryContext
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy.recipe_for" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        recipe_for
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy.attempt_recovery" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        attempt_recovery
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy.aattempt_recovery" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        aattempt_recovery
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy.backoff_delay" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        backoff_delay
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy.next_provider" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        next_provider
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy.smaller_context_budget" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        smaller_context_budget
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.retry_policy.classify_exception" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        classify_exception
+        RateLimitExceededError
       
     </span>
   </a>
@@ -1828,26 +1786,37 @@
   
 
 
-<h1 id="retry-policy">Retry Policy<a class="headerlink" href="#retry-policy" title="Permanent link">&para;</a></h1>
+<h1 id="rate-limit">Rate limit<a class="headerlink" href="#rate-limit" title="Permanent link">&para;</a></h1>
 
 
 <div class="doc doc-object doc-module">
 
 
 
-<h2 id="techrevati.runtime.retry_policy" class="doc doc-heading">
-            <span class="doc doc-object-name doc-module-name">techrevati.runtime.retry_policy</span>
+<h2 id="techrevati.runtime.rate_limit" class="doc doc-heading">
+            <span class="doc doc-object-name doc-module-name">techrevati.runtime.rate_limit</span>
 
 
-<a href="#techrevati.runtime.retry_policy" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#techrevati.runtime.rate_limit" class="headerlink" title="Permanent link">&para;</a></h2>
 
     <div class="doc doc-contents first">
 
-        <p>Retry Policy — Failure classification and recipe lookup.</p>
-<p>Maps failure scenarios to structured recovery steps with bounded
-attempts and an escalation policy. The caller decides whether and
-how to retry; this module provides the recipe + bookkeeping.</p>
-<p>classify_exception() bridges Python exceptions to failure scenarios.</p>
+        <p>Rate limiting — Token-bucket primitives for sync and async call paths.</p>
+<p>Token-aware throttling is the modern shape for LLM-provider rate limits
+because providers themselves are token-based (TPM, RPM, daily caps). A
+single <code>TokenBucket</code> admits or delays one resource (e.g. input
+tokens-per-minute); a <code>RateLimiter</code> composes three named buckets so
+typical provider limits (input TPM, output TPM, request RPM) can be
+expressed as one object.</p>
+<p>Both <code>TokenBucket</code> (sync, <code>threading.Lock</code>) and <code>AsyncTokenBucket</code>
+(<code>asyncio.Lock</code> + <code>asyncio.sleep</code>) implement the same conceptual
+algorithm; async wins by yielding the event loop while waiting for
+refill instead of blocking it.</p>
+<p>Clock is injectable on both variants (<code>Callable[[], float]</code> returning
+monotonic seconds). Tests pass a <code>ManualClock</code> to make timing-dependent
+behavior deterministic; production code uses <code>time.monotonic</code> by
+default.</p>
+<p>Zero new runtime dependencies — stdlib only.</p>
 
 
 
@@ -1872,173 +1841,38 @@ how to retry; this module provides the recipe + bookkeeping.</p>
 
 
 
-<h3 id="techrevati.runtime.retry_policy.FailureScenario" class="doc doc-heading">
-            <span class="doc doc-object-name doc-class-name">FailureScenario</span>
-
-
-<a href="#techrevati.runtime.retry_policy.FailureScenario" class="headerlink" title="Permanent link">&para;</a></h3>
-
-
-    <div class="doc doc-contents ">
-            <p class="doc doc-class-bases">
-              Bases: <code><span title="str">str</span></code>, <code><span title="enum.Enum">Enum</span></code></p>
-
-
-
-        <p>Failure types that can be automatically recovered.</p>
-
-
-
-
-
-
-
-
-
-
-
-<div class="doc doc-children">
-
-
-
-
-
-
-
-
-
-
-
-
-  </div>
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-class">
-
-
-
-<h3 id="techrevati.runtime.retry_policy.RecoveryStep" class="doc doc-heading">
-            <span class="doc doc-object-name doc-class-name">RecoveryStep</span>
-
-
-<a href="#techrevati.runtime.retry_policy.RecoveryStep" class="headerlink" title="Permanent link">&para;</a></h3>
-
-
-    <div class="doc doc-contents ">
-            <p class="doc doc-class-bases">
-              Bases: <code><span title="str">str</span></code>, <code><span title="enum.Enum">Enum</span></code></p>
-
-
-
-        <p>Actions that can be taken to recover from failure.</p>
-
-
-
-
-
-
-
-
-
-
-
-<div class="doc doc-children">
-
-
-
-
-
-
-
-
-
-
-
-
-  </div>
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-class">
-
-
-
-<h3 id="techrevati.runtime.retry_policy.EscalationPolicy" class="doc doc-heading">
-            <span class="doc doc-object-name doc-class-name">EscalationPolicy</span>
-
-
-<a href="#techrevati.runtime.retry_policy.EscalationPolicy" class="headerlink" title="Permanent link">&para;</a></h3>
-
-
-    <div class="doc doc-contents ">
-            <p class="doc doc-class-bases">
-              Bases: <code><span title="str">str</span></code>, <code><span title="enum.Enum">Enum</span></code></p>
-
-
-
-        <p>What to do when max recovery attempts are exhausted.</p>
-
-
-
-
-
-
-
-
-
-
-
-<div class="doc doc-children">
-
-
-
-
-
-
-
-
-
-
-
-
-  </div>
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-class">
-
-
-
-<h3 id="techrevati.runtime.retry_policy.RecoveryRecipe" class="doc doc-heading">
-            <span class="doc doc-object-name doc-class-name">RecoveryRecipe</span>
+<h3 id="techrevati.runtime.rate_limit.TokenBucket" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">TokenBucket</span>
 
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
   </span>
 
-<a href="#techrevati.runtime.retry_policy.RecoveryRecipe" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">RecoveryRecipe</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="n">steps</span><span class="p">,</span> <span class="n">max_attempts</span><span class="p">,</span> <span class="n">escalation_policy</span><span class="p">,</span> <span class="n">step_retries</span><span class="o">=</span><span class="nb">dict</span><span class="p">())</span>
+<a href="#techrevati.runtime.rate_limit.TokenBucket" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">TokenBucket</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">capacity</span><span class="p">,</span> <span class="n">refill_per_second</span><span class="p">,</span> <span class="n">clock</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">monotonic</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
 
 
-        <p>Recovery plan for a failure scenario.</p>
-<p><code>step_retries</code> is an optional per-step retry budget the caller is
-expected to honor when actually executing a step. The default empty
-mapping preserves the 0.1.0 single-attempt semantics; populate it
-when you want, e.g. <code>RETRY_WITH_BACKOFF</code> to fire three times
-before the recipe moves on to <code>SWITCH_PROVIDER</code>. This module
-only records the budget — execution happens in the caller.</p>
+        <p>Classic token-bucket limiter — sync variant.</p>
+<p><code>try_acquire</code> is non-blocking and returns <code>True</code> only when the
+bucket has enough tokens. <code>acquire</code> sleeps until the bucket
+refills, capped by an optional wait timeout; on timeout it raises
+<code>RateLimitExceededError</code> rather than silently exceeding the
+bound.</p>
+<h5 id="techrevati.runtime.rate_limit.TokenBucket--parameters">Parameters<a class="headerlink" href="#techrevati.runtime.rate_limit.TokenBucket--parameters" title="Permanent link">&para;</a></h5>
+<p>name:
+    Human-readable identifier used in error messages.
+capacity:
+    Maximum tokens the bucket holds. Bursts up to this many
+    requests can pass immediately.
+refill_per_second:
+    Steady-state admission rate.
+clock:
+    Monotonic time source. Defaults to <code>time.monotonic</code>.</p>
 
 
 
@@ -2058,8 +1892,74 @@ only records the budget — execution happens in the caller.</p>
 
 
 
+<div class="doc doc-object doc-attribute">
 
 
+
+<h4 id="techrevati.runtime.rate_limit.TokenBucket.available" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">available</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#techrevati.runtime.rate_limit.TokenBucket.available" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">available</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Current token balance (mostly useful for diagnostics + tests).</p>
+
+    </div>
+
+</div>
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="techrevati.runtime.rate_limit.TokenBucket.try_acquire" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">try_acquire</span>
+
+
+<a href="#techrevati.runtime.rate_limit.TokenBucket.try_acquire" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">try_acquire</span><span class="p">(</span><span class="n">tokens</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Spend <code>tokens</code> if available; return whether the spend succeeded.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="techrevati.runtime.rate_limit.TokenBucket.acquire" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">acquire</span>
+
+
+<a href="#techrevati.runtime.rate_limit.TokenBucket.acquire" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">acquire</span><span class="p">(</span><span class="n">tokens</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Block until <code>tokens</code> are available, or raise on timeout.</p>
+<p><code>timeout</code> is the maximum wall-clock time we will sleep
+waiting for refill; <code>None</code> waits indefinitely.</p>
+
+
+    </div>
+
+</div>
 
 
 
@@ -2073,23 +1973,27 @@ only records the budget — execution happens in the caller.</p>
 
 
 
-<h3 id="techrevati.runtime.retry_policy.RecoveryResult" class="doc doc-heading">
-            <span class="doc doc-object-name doc-class-name">RecoveryResult</span>
+<h3 id="techrevati.runtime.rate_limit.AsyncTokenBucket" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">AsyncTokenBucket</span>
 
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
   </span>
 
-<a href="#techrevati.runtime.retry_policy.RecoveryResult" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">RecoveryResult</span><span class="p">(</span><span class="n">outcome</span><span class="p">,</span> <span class="n">steps_taken</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">recovered_steps</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">remaining_steps</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">reason</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+<a href="#techrevati.runtime.rate_limit.AsyncTokenBucket" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">AsyncTokenBucket</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">capacity</span><span class="p">,</span> <span class="n">refill_per_second</span><span class="p">,</span> <span class="n">clock</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">monotonic</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
 
 
-        <p>Outcome of a recovery attempt.</p>
+        <p>Async sibling of <code>TokenBucket</code>.</p>
+<p>Uses <code>asyncio.Lock</code> so refill bookkeeping is coroutine-safe, and
+<code>asyncio.sleep</code> so waiting yields control to the event loop
+instead of pinning the thread. State is independent from the sync
+variant — choose one per downstream.</p>
 
 
 
@@ -2124,23 +2028,122 @@ only records the budget — execution happens in the caller.</p>
 
 
 
-<h3 id="techrevati.runtime.retry_policy.RecoveryEvent" class="doc doc-heading">
-            <span class="doc doc-object-name doc-class-name">RecoveryEvent</span>
+<h3 id="techrevati.runtime.rate_limit.RateLimiter" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">RateLimiter</span>
 
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
   </span>
 
-<a href="#techrevati.runtime.retry_policy.RecoveryEvent" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">RecoveryEvent</span><span class="p">(</span><span class="n">event_type</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">recipe_steps</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">)</span>
+<a href="#techrevati.runtime.rate_limit.RateLimiter" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">RateLimiter</span><span class="p">(</span><span class="n">buckets</span><span class="o">=</span><span class="nb">dict</span><span class="p">())</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
 
 
-        <p>Structured record of a recovery action.</p>
+        <p>Composite of named token buckets, one per dimension.</p>
+<p>Typical LLM-provider shape: <code>rpm</code> for requests-per-minute,
+<code>input_tpm</code> for input tokens-per-minute, <code>output_tpm</code> for
+output tokens-per-minute. Each bucket is independent; an empty
+<code>buckets</code> mapping is a valid no-op limiter.</p>
+<p><code>acquire_pre_call</code> spends RPM up front. After the call returns
+and <code>UsageSnapshot</code> is known, <code>acquire_usage</code> spends the input
++ output token budgets. This split mirrors how providers actually
+enforce limits.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="techrevati.runtime.rate_limit.RateLimiter.acquire_pre_call" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">acquire_pre_call</span>
+
+
+<a href="#techrevati.runtime.rate_limit.RateLimiter.acquire_pre_call" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">acquire_pre_call</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">request_cost</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Block on RPM bucket (<code>buckets["rpm"]</code>) if configured.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="techrevati.runtime.rate_limit.RateLimiter.acquire_usage" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">acquire_usage</span>
+
+
+<a href="#techrevati.runtime.rate_limit.RateLimiter.acquire_usage" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">acquire_usage</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">input_tokens</span><span class="p">,</span> <span class="n">output_tokens</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Block on input/output TPM buckets after a turn completes.</p>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="techrevati.runtime.rate_limit.AsyncRateLimiter" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">AsyncRateLimiter</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#techrevati.runtime.rate_limit.AsyncRateLimiter" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">AsyncRateLimiter</span><span class="p">(</span><span class="n">buckets</span><span class="o">=</span><span class="nb">dict</span><span class="p">())</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Async sibling of <code>RateLimiter</code> — same semantics, async buckets.</p>
 
 
 
@@ -2175,19 +2178,26 @@ only records the budget — execution happens in the caller.</p>
 
 
 
-<h3 id="techrevati.runtime.retry_policy.RecoveryContext" class="doc doc-heading">
-            <span class="doc doc-object-name doc-class-name">RecoveryContext</span>
+<h3 id="techrevati.runtime.rate_limit.RateLimitExceededError" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">RateLimitExceededError</span>
 
 
-<a href="#techrevati.runtime.retry_policy.RecoveryContext" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">RecoveryContext</span><span class="p">()</span>
+<a href="#techrevati.runtime.rate_limit.RateLimitExceededError" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">RateLimitExceededError</span><span class="p">(</span><span class="n">bucket_name</span><span class="p">,</span> <span class="n">tokens</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="Exception">Exception</span></code></p>
 
 
 
-        <p>Tracks recovery attempts per scenario within a session.</p>
+        <p>Raised when an <code>acquire</code> call exceeds the bucket's wait budget.</p>
+<p>Carries the bucket name and the cost the caller tried to spend so
+the error message tells the caller which dimension blocked (input
+TPM vs RPM) and how big the request was. <code>classify_exception</code>
+maps this onto <code>FailureScenario.LLM_ERROR</code> (the rate-limit
+bucket) so existing recovery recipes pick it up unchanged.</p>
 
 
 
@@ -2218,181 +2228,6 @@ only records the budget — execution happens in the caller.</p>
 
 </div>
 
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="techrevati.runtime.retry_policy.recipe_for" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">recipe_for</span>
-
-
-<a href="#techrevati.runtime.retry_policy.recipe_for" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">recipe_for</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Look up the recovery recipe for a failure scenario.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="techrevati.runtime.retry_policy.attempt_recovery" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">attempt_recovery</span>
-
-
-<a href="#techrevati.runtime.retry_policy.attempt_recovery" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">attempt_recovery</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="n">ctx</span><span class="p">)</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Attempt recovery for a failure scenario.</p>
-<p>Returns RecoveryResult with outcome: recovered, partial_recovery,
-or escalation_required.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="techrevati.runtime.retry_policy.aattempt_recovery" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">aattempt_recovery</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-async"><code>async</code></small>
-  </span>
-
-<a href="#techrevati.runtime.retry_policy.aattempt_recovery" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">aattempt_recovery</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="n">ctx</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">sleeper</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Async variant of attempt_recovery.</p>
-<p>Behavior matches the sync version step-for-step. The <code>sleeper</code>
-parameter is reserved for future steps that need to await a delay
-(e.g. backoff). Pass <code>asyncio.sleep</code> in production code; pass a
-no-op or a fake in tests for determinism. Today no step in
-<code>RecoveryRecipe</code> actually sleeps, so <code>sleeper</code> is unused in
-practice — but the contract is established now so 0.1.0 callers
-can rely on it.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="techrevati.runtime.retry_policy.backoff_delay" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">backoff_delay</span>
-
-
-<a href="#techrevati.runtime.retry_policy.backoff_delay" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">backoff_delay</span><span class="p">(</span><span class="n">attempt</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">jitter</span><span class="o">=</span><span class="s1">&#39;decorrelated&#39;</span><span class="p">,</span> <span class="n">cap</span><span class="o">=</span><span class="mf">60.0</span><span class="p">,</span> <span class="n">prev_delay</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Calculate backoff delay in seconds with selectable jitter algorithm.</p>
-<p>Algorithms follow Marc Brooker / AWS Architecture Blog
-(https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/):</p>
-<ul>
-<li><code>"none"</code> — pure exponential <code>base ** attempt</code> (capped).</li>
-<li><code>"full"</code> — <code>uniform(0, cap_exp)</code>: maximum spread, lowest contention.</li>
-<li><code>"equal"</code> — <code>cap_exp/2 + uniform(0, cap_exp/2)</code>: half deterministic.</li>
-<li><code>"decorrelated"</code> (default) — <code>uniform(base, prev_delay * 3)</code>: AWS's
-  fastest algorithm. Callers passing 0 for <code>prev_delay</code> get <code>base</code>.</li>
-</ul>
-<p>Backwards compatibility: <code>jitter=True</code> (bool) maps to <code>"full"</code> and
-<code>jitter=False</code> maps to <code>"none"</code>. The <code>base ** attempt + 25% noise</code>
-formula from 0.0.0 is gone — use <code>"equal"</code> for similar behavior.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="techrevati.runtime.retry_policy.next_provider" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">next_provider</span>
-
-
-<a href="#techrevati.runtime.retry_policy.next_provider" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">next_provider</span><span class="p">(</span><span class="n">available_providers</span><span class="p">,</span> <span class="n">current_provider</span><span class="p">)</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Select the next fallback provider, skipping the current one.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="techrevati.runtime.retry_policy.smaller_context_budget" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">smaller_context_budget</span>
-
-
-<a href="#techrevati.runtime.retry_policy.smaller_context_budget" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">smaller_context_budget</span><span class="p">(</span><span class="n">current_chars</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="mf">0.75</span><span class="p">)</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Calculate a reduced context budget (75% of current by default).</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="techrevati.runtime.retry_policy.classify_exception" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">classify_exception</span>
-
-
-<a href="#techrevati.runtime.retry_policy.classify_exception" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">classify_exception</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Map a Python exception to a FailureScenario for recovery.</p>
-<p>Two-pass dispatch:</p>
-<ol>
-<li><strong>Type-based</strong> — <code>isinstance</code> against well-known stdlib classes
-   (<code>TimeoutError</code>, <code>ConnectionError</code> family, <code>JSONDecodeError</code>).
-   Walks the exception chain via <code>__cause__</code> / <code>__context__</code> so a
-   <code>RuntimeError</code> wrapping a <code>ConnectionError</code> is still classified
-   as <code>PROVIDER_FAILURE</code>.</li>
-<li><strong>String match</strong> — provider SDKs that don't expose stdlib types
-   fall through to substring matching on the rendered message.</li>
-</ol>
-
-
-    </div>
-
-</div>
 
 
 

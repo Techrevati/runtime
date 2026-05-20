@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://Techrevati.github.io/runtime/patterns/permissions/">
+        <link rel="canonical" href="https://Techrevati.github.io/runtime/patterns/durability/">
       
       
-        <link rel="prev" href="../agent-events/">
+        <link rel="prev" href="../circuit-breaker/">
       
       
-        <link rel="next" href="../policy/">
+        <link rel="next" href="../rate-limiting/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Permissions - techrevati-runtime</title>
+        <title>Durability - techrevati-runtime</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#permissions" class="md-skip">
+        <a href="#durable-execution-checkpointsaver" class="md-skip">
           Skip to content
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Permissions
+              Durability
             
           </span>
         </div>
@@ -686,10 +686,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../durability/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Durability
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -705,6 +732,103 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-to-use" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-not-to-use" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When NOT to use
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reference-implementations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reference implementations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anti-patterns
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tuning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tuning
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -854,37 +978,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Permissions
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../permissions/" class="md-nav__link">
         
   
   
@@ -900,70 +997,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#usage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Usage
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#resolution-order" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Resolution order
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#api" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        API
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1511,10 +1544,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#usage" class="md-nav__link">
+  <a href="#quick-example" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Usage
+        Quick example
       
     </span>
   </a>
@@ -1522,10 +1555,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#resolution-order" class="md-nav__link">
+  <a href="#when-to-use" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Resolution order
+        When to use
       
     </span>
   </a>
@@ -1533,10 +1566,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#api" class="md-nav__link">
+  <a href="#when-not-to-use" class="md-nav__link">
     <span class="md-ellipsis">
       
-        API
+        When NOT to use
       
     </span>
   </a>
@@ -1544,10 +1577,43 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
+  <a href="#reference-implementations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Status
+        Reference implementations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anti-patterns
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tuning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tuning
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
       
     </span>
   </a>
@@ -1574,69 +1640,115 @@
   
 
 
-<h1 id="permissions">Permissions<a class="headerlink" href="#permissions" title="Permanent link">&para;</a></h1>
-<p>Deny-first role × tool authorization. <code>denied_tools</code> is checked first, then <code>mode</code> (a totally ordered <code>READ_ONLY &lt; WORKSPACE_WRITE &lt; FULL_ACCESS</code>), then an optional <code>allowed_tools</code> whitelist.</p>
-<p>This module ships configuration-free — define your own roles and tool requirements.</p>
-<h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
+<h1 id="durable-execution-checkpointsaver">Durable execution — CheckpointSaver<a class="headerlink" href="#durable-execution-checkpointsaver" title="Permanent link">&para;</a></h1>
+<p><code>CheckpointSaver</code> persists per-turn snapshots of a session so a crashed
+or paused agent loop can resume from the last committed turn instead of
+re-running every step. Pair it with a stable <code>thread_id</code> and the
+<code>idempotency_key</code> argument to <code>run_turn</code> / <code>arun_turn</code> for replay-safe
+multi-turn loops.</p>
+<h2 id="quick-example">Quick example<a class="headerlink" href="#quick-example" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">techrevati.runtime</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">PermissionMode</span><span class="p">,</span> <span class="n">RolePermissionConfig</span><span class="p">,</span> <span class="n">PermissionPolicy</span><span class="p">,</span> <span class="n">PermissionEnforcer</span><span class="p">,</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">Orchestrator</span><span class="p">,</span> <span class="n">SqliteSaver</span><span class="p">,</span> <span class="n">UsageSnapshot</span><span class="p">,</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">policy</span> <span class="o">=</span> <span class="n">PermissionPolicy</span><span class="p">(</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">role_configs</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        <span class="s2">&quot;writer&quot;</span><span class="p">:</span> <span class="n">RolePermissionConfig</span><span class="p">(</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>            <span class="n">role</span><span class="o">=</span><span class="s2">&quot;writer&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>            <span class="n">mode</span><span class="o">=</span><span class="n">PermissionMode</span><span class="o">.</span><span class="n">FULL_ACCESS</span><span class="p">,</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>            <span class="n">denied_tools</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;dangerous_tool&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="p">),</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        <span class="s2">&quot;reader&quot;</span><span class="p">:</span> <span class="n">RolePermissionConfig</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="s2">&quot;reader&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">PermissionMode</span><span class="o">.</span><span class="n">READ_ONLY</span><span class="p">),</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        <span class="s2">&quot;reviewer&quot;</span><span class="p">:</span> <span class="n">RolePermissionConfig</span><span class="p">(</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>            <span class="n">role</span><span class="o">=</span><span class="s2">&quot;reviewer&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>            <span class="n">mode</span><span class="o">=</span><span class="n">PermissionMode</span><span class="o">.</span><span class="n">WORKSPACE_WRITE</span><span class="p">,</span>
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>            <span class="n">allowed_tools</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;review_code&quot;</span><span class="p">,</span> <span class="s2">&quot;comment&quot;</span><span class="p">],</span>  <span class="c1"># whitelist mode</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        <span class="p">),</span>
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="p">},</span>
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="n">tool_requirements</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>        <span class="s2">&quot;dangerous_tool&quot;</span><span class="p">:</span> <span class="n">PermissionMode</span><span class="o">.</span><span class="n">FULL_ACCESS</span><span class="p">,</span>
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>        <span class="s2">&quot;publish&quot;</span><span class="p">:</span>        <span class="n">PermissionMode</span><span class="o">.</span><span class="n">FULL_ACCESS</span><span class="p">,</span>
-<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    <span class="p">},</span>
-<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="p">)</span>
-<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="n">enforcer</span> <span class="o">=</span> <span class="n">PermissionEnforcer</span><span class="p">(</span><span class="n">policy</span><span class="p">)</span>
-<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>
-<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="n">outcome</span> <span class="o">=</span> <span class="n">enforcer</span><span class="o">.</span><span class="n">check</span><span class="p">(</span><span class="s2">&quot;writer&quot;</span><span class="p">,</span> <span class="s2">&quot;any_tool&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="k">if</span> <span class="ow">not</span> <span class="n">outcome</span><span class="o">.</span><span class="n">allowed</span><span class="p">:</span>
-<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">outcome</span><span class="o">.</span><span class="n">reason</span><span class="p">)</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">saver</span> <span class="o">=</span> <span class="n">SqliteSaver</span><span class="p">(</span><span class="s2">&quot;checkpoints.db&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">orch</span> <span class="o">=</span> <span class="n">Orchestrator</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="s2">&quot;writer&quot;</span><span class="p">,</span> <span class="n">phase</span><span class="o">=</span><span class="s2">&quot;draft&quot;</span><span class="p">,</span> <span class="n">saver</span><span class="o">=</span><span class="n">saver</span><span class="p">)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="k">with</span> <span class="n">orch</span><span class="o">.</span><span class="n">session</span><span class="p">(</span><span class="n">thread_id</span><span class="o">=</span><span class="s2">&quot;user-42:essay&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">draft</span><span class="p">,</span> <span class="n">usage</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">run_turn</span><span class="p">(</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        <span class="k">lambda</span><span class="p">:</span> <span class="n">call_model</span><span class="p">(</span><span class="n">outline_prompt</span><span class="p">),</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="n">model</span><span class="o">=</span><span class="s2">&quot;model-a&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        <span class="n">usage</span><span class="o">=</span><span class="n">UsageSnapshot</span><span class="p">(</span><span class="n">input_tokens</span><span class="o">=</span><span class="mi">2_000</span><span class="p">,</span> <span class="n">output_tokens</span><span class="o">=</span><span class="mi">900</span><span class="p">),</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        <span class="n">idempotency_key</span><span class="o">=</span><span class="s2">&quot;draft:turn-1&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="p">)</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="n">revision</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">run_turn</span><span class="p">(</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>        <span class="k">lambda</span><span class="p">:</span> <span class="n">call_model</span><span class="p">(</span><span class="n">revision_prompt</span><span class="p">(</span><span class="n">draft</span><span class="p">)),</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        <span class="n">model</span><span class="o">=</span><span class="s2">&quot;model-a&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>        <span class="n">idempotency_key</span><span class="o">=</span><span class="s2">&quot;draft:turn-2&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="p">)</span>
 </code></pre></div>
-<h2 id="resolution-order">Resolution order<a class="headerlink" href="#resolution-order" title="Permanent link">&para;</a></h2>
-<ol>
-<li><strong>Deny list.</strong> Any tool in <code>denied_tools</code> is rejected, regardless of mode.</li>
-<li><strong>Mode comparison.</strong> If the role's mode is lower than the tool's required mode, reject.</li>
-<li><strong>Allowed list.</strong> If <code>allowed_tools</code> is set, the tool must be in it.</li>
-<li><strong>Default-allow.</strong> If none of the above triggers a denial, allow.</li>
-</ol>
-<h2 id="api">API<a class="headerlink" href="#api" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">PermissionMode</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span> <span class="n">READ_ONLY</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">WORKSPACE_WRITE</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">FULL_ACCESS</span><span class="o">=</span><span class="mi">3</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nd">@dataclass</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">RolePermissionConfig</span><span class="p">:</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">role</span><span class="p">:</span> <span class="nb">str</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">mode</span><span class="p">:</span> <span class="n">PermissionMode</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">allowed_tools</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">denied_tools</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="k">class</span><span class="w"> </span><span class="nc">PermissionPolicy</span><span class="p">:</span>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">role_configs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tool_requirements</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span> <span class="o">...</span>
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">authorize</span><span class="p">(</span><span class="n">role</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tool_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PermissionOutcome</span>
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="k">class</span><span class="w"> </span><span class="nc">PermissionEnforcer</span><span class="p">:</span>
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">policy</span><span class="p">:</span> <span class="n">PermissionPolicy</span><span class="p">):</span> <span class="o">...</span>
-<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check</span><span class="p">(</span><span class="n">role</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tool_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PermissionOutcome</span>
-<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">is_allowed</span><span class="p">(</span><span class="n">role</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tool_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
-<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">filter_tools</span><span class="p">(</span><span class="n">role</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tools</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callable</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span>
-</code></pre></div>
-<p><code>filter_tools</code> reads <code>tool.__name__</code> from each callable.</p>
-<h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p><code>permissions</code> is intentionally thin: role × tool only. No argument-level restrictions, no quotas, no time-of-day rules. Compose with your own layer if you need those.</p>
+<p>On a clean run, two checkpoints land in <code>checkpoints.db</code>. If the
+process crashes between the two turns and a future invocation opens a
+fresh <code>Orchestrator</code> against the same <code>thread_id</code>, the first
+<code>run_turn</code> returns the cached result for <code>"draft:turn-1"</code> without
+calling the model again, and execution continues with turn 2.</p>
+<h2 id="when-to-use">When to use<a class="headerlink" href="#when-to-use" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Long agent loops where a single retry costs real money / latency.</li>
+<li>Multi-stage pipelines that you want to resume mid-flight after a
+  pod restart, deploy, or transient failure.</li>
+<li>Idempotent webhook handlers — the <code>idempotency_key</code> is exactly the
+  request id you'd use to dedupe.</li>
+</ul>
+<h2 id="when-not-to-use">When NOT to use<a class="headerlink" href="#when-not-to-use" title="Permanent link">&para;</a></h2>
+<ul>
+<li>The whole loop is cheap and re-running from scratch is fine.</li>
+<li>Results aren't JSON-serializable and you can't coerce them. The saver
+  logs a warning and skips the checkpoint, so the call still works but
+  the durability guarantee is lost.</li>
+<li>You need Temporal-style step replay (run a half-finished turn against
+  a recorded history). This module checkpoints between turns, not inside
+  one. Wrap a durable engine behind a custom <code>CheckpointSaver</code> impl if
+  you need that semantic.</li>
+</ul>
+<h2 id="reference-implementations">Reference implementations<a class="headerlink" href="#reference-implementations" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>InMemorySaver</code> — process-local, lost on exit, thread-safe. Default
+  for tests and dev loops.</li>
+<li><code>SqliteSaver(path)</code> — stdlib <code>sqlite3</code> only, no new runtime
+  dependency, WAL mode for concurrent readers. Pass <code>":memory:"</code> for a
+  fully in-memory database scoped to one connection.</li>
+</ul>
+<p>Both implement the same <code>CheckpointSaver</code> protocol, so a session can
+swap between them by changing the <code>saver=</code> argument on <code>Orchestrator</code>.</p>
+<h2 id="anti-patterns">Anti-patterns<a class="headerlink" href="#anti-patterns" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Reusing one <code>thread_id</code> across unrelated sessions.</strong> The <code>list</code>
+  returned by the saver is a single log; mixing logs means
+  <code>idempotency_key</code> collisions can resurrect the wrong result.
+  Namespace your thread ids (<code>user-42:essay</code>, not <code>essay</code>).</li>
+<li><strong>Treating <code>idempotency_key</code> as a cache key.</strong> It's a replay marker
+  scoped to one thread. Two threads with the same key get independent
+  results.</li>
+<li><strong>Mutating the dict you pass to <code>put</code>.</strong> Savers copy on insert, but
+  test helpers that re-use a dict between turns will surprise you if
+  you check identity. Build a fresh dict per turn.</li>
+</ul>
+<h2 id="tuning">Tuning<a class="headerlink" href="#tuning" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Knob</th>
+<th>Default</th>
+<th>Why touch it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SqliteSaver</code> <code>path</code></td>
+<td>required</td>
+<td><code>:memory:</code> for tests; a real file for restart durability.</td>
+</tr>
+<tr>
+<td><code>list(..., limit=N)</code></td>
+<td>10</td>
+<td>Raise it if you have very long threads and need to reach further back.</td>
+</tr>
+<tr>
+<td><code>_restore_idempotent_turn</code> scan depth</td>
+<td>100</td>
+<td>Internal cap on how far back an idempotency lookup walks. If your threads exceed 100 turns and you need replay older than that, cache the lookup outside the runtime.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../../migrating-from-0.0.x/">Migrating from 0.0.x</a> — <code>thread_id</code> /
+  <code>idempotency_key</code> are new in 0.2.0; older sessions keep working
+  without them.</li>
+<li><a href="../orchestrator/">Orchestrator</a> — how the saver is wired into the
+  session lifecycle.</li>
+</ul>
 
 
 

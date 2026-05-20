@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://Techrevati.github.io/runtime/patterns/permissions/">
+        <link rel="canonical" href="https://Techrevati.github.io/runtime/patterns/routing/">
       
       
-        <link rel="prev" href="../agent-events/">
+        <link rel="prev" href="../rate-limiting/">
       
       
-        <link rel="next" href="../policy/">
+        <link rel="next" href="../quality-gate/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Permissions - techrevati-runtime</title>
+        <title>Routing - techrevati-runtime</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#permissions" class="md-skip">
+        <a href="#provider-routing" class="md-skip">
           Skip to content
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Permissions
+              Routing
             
           </span>
         </div>
@@ -742,10 +742,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../routing/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Routing
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -761,6 +788,92 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-to-use" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-not-to-use" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When NOT to use
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comparison
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anti-patterns
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -854,37 +967,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Permissions
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../permissions/" class="md-nav__link">
         
   
   
@@ -900,70 +986,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#usage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Usage
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#resolution-order" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Resolution order
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#api" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        API
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1511,10 +1533,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#usage" class="md-nav__link">
+  <a href="#quick-example" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Usage
+        Quick example
       
     </span>
   </a>
@@ -1522,10 +1544,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#resolution-order" class="md-nav__link">
+  <a href="#when-to-use" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Resolution order
+        When to use
       
     </span>
   </a>
@@ -1533,10 +1555,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#api" class="md-nav__link">
+  <a href="#when-not-to-use" class="md-nav__link">
     <span class="md-ellipsis">
       
-        API
+        When NOT to use
       
     </span>
   </a>
@@ -1544,10 +1566,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
+  <a href="#comparison" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Status
+        Comparison
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anti-patterns
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
       
     </span>
   </a>
@@ -1574,69 +1618,103 @@
   
 
 
-<h1 id="permissions">Permissions<a class="headerlink" href="#permissions" title="Permanent link">&para;</a></h1>
-<p>Deny-first role × tool authorization. <code>denied_tools</code> is checked first, then <code>mode</code> (a totally ordered <code>READ_ONLY &lt; WORKSPACE_WRITE &lt; FULL_ACCESS</code>), then an optional <code>allowed_tools</code> whitelist.</p>
-<p>This module ships configuration-free — define your own roles and tool requirements.</p>
-<h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
+<h1 id="provider-routing">Provider routing<a class="headerlink" href="#provider-routing" title="Permanent link">&para;</a></h1>
+<p><code>ProviderRouter</code> is a strategy interface for picking which provider to
+call when the runtime decides to switch (e.g. after
+<code>RecoveryStep.SWITCH_PROVIDER</code> fires). Three reference implementations
+ship: first-acceptable (static), rotating (round-robin), and
+weighted by config.</p>
+<h2 id="quick-example">Quick example<a class="headerlink" href="#quick-example" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">techrevati.runtime</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">PermissionMode</span><span class="p">,</span> <span class="n">RolePermissionConfig</span><span class="p">,</span> <span class="n">PermissionPolicy</span><span class="p">,</span> <span class="n">PermissionEnforcer</span><span class="p">,</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">Orchestrator</span><span class="p">,</span> <span class="n">StaticProviderRouter</span><span class="p">,</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">policy</span> <span class="o">=</span> <span class="n">PermissionPolicy</span><span class="p">(</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">role_configs</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        <span class="s2">&quot;writer&quot;</span><span class="p">:</span> <span class="n">RolePermissionConfig</span><span class="p">(</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>            <span class="n">role</span><span class="o">=</span><span class="s2">&quot;writer&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>            <span class="n">mode</span><span class="o">=</span><span class="n">PermissionMode</span><span class="o">.</span><span class="n">FULL_ACCESS</span><span class="p">,</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>            <span class="n">denied_tools</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;dangerous_tool&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="p">),</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        <span class="s2">&quot;reader&quot;</span><span class="p">:</span> <span class="n">RolePermissionConfig</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="s2">&quot;reader&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">PermissionMode</span><span class="o">.</span><span class="n">READ_ONLY</span><span class="p">),</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        <span class="s2">&quot;reviewer&quot;</span><span class="p">:</span> <span class="n">RolePermissionConfig</span><span class="p">(</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>            <span class="n">role</span><span class="o">=</span><span class="s2">&quot;reviewer&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>            <span class="n">mode</span><span class="o">=</span><span class="n">PermissionMode</span><span class="o">.</span><span class="n">WORKSPACE_WRITE</span><span class="p">,</span>
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>            <span class="n">allowed_tools</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;review_code&quot;</span><span class="p">,</span> <span class="s2">&quot;comment&quot;</span><span class="p">],</span>  <span class="c1"># whitelist mode</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        <span class="p">),</span>
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="p">},</span>
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="n">tool_requirements</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>        <span class="s2">&quot;dangerous_tool&quot;</span><span class="p">:</span> <span class="n">PermissionMode</span><span class="o">.</span><span class="n">FULL_ACCESS</span><span class="p">,</span>
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>        <span class="s2">&quot;publish&quot;</span><span class="p">:</span>        <span class="n">PermissionMode</span><span class="o">.</span><span class="n">FULL_ACCESS</span><span class="p">,</span>
-<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    <span class="p">},</span>
-<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="p">)</span>
-<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="n">enforcer</span> <span class="o">=</span> <span class="n">PermissionEnforcer</span><span class="p">(</span><span class="n">policy</span><span class="p">)</span>
-<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>
-<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="n">outcome</span> <span class="o">=</span> <span class="n">enforcer</span><span class="o">.</span><span class="n">check</span><span class="p">(</span><span class="s2">&quot;writer&quot;</span><span class="p">,</span> <span class="s2">&quot;any_tool&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="k">if</span> <span class="ow">not</span> <span class="n">outcome</span><span class="o">.</span><span class="n">allowed</span><span class="p">:</span>
-<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">outcome</span><span class="o">.</span><span class="n">reason</span><span class="p">)</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">router</span> <span class="o">=</span> <span class="n">StaticProviderRouter</span><span class="p">((</span><span class="s2">&quot;model-a&quot;</span><span class="p">,</span> <span class="s2">&quot;model-b&quot;</span><span class="p">,</span> <span class="s2">&quot;model-c&quot;</span><span class="p">))</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">orch</span> <span class="o">=</span> <span class="n">Orchestrator</span><span class="p">(</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">role</span><span class="o">=</span><span class="s2">&quot;writer&quot;</span><span class="p">,</span> <span class="n">phase</span><span class="o">=</span><span class="s2">&quot;draft&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">provider_router</span><span class="o">=</span><span class="n">router</span><span class="p">,</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="p">)</span>
 </code></pre></div>
-<h2 id="resolution-order">Resolution order<a class="headerlink" href="#resolution-order" title="Permanent link">&para;</a></h2>
-<ol>
-<li><strong>Deny list.</strong> Any tool in <code>denied_tools</code> is rejected, regardless of mode.</li>
-<li><strong>Mode comparison.</strong> If the role's mode is lower than the tool's required mode, reject.</li>
-<li><strong>Allowed list.</strong> If <code>allowed_tools</code> is set, the tool must be in it.</li>
-<li><strong>Default-allow.</strong> If none of the above triggers a denial, allow.</li>
-</ol>
-<h2 id="api">API<a class="headerlink" href="#api" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">PermissionMode</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span> <span class="n">READ_ONLY</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">WORKSPACE_WRITE</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">FULL_ACCESS</span><span class="o">=</span><span class="mi">3</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nd">@dataclass</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">RolePermissionConfig</span><span class="p">:</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">role</span><span class="p">:</span> <span class="nb">str</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">mode</span><span class="p">:</span> <span class="n">PermissionMode</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">allowed_tools</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">denied_tools</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="k">class</span><span class="w"> </span><span class="nc">PermissionPolicy</span><span class="p">:</span>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">role_configs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tool_requirements</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span> <span class="o">...</span>
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">authorize</span><span class="p">(</span><span class="n">role</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tool_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PermissionOutcome</span>
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="k">class</span><span class="w"> </span><span class="nc">PermissionEnforcer</span><span class="p">:</span>
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">policy</span><span class="p">:</span> <span class="n">PermissionPolicy</span><span class="p">):</span> <span class="o">...</span>
-<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check</span><span class="p">(</span><span class="n">role</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tool_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PermissionOutcome</span>
-<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">is_allowed</span><span class="p">(</span><span class="n">role</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tool_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
-<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">filter_tools</span><span class="p">(</span><span class="n">role</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tools</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callable</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span>
+<p>The runtime exposes the router through <code>session.provider_router</code> so
+caller code that owns the actual call can ask for a next provider on a
+failure recovery branch:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">next_provider</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">provider_router</span><span class="o">.</span><span class="n">select</span><span class="p">(</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">scenario</span><span class="o">=</span><span class="n">FailureScenario</span><span class="o">.</span><span class="n">PROVIDER_FAILURE</span><span class="p">,</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">attempt</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">current</span><span class="o">=</span><span class="s2">&quot;model-a&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">exclude</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;model-already-429d&quot;</span><span class="p">,),</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="p">)</span>
 </code></pre></div>
-<p><code>filter_tools</code> reads <code>tool.__name__</code> from each callable.</p>
-<h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p><code>permissions</code> is intentionally thin: role × tool only. No argument-level restrictions, no quotas, no time-of-day rules. Compose with your own layer if you need those.</p>
+<p><code>select</code> is allowed to return <code>None</code> — that's the signal to escalate
+to the recipe's <code>EscalationPolicy</code> rather than continue retrying.</p>
+<h2 id="when-to-use">When to use<a class="headerlink" href="#when-to-use" title="Permanent link">&para;</a></h2>
+<ul>
+<li>You have a stable fallback list and want a one-line drop-in for
+  "pick the next one".</li>
+<li>You're balancing across providers for cost reasons and want strict
+  rotation (<code>RoundRobinProviderRouter</code>).</li>
+<li>You want a weighted preference that survives config reloads
+  (<code>WeightedProviderRouter</code>) — e.g. "prefer cheap-A, fall back to
+  premium-B only at peak hours".</li>
+</ul>
+<h2 id="when-not-to-use">When NOT to use<a class="headerlink" href="#when-not-to-use" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Single-provider workloads. Routing only makes sense when there is
+  somewhere to fall back to.</li>
+<li>Mid-call provider switching — these routers fire between calls,
+  not inside one. Streaming partial output across providers requires
+  a custom strategy.</li>
+</ul>
+<h2 id="comparison">Comparison<a class="headerlink" href="#comparison" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Router</th>
+<th>State</th>
+<th>Strategy</th>
+<th>Determinism</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>StaticProviderRouter</code></td>
+<td>stateless</td>
+<td>first non-excluded in order</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>RoundRobinProviderRouter</code></td>
+<td>cursor</td>
+<td>strict rotation</td>
+<td>yes, given input order</td>
+</tr>
+<tr>
+<td><code>WeightedProviderRouter</code></td>
+<td>stateless</td>
+<td>highest weight, ties to earliest declaration</td>
+<td>yes</td>
+</tr>
+</tbody>
+</table>
+<h2 id="anti-patterns">Anti-patterns<a class="headerlink" href="#anti-patterns" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Putting the same provider name in the list twice</strong> — round-robin
+  treats them as distinct slots and the weighted router will pick the
+  first one. If you want preference, use weights, not duplicates.</li>
+<li><strong>Selecting before classifying the failure.</strong> Call <code>select</code> only
+  after <code>classify_exception</code> actually returns a scenario that calls
+  for a switch (<code>LLM_ERROR</code> with <code>SWITCH_PROVIDER</code> in the recipe, or
+  <code>PROVIDER_FAILURE</code>).</li>
+<li><strong>Mutating the <code>providers</code> tuple at runtime.</strong> All three
+  implementations capture the tuple at construction; rebuild the
+  router when the list changes.</li>
+</ul>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../retry/">Retry policy</a> — where <code>SWITCH_PROVIDER</code> originates.</li>
+<li><a href="../rate-limiting/">Rate limiting</a> — pair with router via the
+  <code>exclude</code> argument to skip providers that 429'd this minute.</li>
+</ul>
 
 
 
