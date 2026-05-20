@@ -1,5 +1,6 @@
 """Tests for agent_patterns.recovery_recipes"""
 
+import asyncio
 import json
 
 import pytest
@@ -190,6 +191,47 @@ def test_smaller_context_budget():
 def test_escalation_policies():
     recipe = recipe_for(FailureScenario.MEMORY_CORRUPTION)
     assert recipe.escalation_policy == EscalationPolicy.ABORT
+
+
+# -- Async recovery (Sprint 2.5) --
+
+
+def test_aattempt_recovery_matches_sync_behavior():
+    """Async variant returns the same result as the sync function."""
+    from techrevati.runtime.retry_policy import aattempt_recovery
+
+    sync_ctx = RecoveryContext()
+    async_ctx = RecoveryContext()
+
+    sync_result = attempt_recovery(FailureScenario.LLM_TIMEOUT, sync_ctx)
+    async_result = asyncio.run(
+        aattempt_recovery(FailureScenario.LLM_TIMEOUT, async_ctx)
+    )
+
+    assert sync_result.outcome == async_result.outcome
+    assert sync_result.recovered_steps == async_result.recovered_steps
+    assert sync_ctx.attempt_count(
+        FailureScenario.LLM_TIMEOUT
+    ) == async_ctx.attempt_count(FailureScenario.LLM_TIMEOUT)
+
+
+def test_aattempt_recovery_accepts_custom_sleeper():
+    """sleeper parameter is accepted and may be a no-op."""
+    from techrevati.runtime.retry_policy import aattempt_recovery
+
+    called: list[float] = []
+
+    async def fake_sleeper(secs: float) -> None:
+        called.append(secs)
+
+    ctx = RecoveryContext()
+    result = asyncio.run(
+        aattempt_recovery(FailureScenario.LLM_TIMEOUT, ctx, sleeper=fake_sleeper)
+    )
+    assert result.outcome == "recovered"
+    # No step in the current recipe sleeps, so the sleeper isn't called.
+    # The contract is the parameter is accepted without TypeError.
+    assert called == []
 
     recipe = recipe_for(FailureScenario.TOOL_EXECUTION_ERROR)
     assert recipe.escalation_policy == EscalationPolicy.LOG_AND_CONTINUE

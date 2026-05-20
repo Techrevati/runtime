@@ -9,7 +9,7 @@ Zero runtime dependencies.
 >>> from techrevati.runtime import CircuitBreaker, PolicyEngine
 """
 
-__version__ = "0.0.1"
+__version__ = "0.1.0.dev1"
 
 from techrevati.runtime.agent_events import (
     AgentEvent,
@@ -25,14 +25,17 @@ from techrevati.runtime.agent_lifecycle import (
     InvalidTransitionError,
 )
 from techrevati.runtime.circuit_breaker import (
+    AsyncCircuitBreaker,
     CircuitBreaker,
     CircuitOpenError,
     CircuitState,
 )
 from techrevati.runtime.orchestrator import (
+    AsyncOrchestrationSession,
     OrchestrationSession,
     Orchestrator,
     PermissionDeniedError,
+    TurnTimeoutError,
 )
 from techrevati.runtime.permissions import (
     PermissionEnforcer,
@@ -62,6 +65,7 @@ from techrevati.runtime.retry_policy import (
     RecoveryRecipe,
     RecoveryResult,
     RecoveryStep,
+    aattempt_recovery,
     attempt_recovery,
     backoff_delay,
     classify_exception,
@@ -89,6 +93,8 @@ __all__ = [
     "AgentStatus",
     "AgentWorker",
     "AgentWorkerEvent",
+    "AsyncCircuitBreaker",
+    "AsyncOrchestrationSession",
     "BudgetExceededError",
     "CircuitBreaker",
     "CircuitOpenError",
@@ -120,9 +126,11 @@ __all__ = [
     "RecoveryResult",
     "RecoveryStep",
     "RolePermissionConfig",
+    "TurnTimeoutError",
     "UsageSnapshot",
     "UsageTracker",
     "__version__",
+    "aattempt_recovery",
     "attempt_recovery",
     "backoff_delay",
     "classify_exception",

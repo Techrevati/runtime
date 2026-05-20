@@ -5,6 +5,50 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the project
 follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html), with the
 caveat that 0.x APIs are explicitly unstable.
 
+## [0.1.0.dev1] — 2026-05-20
+
+Sprint 2 milestone toward the 0.1.0 async-first release. APIs added here
+are unstable; the contract becomes stable when 0.1.0 ships.
+
+### Added
+- `AsyncCircuitBreaker` — `asyncio.Lock`-based sibling of `CircuitBreaker`
+  with the same `half_open_max_probes` serialization semantics and
+  injectable monotonic `clock`. Independent state from the sync variant.
+- `AsyncOrchestrationSession` + `Orchestrator.asession()` async context
+  manager. Mirrors the sync session API; `arun_turn` and `arun_tool`
+  drive async coro factories. Sync helpers (`authorize`, `evaluate_policy`,
+  `evaluate_gate`, `summary`, lifecycle methods) are inherited from a
+  shared `_SessionBase` so behavior stays in lock-step.
+- `arun_turn(timeout=...)` enforces the deadline with `asyncio.wait_for`.
+  `run_turn(timeout=...)` enforces it via a one-shot
+  `ThreadPoolExecutor`. Both raise `TurnTimeoutError`.
+- `TurnTimeoutError` — single error class spanning both code paths so
+  callers don't need to catch `concurrent.futures.TimeoutError` and
+  `asyncio.TimeoutError` separately.
+- `AgentStatus.CANCELLED` terminal state. `asyncio.CancelledError`
+  bubbling out of an `async with orch.asession()` body transitions the
+  worker to CANCELLED instead of FAILED, then re-raises.
+- `aattempt_recovery(scenario, ctx, *, sleeper=asyncio.sleep)` — async
+  sibling of `attempt_recovery`. Accepts an injectable sleeper today
+  (no recipe currently sleeps, but the contract is fixed for future
+  steps).
+- `AsyncOrchestrationSession.pause_for_input(prompt)` — async
+  human-in-the-loop hook. Transitions worker to `WAITING_FOR_INPUT`,
+  returns an awaitable that the caller resolves via
+  `session.provide_input(value)`.
+- `AgentRegistry` and `_SessionBase` now record session start time on
+  construction; `evaluate_policy()` auto-computes `elapsed_seconds` when
+  the caller does not provide one. Closes the `TimedOut`-never-fires
+  gap from 0.0.x.
+- `RUNNING → WAITING_FOR_INPUT` transition is now valid (was missing).
+- `pytest-asyncio==1.3.0` added to the `[dev]` extras.
+
+### Changed
+- `evaluate_policy(elapsed_seconds=...)` parameter is now `float | None`
+  (default `None`). Behavior change: when omitted, time-based policies
+  finally see real elapsed seconds. Explicit `elapsed_seconds=0.0`
+  callers will need to migrate; pass the value you want.
+
 ## [0.0.1] — 2026-05-20
 
 ### Fixed
@@ -80,5 +124,6 @@ loops with reliability and cost visibility:
 - `PermissionPolicy` + `PermissionEnforcer` — deny-first role × tool gating.
 - `PolicyEngine` + composable conditions — declarative rule evaluator.
 
+[0.1.0.dev1]: https://github.com/Techrevati/runtime/releases/tag/v0.1.0.dev1
 [0.0.1]: https://github.com/Techrevati/runtime/releases/tag/v0.0.1
 [0.0.0]: https://github.com/Techrevati/runtime/releases/tag/v0.0.0
