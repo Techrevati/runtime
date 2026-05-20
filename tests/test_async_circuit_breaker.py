@@ -11,19 +11,7 @@ from techrevati.runtime.circuit_breaker import (
     CircuitOpenError,
     CircuitState,
 )
-
-
-class ManualClock:
-    """Test double for an injectable monotonic clock."""
-
-    def __init__(self, start: float = 1000.0) -> None:
-        self._t = start
-
-    def __call__(self) -> float:
-        return self._t
-
-    def advance(self, seconds: float) -> None:
-        self._t += seconds
+from tests.conftest import ManualClock
 
 
 @pytest.mark.asyncio

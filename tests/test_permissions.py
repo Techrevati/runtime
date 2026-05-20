@@ -95,3 +95,42 @@ def test_enforcer_is_allowed_convenience():
         )
     )
     assert enforcer.is_allowed("writer", "any_tool") is True
+
+
+def test_permission_outcome_to_dict_strips_empty_fields():
+    """to_dict() must omit reason / active_mode / required_mode when blank."""
+    from techrevati.runtime.permissions import PermissionOutcome
+
+    minimal = PermissionOutcome(allowed=True).to_dict()
+    assert minimal == {"allowed": True}
+
+
+def test_permission_outcome_to_dict_includes_populated_fields():
+    """All populated fields must appear in the serialized dict."""
+    from techrevati.runtime.permissions import PermissionOutcome
+
+    full = PermissionOutcome(
+        allowed=False,
+        reason="explicitly denied",
+        active_mode="READ_ONLY",
+        required_mode="FULL_ACCESS",
+    ).to_dict()
+    assert full == {
+        "allowed": False,
+        "reason": "explicitly denied",
+        "active_mode": "READ_ONLY",
+        "required_mode": "FULL_ACCESS",
+    }
+
+
+def test_authorize_returns_dict_serializable_outcome():
+    """End-to-end: a denial outcome's to_dict() must round-trip useful data."""
+    policy = PermissionPolicy(
+        role_configs={"r": RolePermissionConfig("r", PermissionMode.READ_ONLY)},
+        tool_requirements={"write": PermissionMode.FULL_ACCESS},
+    )
+    outcome = policy.authorize("r", "write").to_dict()
+    assert outcome["allowed"] is False
+    assert outcome["active_mode"] == "READ_ONLY"
+    assert outcome["required_mode"] == "FULL_ACCESS"
+    assert "READ_ONLY" in outcome["reason"]
