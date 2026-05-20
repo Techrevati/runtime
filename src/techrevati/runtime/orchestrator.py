@@ -54,7 +54,10 @@ from techrevati.runtime.circuit_breaker import (
 )
 from techrevati.runtime.governance import GovernanceBreachError, GovernancePlane
 from techrevati.runtime.guardrails import (
+    AsyncGuardrail,
     Guardrail,
+    arun_post_checks,
+    arun_pre_checks,
     run_post_checks,
     run_pre_checks,
 )
@@ -213,7 +216,7 @@ class AgentSession:
     budget_usd: float | None = None
     enforce_budget: bool = False
     max_iterations: int = 25
-    guardrails: list[Guardrail] = field(default_factory=list)
+    guardrails: list[Guardrail | AsyncGuardrail] = field(default_factory=list)
     event_sink: EventSink = field(default_factory=NoopEventSink)
     usage_sink: UsageSink = field(default_factory=NoopUsageSink)
     saver: CheckpointSaver | None = None
@@ -367,7 +370,7 @@ class _SessionBase:
     budget_usd: float | None = None
     enforce_budget: bool = False
     max_iterations: int = 25
-    guardrails: list[Guardrail] = field(default_factory=list)
+    guardrails: list[Guardrail | AsyncGuardrail] = field(default_factory=list)
     event_sink: EventSink = field(default_factory=NoopEventSink)
     usage_sink: UsageSink = field(default_factory=NoopUsageSink)
     events: list[AgentEvent] = field(default_factory=list)
@@ -607,19 +610,54 @@ class _SessionBase:
             raise MaxIterationsExceededError(self.max_iterations)
         self._iteration_count += 1
 
+    def _emit_governance_outcomes(self, outcomes: list[Any]) -> None:
+        """Emit governance.alert events for breached alert-mode limits."""
+        for outcome in outcomes:
+            if outcome.breached and outcome.on_breach == "alert":
+                self._emit_event(
+                    AgentEvent.governance_alert(
+                        self.role,
+                        self.phase,
+                        limit_name=outcome.limit_name,
+                        observed=outcome.observed,
+                        ceiling=outcome.ceiling,
+                        scope=outcome.scope,
+                    )
+                )
+
+    def _enforce_governance(self) -> None:
+        """Enforce + emit alerts + emit breach event right before raising."""
+        if self.governance is None:
+            return
+        try:
+            outcomes = self.governance.enforce()
+        except GovernanceBreachError as err:
+            self._emit_event(
+                AgentEvent.governance_breach(
+                    self.role,
+                    self.phase,
+                    limit_name=err.limit_name,
+                    observed=err.observed,
+                    ceiling=err.ceiling,
+                    scope=err.scope,
+                )
+            )
+            raise
+        self._emit_governance_outcomes(outcomes)
+
     def _check_governance_pre_turn(self) -> None:
         """Tick the turn counter and enforce limits before fn runs."""
         if self.governance is None:
             return
         self.governance.state.record_turn_start()
-        self.governance.enforce()
+        self._enforce_governance()
 
     def _check_governance_pre_tool(self) -> None:
         """Tick the tool counter and enforce limits before tool fn runs."""
         if self.governance is None:
             return
         self.governance.state.record_tool_call()
-        self.governance.enforce()
+        self._enforce_governance()
 
     def _record_governance_turn_outcome(
         self, *, success: bool, cost_usd: float | None = None
@@ -634,7 +672,7 @@ class _SessionBase:
         if cost_usd is not None:
             self.governance.state.record_cost(cost_usd)
         # Post-turn enforcement: a cost or failure-streak breach surfaces here.
-        self.governance.enforce()
+        self._enforce_governance()
 
     def handoff_to(
         self,
@@ -896,15 +934,17 @@ class AsyncOrchestrationSession(_SessionBase):
     ) -> T:
         """Async sibling of run_tool.
 
-        Permission + governance + guardrails are sync; the call itself is awaited.
+        Permission + governance are sync; guardrails are awaited when
+        they implement ``AsyncGuardrail`` and called inline when they
+        are sync ``Guardrail`` instances.
         """
         outcome = self.authorize(tool_name)
         if not outcome.allowed:
             raise PermissionDeniedError(outcome)
         self._check_governance_pre_tool()
-        run_pre_checks(self.guardrails, role=self.role, tool=tool_name)
+        await arun_pre_checks(self.guardrails, role=self.role, tool=tool_name)
         result = await coro_factory()
-        run_post_checks(self.guardrails, result, role=self.role, tool=tool_name)
+        await arun_post_checks(self.guardrails, result, role=self.role, tool=tool_name)
         return result
 
     async def arun_turn(

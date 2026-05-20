@@ -41,6 +41,9 @@ class AgentEventName(str, Enum):
     # Hooks
     HOOK_PRE_TOOL = "hook.pre_tool"
     HOOK_POST_TOOL = "hook.post_tool"
+    # Governance plane (Sprint 2 / EU AI Act Article 14 + 15)
+    GOVERNANCE_BREACH = "governance.breach"
+    GOVERNANCE_ALERT = "governance.alert"
 
 
 class AgentEventStatus(str, Enum):
@@ -176,6 +179,57 @@ class AgentEvent:
             role=role,
             phase=phase,
             detail=detail,
+        )
+
+    @classmethod
+    def governance_breach(
+        cls,
+        role: str,
+        phase: str,
+        *,
+        limit_name: str,
+        observed: float,
+        ceiling: float,
+        scope: str,
+    ) -> AgentEvent:
+        return cls(
+            event=AgentEventName.GOVERNANCE_BREACH,
+            status=AgentEventStatus.FAILED,
+            role=role,
+            phase=phase,
+            failure_class=AgentFailureClass.DEPENDENCY_FAILED,
+            detail=f"{limit_name}: {observed} > {ceiling}",
+            data={
+                "limit_name": limit_name,
+                "observed": observed,
+                "ceiling": ceiling,
+                "scope": scope,
+            },
+        )
+
+    @classmethod
+    def governance_alert(
+        cls,
+        role: str,
+        phase: str,
+        *,
+        limit_name: str,
+        observed: float,
+        ceiling: float,
+        scope: str,
+    ) -> AgentEvent:
+        return cls(
+            event=AgentEventName.GOVERNANCE_ALERT,
+            status=AgentEventStatus.RUNNING,
+            role=role,
+            phase=phase,
+            detail=f"{limit_name}: {observed} > {ceiling}",
+            data={
+                "limit_name": limit_name,
+                "observed": observed,
+                "ceiling": ceiling,
+                "scope": scope,
+            },
         )
 
     # -- Serialization --

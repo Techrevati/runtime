@@ -59,11 +59,14 @@ from techrevati.runtime.governance import (
 )
 from techrevati.runtime.guardrails import (
     AllowAllGuardrail,
+    AsyncGuardrail,
     Guardrail,
     GuardrailOutcome,
     GuardrailStage,
     GuardrailViolatedError,
     GuardrailViolation,
+    PatternGuardrail,
+    PromptInjectionGuardrail,
 )
 from techrevati.runtime.handoffs import Handoff
 from techrevati.runtime.orchestrator import (
@@ -169,6 +172,7 @@ __all__ = [
     "AgentWorkerEvent",
     "AllowAllGuardrail",
     "AsyncCircuitBreaker",
+    "AsyncGuardrail",
     "AsyncOrchestrationSession",
     "AsyncRateLimiter",
     "AsyncTokenBucket",
@@ -208,6 +212,8 @@ __all__ = [
     "NoopEventSink",
     "NoopUsageSink",
     "OrchestrationSession",
+    "PatternGuardrail",
+    "PromptInjectionGuardrail",
     "Orchestrator",
     "PermissionDeniedError",
     "PermissionEnforcer",
