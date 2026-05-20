@@ -1,5 +1,5 @@
 site_name: techrevati-runtime
-site_description: Production runtime primitives for multi-step LLM agent loops
+site_description: Runtime primitives for multi-step LLM agent loops (alpha)
 site_url: https://Techrevati.github.io/runtime
 repo_url: https://github.com/Techrevati/runtime
 repo_name: Techrevati/runtime
@@ -20,11 +20,25 @@ theme:
 
 plugins:
   - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: google
+            show_source: false
+            show_root_heading: true
+            show_root_toc_entry: false
+            members_order: source
+            merge_init_into_class: true
+            separate_signature: true
 
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
-  - Primitives:
+  - End-to-End Tutorial: tutorials/end-to-end.md
+  - Patterns:
     - Orchestrator: patterns/orchestrator.md
     - Retry Policy: patterns/retry.md
     - Circuit Breaker: patterns/circuit-breaker.md
@@ -34,6 +48,15 @@ nav:
     - Permissions: patterns/permissions.md
     - Policy Engine: patterns/policy.md
     - Usage Tracking: patterns/usage-tracking.md
+  - API Reference:
+    - Orchestrator: api/orchestrator.md
+    - Circuit Breaker: api/circuit_breaker.md
+    - Retry Policy: api/retry_policy.md
+    - Usage Tracking: api/usage_tracking.md
+    - Guardrails: api/guardrails.md
+    - Handoffs: api/handoffs.md
+    - Sinks: api/sinks.md
+    - OpenTelemetry: api/otel.md
   - Changelog: changelog.md
 
 markdown_extensions:

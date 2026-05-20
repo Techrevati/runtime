@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "techrevati-runtime"
-version = "0.1.0.dev3"
+version = "0.1.0.rc1"
 description = "Production runtime primitives for multi-step LLM agent loops."
 readme = "README.md"
 license = "MIT"
