@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://Techrevati.github.io/runtime/api/circuit_breaker/">
+        <link rel="canonical" href="https://Techrevati.github.io/runtime/api/governance/">
       
       
-        <link rel="prev" href="../orchestrator/">
+        <link rel="prev" href="../guardrails/">
       
       
-        <link rel="next" href="../checkpoint/">
+        <link rel="next" href="../handoffs/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Circuit Breaker - techrevati-runtime</title>
+        <title>Governance - techrevati-runtime</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#circuit-breaker" class="md-skip">
+        <a href="#api-techrevatiruntimegovernance" class="md-skip">
           Skip to content
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Circuit Breaker
+              Governance
             
           </span>
         </div>
@@ -1055,37 +1055,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Circuit Breaker
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../circuit_breaker/" class="md-nav__link">
         
   
   
@@ -1101,242 +1074,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        circuit_breaker
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="circuit_breaker">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.CircuitState" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CircuitState
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.CircuitOpenError" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CircuitOpenError
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.CircuitBreaker" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CircuitBreaker
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="CircuitBreaker">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.CircuitBreaker--parameters" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Parameters
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.CircuitBreaker.call" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        call
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.CircuitBreaker.record_success" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        record_success
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.CircuitBreaker.record_failure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        record_failure
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.CircuitBreaker.state" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        state
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.CircuitBreaker.is_open" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        is_open
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.CircuitBreaker.reset" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        reset
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.AsyncCircuitBreaker" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AsyncCircuitBreaker
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="AsyncCircuitBreaker">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.AsyncCircuitBreaker.call" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        call
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.AsyncCircuitBreaker.record_success" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        record_success
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.AsyncCircuitBreaker.record_failure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        record_failure
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.AsyncCircuitBreaker.state" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        state
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.AsyncCircuitBreaker.is_open" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        is_open
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.AsyncCircuitBreaker.reset" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        reset
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1514,10 +1251,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../governance/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Governance
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1533,6 +1297,159 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#techrevati.runtime.governance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        governance
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="governance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.governance.GovernanceBreachError" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GovernanceBreachError
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.governance.GovernanceState" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GovernanceState
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.governance.MaxIterationsLimit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MaxIterationsLimit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.governance.MaxBudgetLimit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MaxBudgetLimit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.governance.MaxConsecutiveFailuresLimit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MaxConsecutiveFailuresLimit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.governance.MaxToolCallsLimit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MaxToolCallsLimit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.governance.LimitOutcome" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LimitOutcome
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.governance.GovernancePlane" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GovernancePlane
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="GovernancePlane">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.governance.GovernancePlane.evaluate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        evaluate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.governance.GovernancePlane.enforce" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        enforce
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1739,22 +1656,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker" class="md-nav__link">
+  <a href="#techrevati.runtime.governance" class="md-nav__link">
     <span class="md-ellipsis">
       
-        circuit_breaker
+        governance
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="circuit_breaker">
+    <nav class="md-nav" aria-label="governance">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.CircuitState" class="md-nav__link">
+  <a href="#techrevati.runtime.governance.GovernanceBreachError" class="md-nav__link">
     <span class="md-ellipsis">
       
-        CircuitState
+        GovernanceBreachError
       
     </span>
   </a>
@@ -1762,10 +1679,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.CircuitOpenError" class="md-nav__link">
+  <a href="#techrevati.runtime.governance.GovernanceState" class="md-nav__link">
     <span class="md-ellipsis">
       
-        CircuitOpenError
+        GovernanceState
       
     </span>
   </a>
@@ -1773,22 +1690,77 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.CircuitBreaker" class="md-nav__link">
+  <a href="#techrevati.runtime.governance.MaxIterationsLimit" class="md-nav__link">
     <span class="md-ellipsis">
       
-        CircuitBreaker
+        MaxIterationsLimit
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="CircuitBreaker">
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.governance.MaxBudgetLimit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MaxBudgetLimit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.governance.MaxConsecutiveFailuresLimit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MaxConsecutiveFailuresLimit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.governance.MaxToolCallsLimit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MaxToolCallsLimit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.governance.LimitOutcome" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LimitOutcome
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.governance.GovernancePlane" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GovernancePlane
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="GovernancePlane">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.CircuitBreaker--parameters" class="md-nav__link">
+  <a href="#techrevati.runtime.governance.GovernancePlane.evaluate" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Parameters
+        evaluate
       
     </span>
   </a>
@@ -1796,148 +1768,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.CircuitBreaker.call" class="md-nav__link">
+  <a href="#techrevati.runtime.governance.GovernancePlane.enforce" class="md-nav__link">
     <span class="md-ellipsis">
       
-        call
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.CircuitBreaker.record_success" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        record_success
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.CircuitBreaker.record_failure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        record_failure
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.CircuitBreaker.state" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        state
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.CircuitBreaker.is_open" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        is_open
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.CircuitBreaker.reset" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        reset
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.AsyncCircuitBreaker" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AsyncCircuitBreaker
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="AsyncCircuitBreaker">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.AsyncCircuitBreaker.call" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        call
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.AsyncCircuitBreaker.record_success" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        record_success
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.AsyncCircuitBreaker.record_failure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        record_failure
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.AsyncCircuitBreaker.state" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        state
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.AsyncCircuitBreaker.is_open" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        is_open
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.circuit_breaker.AsyncCircuitBreaker.reset" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        reset
+        enforce
       
     </span>
   </a>
@@ -1974,29 +1808,60 @@
   
 
 
-<h1 id="circuit-breaker">Circuit Breaker<a class="headerlink" href="#circuit-breaker" title="Permanent link">&para;</a></h1>
+<h1 id="api-techrevatiruntimegovernance">API: <code>techrevati.runtime.governance</code><a class="headerlink" href="#api-techrevatiruntimegovernance" title="Permanent link">&para;</a></h1>
 
 
 <div class="doc doc-object doc-module">
 
 
 
-<h2 id="techrevati.runtime.circuit_breaker" class="doc doc-heading">
-            <span class="doc doc-object-name doc-module-name">techrevati.runtime.circuit_breaker</span>
+<h2 id="techrevati.runtime.governance" class="doc doc-heading">
+            <span class="doc doc-object-name doc-module-name">techrevati.runtime.governance</span>
 
 
-<a href="#techrevati.runtime.circuit_breaker" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#techrevati.runtime.governance" class="headerlink" title="Permanent link">&para;</a></h2>
 
     <div class="doc doc-contents first">
 
-        <p>Circuit Breaker — Fault-tolerant execution with state machine.</p>
-<p>Implements the Circuit Breaker pattern to prevent cascading failures
-when calling unreliable services or operations. Transitions between
-CLOSED (normal), OPEN (failing), and HALF_OPEN (testing) states.</p>
-<p>Thread-safe with configurable failure threshold, recovery timeout,
-and number of in-flight probes permitted in HALF_OPEN. Uses
-<code>time.monotonic</code> for duration checks so clock jumps don't affect
-behavior; the clock function is injectable for deterministic tests.</p>
+        <p>Governance plane — hard-stop limits enforced outside agent code.</p>
+<p>The governance plane is the runtime's last line of defense against
+runaway agent loops, budget overruns, persistent failures, and unbounded
+tool use. Unlike <code>UsageLimits</code> (which the agent can in principle
+catch + recover from), a <code>GovernanceBreachError</code> is <em>terminal</em>: it
+propagates through the orchestrator without entering the recovery loop
+or the failure classifier.</p>
+<p>This is the Waxell pattern: enforcement at the governance plane, not
+inside agent logic, so the agent cannot bypass its own limits. For EU
+AI Act Article 14 (human oversight) and Article 15 (robustness)
+deployments this is the technical primitive auditors expect to see.</p>
+<p>Each limit is a small frozen dataclass with three pieces of data:</p>
+<ul>
+<li><code>value</code> — the ceiling.</li>
+<li><code>scope</code> — currently only <code>"session"</code> is enforced; <code>"thread"</code> and
+  <code>"project"</code> are reserved for future cross-session enforcement.</li>
+<li><code>on_breach</code> — <code>"terminate"</code> raises <code>GovernanceBreachError</code>;
+  <code>"alert"</code> emits a <code>governance.alert</code> event and continues. Use
+  <code>"alert"</code> during rollout to measure breach rates before flipping to
+  <code>"terminate"</code> in production.</li>
+</ul>
+<p>Composition into a session:</p>
+<blockquote>
+<blockquote>
+<blockquote>
+<p>from techrevati.runtime import AgentSession
+from techrevati.runtime.governance import (
+...     GovernancePlane, MaxIterationsLimit, MaxBudgetLimit,
+... )
+plane = GovernancePlane(
+...     limits=(
+...         MaxIterationsLimit(value=10),
+...         MaxBudgetLimit(value=5.00, on_breach="alert"),
+...     ),
+... )
+session = AgentSession(role="writer", phase="draft", governance=plane)</p>
+</blockquote>
+</blockquote>
+</blockquote>
 
 
 
@@ -2021,60 +1886,12 @@ behavior; the clock function is injectable for deterministic tests.</p>
 
 
 
-<h3 id="techrevati.runtime.circuit_breaker.CircuitState" class="doc doc-heading">
-            <span class="doc doc-object-name doc-class-name">CircuitState</span>
+<h3 id="techrevati.runtime.governance.GovernanceBreachError" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">GovernanceBreachError</span>
 
 
-<a href="#techrevati.runtime.circuit_breaker.CircuitState" class="headerlink" title="Permanent link">&para;</a></h3>
-
-
-    <div class="doc doc-contents ">
-            <p class="doc doc-class-bases">
-              Bases: <code><span title="str">str</span></code>, <code><span title="enum.Enum">Enum</span></code></p>
-
-
-
-        <p>Circuit breaker lifecycle states.</p>
-
-
-
-
-
-
-
-
-
-
-
-<div class="doc doc-children">
-
-
-
-
-
-
-
-
-
-
-
-
-  </div>
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-class">
-
-
-
-<h3 id="techrevati.runtime.circuit_breaker.CircuitOpenError" class="doc doc-heading">
-            <span class="doc doc-object-name doc-class-name">CircuitOpenError</span>
-
-
-<a href="#techrevati.runtime.circuit_breaker.CircuitOpenError" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">CircuitOpenError</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+<a href="#techrevati.runtime.governance.GovernanceBreachError" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">GovernanceBreachError</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">limit_name</span><span class="p">,</span> <span class="n">observed</span><span class="p">,</span> <span class="n">ceiling</span><span class="p">,</span> <span class="n">scope</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2083,7 +1900,12 @@ behavior; the clock function is injectable for deterministic tests.</p>
 
 
 
-        <p>Raised when circuit breaker is open and request is blocked.</p>
+        <p>Raised when a governance limit is exceeded with <code>on_breach="terminate"</code>.</p>
+<p>Terminal by contract: the orchestrator re-raises this without
+invoking <code>classify_exception</code> or <code>attempt_recovery</code>. Caller code
+that wraps a session in <code>except Exception</code> will still see it; if
+that's a problem in your code path, catch <code>GovernanceBreachError</code>
+explicitly before the broader handler.</p>
 
 
 
@@ -2118,37 +1940,26 @@ behavior; the clock function is injectable for deterministic tests.</p>
 
 
 
-<h3 id="techrevati.runtime.circuit_breaker.CircuitBreaker" class="doc doc-heading">
-            <span class="doc doc-object-name doc-class-name">CircuitBreaker</span>
+<h3 id="techrevati.runtime.governance.GovernanceState" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">GovernanceState</span>
 
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
   </span>
 
-<a href="#techrevati.runtime.circuit_breaker.CircuitBreaker" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">CircuitBreaker</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">failure_threshold</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">recovery_timeout_seconds</span><span class="o">=</span><span class="mf">60.0</span><span class="p">,</span> <span class="n">half_open_max_probes</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">clock</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">monotonic</span><span class="p">)</span>
+<a href="#techrevati.runtime.governance.GovernanceState" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">GovernanceState</span><span class="p">(</span><span class="n">turns</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">tool_calls</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">consecutive_failures</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cost_usd</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
 
 
-        <p>Stateful circuit breaker with thread-safe transitions.</p>
-<h5 id="techrevati.runtime.circuit_breaker.CircuitBreaker--parameters">Parameters<a class="headerlink" href="#techrevati.runtime.circuit_breaker.CircuitBreaker--parameters" title="Permanent link">&para;</a></h5>
-<p>name:
-    Human-readable identifier (included in <code>CircuitOpenError</code>).
-failure_threshold:
-    Consecutive failures before the circuit opens.
-recovery_timeout_seconds:
-    Duration the circuit stays open before allowing probes.
-half_open_max_probes:
-    Concurrent probe calls allowed in HALF_OPEN. Default 1 (Polly
-    convention); raising to N spreads recovery risk over multiple
-    in-flight calls (Resilience4j defaults to 10).
-clock:
-    Monotonic time source. Defaults to <code>time.monotonic</code>. Override
-    in tests to make timing-dependent behavior deterministic.</p>
+        <p>Mutable accumulator the plane reads on each evaluation.</p>
+<p>The orchestrator updates these counters as the session progresses;
+the plane never mutates them. Keep additions on this state cheap —
+it is read on every turn and every tool call.</p>
 
 
 
@@ -2170,129 +1981,6 @@ clock:
 
 
 
-
-<div class="doc doc-object doc-function">
-
-
-<h4 id="techrevati.runtime.circuit_breaker.CircuitBreaker.call" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">call</span>
-
-
-<a href="#techrevati.runtime.circuit_breaker.CircuitBreaker.call" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">call</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Execute fn with breaker protection. Raises CircuitOpenError if open.</p>
-<p>In HALF_OPEN state, at most <code>half_open_max_probes</code> concurrent
-calls are admitted; excess callers receive <code>CircuitOpenError</code>
-until in-flight probes complete.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h4 id="techrevati.runtime.circuit_breaker.CircuitBreaker.record_success" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">record_success</span>
-
-
-<a href="#techrevati.runtime.circuit_breaker.CircuitBreaker.record_success" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">record_success</span><span class="p">()</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Record a successful execution. Closes the circuit if HALF_OPEN.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h4 id="techrevati.runtime.circuit_breaker.CircuitBreaker.record_failure" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">record_failure</span>
-
-
-<a href="#techrevati.runtime.circuit_breaker.CircuitBreaker.record_failure" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">record_failure</span><span class="p">()</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Record a failed execution. Opens the circuit at threshold.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h4 id="techrevati.runtime.circuit_breaker.CircuitBreaker.state" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">state</span>
-
-
-<a href="#techrevati.runtime.circuit_breaker.CircuitBreaker.state" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">state</span><span class="p">()</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Get current circuit state.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h4 id="techrevati.runtime.circuit_breaker.CircuitBreaker.is_open" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">is_open</span>
-
-
-<a href="#techrevati.runtime.circuit_breaker.CircuitBreaker.is_open" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">is_open</span><span class="p">()</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Return True if circuit is open (blocking requests).</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h4 id="techrevati.runtime.circuit_breaker.CircuitBreaker.reset" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">reset</span>
-
-
-<a href="#techrevati.runtime.circuit_breaker.CircuitBreaker.reset" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">reset</span><span class="p">()</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Manually reset the circuit to CLOSED state.</p>
-
-
-    </div>
-
-</div>
 
 
 
@@ -2306,27 +1994,303 @@ until in-flight probes complete.</p>
 
 
 
-<h3 id="techrevati.runtime.circuit_breaker.AsyncCircuitBreaker" class="doc doc-heading">
-            <span class="doc doc-object-name doc-class-name">AsyncCircuitBreaker</span>
+<h3 id="techrevati.runtime.governance.MaxIterationsLimit" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">MaxIterationsLimit</span>
 
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
   </span>
 
-<a href="#techrevati.runtime.circuit_breaker.AsyncCircuitBreaker" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">AsyncCircuitBreaker</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">failure_threshold</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">recovery_timeout_seconds</span><span class="o">=</span><span class="mf">60.0</span><span class="p">,</span> <span class="n">half_open_max_probes</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">clock</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">monotonic</span><span class="p">)</span>
+<a href="#techrevati.runtime.governance.MaxIterationsLimit" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">MaxIterationsLimit</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="s1">&#39;session&#39;</span><span class="p">,</span> <span class="n">on_breach</span><span class="o">=</span><span class="s1">&#39;terminate&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;max_iterations&#39;</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="techrevati.runtime.governance._LimitBase">_LimitBase</span></code></p>
+
+
+
+        <p>Cap total turns in the session. Pairs with <code>AgentSession.max_iterations</code>.</p>
+<p>Difference from <code>AgentSession.max_iterations</code>: the latter raises a
+domain <code>MaxIterationsExceededError</code> <em>which can</em> be caught and
+handled inside agent code. <code>MaxIterationsLimit</code> with
+<code>on_breach="terminate"</code> raises <code>GovernanceBreachError</code> which is
+terminal and skips the recovery loop.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="techrevati.runtime.governance.MaxBudgetLimit" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">MaxBudgetLimit</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#techrevati.runtime.governance.MaxBudgetLimit" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">MaxBudgetLimit</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="s1">&#39;session&#39;</span><span class="p">,</span> <span class="n">on_breach</span><span class="o">=</span><span class="s1">&#39;terminate&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;max_budget_usd&#39;</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="techrevati.runtime.governance._LimitBase">_LimitBase</span></code></p>
+
+
+
+        <p>Cap cumulative cost in USD. Pairs with <code>UsageLimits.cost_usd_max</code>.</p>
+<p>Same difference as <code>MaxIterationsLimit</code>: this is the hard-stop
+twin of the recoverable <code>BudgetExceededError</code>.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="techrevati.runtime.governance.MaxConsecutiveFailuresLimit" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">MaxConsecutiveFailuresLimit</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#techrevati.runtime.governance.MaxConsecutiveFailuresLimit" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">MaxConsecutiveFailuresLimit</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="s1">&#39;session&#39;</span><span class="p">,</span> <span class="n">on_breach</span><span class="o">=</span><span class="s1">&#39;terminate&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;max_consecutive_failures&#39;</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="techrevati.runtime.governance._LimitBase">_LimitBase</span></code></p>
+
+
+
+        <p>Cap consecutive recovery failures.</p>
+<p>Counts only consecutive failures — a single success resets the
+counter. Catches "agent retries the same broken thing forever"
+failure modes that <code>RecoveryRecipe</code> step retries alone do not.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="techrevati.runtime.governance.MaxToolCallsLimit" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">MaxToolCallsLimit</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#techrevati.runtime.governance.MaxToolCallsLimit" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">MaxToolCallsLimit</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="s1">&#39;session&#39;</span><span class="p">,</span> <span class="n">on_breach</span><span class="o">=</span><span class="s1">&#39;terminate&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;max_tool_calls&#39;</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="techrevati.runtime.governance._LimitBase">_LimitBase</span></code></p>
+
+
+
+        <p>Cap total tool calls in the session.</p>
+<p>Distinct from <code>UsageLimits.tool_calls_max</code> only in that this is a
+hard-stop. Choose this when "the agent is spamming tool calls" is a
+safety / cost concern, not a usage telemetry concern.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="techrevati.runtime.governance.LimitOutcome" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">LimitOutcome</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#techrevati.runtime.governance.LimitOutcome" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">LimitOutcome</span><span class="p">(</span><span class="n">breached</span><span class="p">,</span> <span class="n">limit_name</span><span class="p">,</span> <span class="n">observed</span><span class="p">,</span> <span class="n">ceiling</span><span class="p">,</span> <span class="n">scope</span><span class="p">,</span> <span class="n">on_breach</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
 
 
-        <p>Async sibling of CircuitBreaker — same state semantics, asyncio.Lock.</p>
-<p>Independent from the sync variant: state is not shared. Choose one
-per downstream. The probe-serialization, monotonic clock, and
-clock-injection contracts match the sync class exactly so behavior
-is portable between sync and async code paths.</p>
+        <p>Result of evaluating one limit against current state.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="techrevati.runtime.governance.GovernancePlane" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">GovernancePlane</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#techrevati.runtime.governance.GovernancePlane" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">GovernancePlane</span><span class="p">(</span><span class="n">limits</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="n">GovernanceState</span><span class="p">())</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Composes a set of limits and enforces them against a <code>GovernanceState</code>.</p>
+<p>The orchestrator constructs and owns the state; the plane is a
+pure evaluator + raiser. This separation keeps the limit objects
+immutable and the per-session counter mutable, which is what tests
+and audit replays both want.</p>
 
 
 
@@ -2352,21 +2316,20 @@ is portable between sync and async code paths.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="techrevati.runtime.circuit_breaker.AsyncCircuitBreaker.call" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">call</span>
+<h4 id="techrevati.runtime.governance.GovernancePlane.evaluate" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">evaluate</span>
 
 
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-async"><code>async</code></small>
-  </span>
-
-<a href="#techrevati.runtime.circuit_breaker.AsyncCircuitBreaker.call" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">call</span><span class="p">(</span><span class="n">coro_factory</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<a href="#techrevati.runtime.governance.GovernancePlane.evaluate" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">evaluate</span><span class="p">()</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Execute coro with breaker protection. Raises CircuitOpenError if open.</p>
+        <p>Evaluate every limit. Returns outcomes (breached or not).</p>
+<p>Does NOT raise. Callers that want enforcement call
+<code>enforce()</code> instead; this method is exposed for inspection
+and for the <code>"alert"</code> code path which only emits events.</p>
 
 
     </div>
@@ -2376,117 +2339,21 @@ is portable between sync and async code paths.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="techrevati.runtime.circuit_breaker.AsyncCircuitBreaker.record_success" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">record_success</span>
+<h4 id="techrevati.runtime.governance.GovernancePlane.enforce" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">enforce</span>
 
 
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-async"><code>async</code></small>
-  </span>
-
-<a href="#techrevati.runtime.circuit_breaker.AsyncCircuitBreaker.record_success" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">record_success</span><span class="p">()</span>
+<a href="#techrevati.runtime.governance.GovernancePlane.enforce" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">enforce</span><span class="p">()</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Record a successful execution. Closes the circuit if HALF_OPEN.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h4 id="techrevati.runtime.circuit_breaker.AsyncCircuitBreaker.record_failure" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">record_failure</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-async"><code>async</code></small>
-  </span>
-
-<a href="#techrevati.runtime.circuit_breaker.AsyncCircuitBreaker.record_failure" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">record_failure</span><span class="p">()</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Record a failed execution. Opens the circuit at threshold.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h4 id="techrevati.runtime.circuit_breaker.AsyncCircuitBreaker.state" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">state</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-async"><code>async</code></small>
-  </span>
-
-<a href="#techrevati.runtime.circuit_breaker.AsyncCircuitBreaker.state" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">state</span><span class="p">()</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Get current circuit state.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h4 id="techrevati.runtime.circuit_breaker.AsyncCircuitBreaker.is_open" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">is_open</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-async"><code>async</code></small>
-  </span>
-
-<a href="#techrevati.runtime.circuit_breaker.AsyncCircuitBreaker.is_open" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">is_open</span><span class="p">()</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Return True if circuit is open (blocking requests).</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h4 id="techrevati.runtime.circuit_breaker.AsyncCircuitBreaker.reset" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">reset</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-async"><code>async</code></small>
-  </span>
-
-<a href="#techrevati.runtime.circuit_breaker.AsyncCircuitBreaker.reset" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">reset</span><span class="p">()</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Manually reset the circuit to CLOSED state.</p>
+        <p>Evaluate and raise on the first <code>on_breach="terminate"</code> breach.</p>
+<p>Returns the full list of outcomes (including breached ones with
+<code>on_breach="alert"</code>) so the caller can record them via the
+event sink. Raises <code>GovernanceBreachError</code> on the first
+terminate-breach.</p>
 
 
     </div>

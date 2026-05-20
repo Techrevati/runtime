@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://Techrevati.github.io/runtime/api/orchestrator/">
       
       
-        <link rel="prev" href="../../patterns/usage-tracking/">
+        <link rel="prev" href="../../patterns/governance/">
       
       
         <link rel="next" href="../circuit_breaker/">
@@ -931,6 +931,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../patterns/governance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Governance Plane
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1484,6 +1512,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../governance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Governance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../handoffs/" class="md-nav__link">
         
   
@@ -1965,29 +2021,61 @@ print(session.summary())
 
 
 
-<div class="doc doc-object doc-attribute">
+
+
+<div class="doc doc-object doc-class">
 
 
 
 <h3 id="techrevati.runtime.orchestrator.Orchestrator" class="doc doc-heading">
-            <span class="doc doc-object-name doc-attribute-name">Orchestrator</span>
+            <span class="doc doc-object-name doc-class-name">Orchestrator</span>
 
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
-  </span>
 
 <a href="#techrevati.runtime.orchestrator.Orchestrator" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Orchestrator</span> <span class="o">=</span> <span class="n">AgentSession</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Orchestrator</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="AgentSession
+
+
+  
+      dataclass
+   (techrevati.runtime.orchestrator.AgentSession)" href="#techrevati.runtime.orchestrator.AgentSession">AgentSession</a></code></p>
+
+
+
+        <p>Deprecated alias for <code>AgentSession</code>. Removed in 0.3.0.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
 
     </div>
 
 </div>
-
-
 
 <div class="doc doc-object doc-class">
 
@@ -2002,7 +2090,7 @@ print(session.summary())
   </span>
 
 <a href="#techrevati.runtime.orchestrator.OrchestrationSession" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">OrchestrationSession</span><span class="p">(</span><span class="n">worker</span><span class="p">,</span> <span class="n">tracker</span><span class="p">,</span> <span class="n">recovery</span><span class="p">,</span> <span class="n">registry</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">role</span><span class="p">,</span> <span class="n">project_id</span><span class="p">,</span> <span class="n">permissions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">policy_engine</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">quality_gate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">budget_usd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enforce_budget</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_iterations</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">guardrails</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">event_sink</span><span class="o">=</span><span class="n">NoopEventSink</span><span class="p">(),</span> <span class="n">usage_sink</span><span class="o">=</span><span class="n">NoopUsageSink</span><span class="p">(),</span> <span class="n">events</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">thread_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">saver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">provider_router</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">usage_limits</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">circuit_breaker</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rate_limiter</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">OrchestrationSession</span><span class="p">(</span><span class="n">worker</span><span class="p">,</span> <span class="n">tracker</span><span class="p">,</span> <span class="n">recovery</span><span class="p">,</span> <span class="n">registry</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">role</span><span class="p">,</span> <span class="n">project_id</span><span class="p">,</span> <span class="n">permissions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">policy_engine</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">quality_gate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">budget_usd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enforce_budget</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_iterations</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">guardrails</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">event_sink</span><span class="o">=</span><span class="n">NoopEventSink</span><span class="p">(),</span> <span class="n">usage_sink</span><span class="o">=</span><span class="n">NoopUsageSink</span><span class="p">(),</span> <span class="n">events</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">thread_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">saver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">provider_router</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">usage_limits</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">governance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">circuit_breaker</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rate_limiter</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2047,8 +2135,8 @@ print(session.summary())
 
     <div class="doc doc-contents ">
 
-        <p>Execute a tool with permission + guardrail checks around it.</p>
-<p>Order: permission → pre-guardrails → fn() → post-guardrails.</p>
+        <p>Execute a tool with permission + guardrail + governance checks around it.</p>
+<p>Order: permission → governance → pre-guardrails → fn() → post-guardrails.</p>
 
 
     </div>
@@ -2108,7 +2196,7 @@ written so a restart can replay through it.</p>
   </span>
 
 <a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">AsyncOrchestrationSession</span><span class="p">(</span><span class="n">worker</span><span class="p">,</span> <span class="n">tracker</span><span class="p">,</span> <span class="n">recovery</span><span class="p">,</span> <span class="n">registry</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">role</span><span class="p">,</span> <span class="n">project_id</span><span class="p">,</span> <span class="n">permissions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">policy_engine</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">quality_gate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">budget_usd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enforce_budget</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_iterations</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">guardrails</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">event_sink</span><span class="o">=</span><span class="n">NoopEventSink</span><span class="p">(),</span> <span class="n">usage_sink</span><span class="o">=</span><span class="n">NoopUsageSink</span><span class="p">(),</span> <span class="n">events</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">thread_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">saver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">provider_router</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">usage_limits</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">circuit_breaker</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">async_rate_limiter</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">AsyncOrchestrationSession</span><span class="p">(</span><span class="n">worker</span><span class="p">,</span> <span class="n">tracker</span><span class="p">,</span> <span class="n">recovery</span><span class="p">,</span> <span class="n">registry</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">role</span><span class="p">,</span> <span class="n">project_id</span><span class="p">,</span> <span class="n">permissions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">policy_engine</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">quality_gate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">budget_usd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enforce_budget</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_iterations</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">guardrails</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">event_sink</span><span class="o">=</span><span class="n">NoopEventSink</span><span class="p">(),</span> <span class="n">usage_sink</span><span class="o">=</span><span class="n">NoopUsageSink</span><span class="p">(),</span> <span class="n">events</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">thread_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">saver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">provider_router</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">usage_limits</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">governance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">circuit_breaker</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">async_rate_limiter</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2162,7 +2250,9 @@ pause are async.</p>
     <div class="doc doc-contents ">
 
         <p>Async sibling of run_tool.</p>
-<p>Permission + guardrails are sync; the call itself is awaited.</p>
+<p>Permission + governance are sync; guardrails are awaited when
+they implement <code>AsyncGuardrail</code> and called inline when they
+are sync <code>Guardrail</code> instances.</p>
 
 
     </div>
@@ -2300,7 +2390,7 @@ without leaving the session machinery.</p>
   </span>
 
 <a href="#techrevati.runtime.orchestrator.AgentSession" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">AgentSession</span><span class="p">(</span><span class="n">role</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">project_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">registry</span><span class="o">=</span><span class="n">AgentRegistry</span><span class="p">(),</span> <span class="n">permissions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">circuit_breaker</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">async_circuit_breaker</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">policy_engine</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">quality_gate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">budget_usd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enforce_budget</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_iterations</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">guardrails</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">event_sink</span><span class="o">=</span><span class="n">NoopEventSink</span><span class="p">(),</span> <span class="n">usage_sink</span><span class="o">=</span><span class="n">NoopUsageSink</span><span class="p">(),</span> <span class="n">saver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rate_limiter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">async_rate_limiter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">provider_router</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">usage_limits</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">AgentSession</span><span class="p">(</span><span class="n">role</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">project_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">registry</span><span class="o">=</span><span class="n">AgentRegistry</span><span class="p">(),</span> <span class="n">permissions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">circuit_breaker</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">async_circuit_breaker</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">policy_engine</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">quality_gate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">budget_usd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enforce_budget</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_iterations</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">guardrails</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">event_sink</span><span class="o">=</span><span class="n">NoopEventSink</span><span class="p">(),</span> <span class="n">usage_sink</span><span class="o">=</span><span class="n">NoopUsageSink</span><span class="p">(),</span> <span class="n">saver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rate_limiter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">async_rate_limiter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">provider_router</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">usage_limits</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">governance</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">

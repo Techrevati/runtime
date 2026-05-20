@@ -931,6 +931,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../patterns/governance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Governance Plane
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1314,6 +1342,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#techrevati.runtime.usage_tracking.PricingAlreadyRegisteredError" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PricingAlreadyRegisteredError
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#techrevati.runtime.usage_tracking.UsageSnapshot" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1414,6 +1453,34 @@
     
   
     Guardrails
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../governance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Governance
   
 
     
@@ -1708,6 +1775,17 @@
         
       </ul>
     </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.usage_tracking.PricingAlreadyRegisteredError" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PricingAlreadyRegisteredError
+      
+    </span>
+  </a>
   
 </li>
         
@@ -2128,6 +2206,55 @@ calculation.</p>
 
 
 
+<h3 id="techrevati.runtime.usage_tracking.PricingAlreadyRegisteredError" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">PricingAlreadyRegisteredError</span>
+
+
+<a href="#techrevati.runtime.usage_tracking.PricingAlreadyRegisteredError" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">PricingAlreadyRegisteredError</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="ValueError">ValueError</span></code></p>
+
+
+
+        <p>Raised on re-registration when <code>on_conflict='error'</code>.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
 <h3 id="techrevati.runtime.usage_tracking.UsageSnapshot" class="doc doc-heading">
             <span class="doc doc-object-name doc-class-name">UsageSnapshot</span>
 
@@ -2288,13 +2415,24 @@ lookup falls back to the zero-cost default.</p>
 
 
 <a href="#techrevati.runtime.usage_tracking.register_pricing" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">register_pricing</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">pricing</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">register_pricing</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">pricing</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">on_conflict</span><span class="o">=</span><span class="s1">&#39;overwrite&#39;</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
         <p>Register or override pricing for a model. Thread-safe.</p>
 <p>Matches are case-insensitive; the key is normalized to lower-case.</p>
+<p><code>on_conflict</code> controls behavior when <code>model</code> is already in the
+pricing table:</p>
+<ul>
+<li><code>"overwrite"</code> (default, preserves 0.2.0 behavior) — replace the
+  existing entry.</li>
+<li><code>"error"</code> — raise <code>PricingAlreadyRegisteredError</code>. Use this in
+  startup wiring where double-registration signals a configuration
+  bug.</li>
+<li><code>"keep"</code> — leave the existing entry; the new pricing is dropped
+  silently. Useful for "register defaults if not present" patterns.</li>
+</ul>
 
 
     </div>

@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://Techrevati.github.io/runtime/patterns/lifecycle/">
+        <link rel="canonical" href="https://Techrevati.github.io/runtime/patterns/governance/">
       
       
-        <link rel="prev" href="../quality-gate/">
+        <link rel="prev" href="../usage-tracking/">
       
       
-        <link rel="next" href="../agent-events/">
+        <link rel="next" href="../../api/orchestrator/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Agent Lifecycle - techrevati-runtime</title>
+        <title>Governance Plane - techrevati-runtime</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#agent-lifecycle" class="md-skip">
+        <a href="#governance-plane" class="md-skip">
           Skip to content
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Agent Lifecycle
+              Governance Plane
             
           </span>
         </div>
@@ -798,37 +798,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Agent Lifecycle
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../lifecycle/" class="md-nav__link">
         
   
   
@@ -844,59 +817,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#states" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        States
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#usage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Usage
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#api" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        API
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1018,10 +938,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../governance/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Governance Plane
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1037,6 +984,186 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#when-to-use-this" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use this
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-not-to-use-this" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When NOT to use this
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quickstart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quickstart
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-four-built-in-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The four built-in limits
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The four built-in limits">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#maxiterationslimit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MaxIterationsLimit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#maxbudgetlimit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MaxBudgetLimit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#maxconsecutivefailureslimit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MaxConsecutiveFailuresLimit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#maxtoolcallslimit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MaxToolCallsLimit
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#on_breach-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        on_breach modes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#event-surface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Event surface
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#composing-with-usagelimits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Composing with UsageLimits
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tuning-the-knobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tuning the knobs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anti-patterns
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1556,10 +1683,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#states" class="md-nav__link">
+  <a href="#when-to-use-this" class="md-nav__link">
     <span class="md-ellipsis">
       
-        States
+        When to use this
       
     </span>
   </a>
@@ -1567,10 +1694,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#usage" class="md-nav__link">
+  <a href="#when-not-to-use-this" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Usage
+        When NOT to use this
       
     </span>
   </a>
@@ -1578,10 +1705,137 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#api" class="md-nav__link">
+  <a href="#quickstart" class="md-nav__link">
     <span class="md-ellipsis">
       
-        API
+        Quickstart
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-four-built-in-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The four built-in limits
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The four built-in limits">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#maxiterationslimit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MaxIterationsLimit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#maxbudgetlimit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MaxBudgetLimit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#maxconsecutivefailureslimit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MaxConsecutiveFailuresLimit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#maxtoolcallslimit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MaxToolCallsLimit
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#on_breach-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        on_breach modes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#event-surface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Event surface
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#composing-with-usagelimits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Composing with UsageLimits
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tuning-the-knobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tuning the knobs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anti-patterns
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sources
       
     </span>
   </a>
@@ -1608,57 +1862,209 @@
   
 
 
-<h1 id="agent-lifecycle">Agent Lifecycle<a class="headerlink" href="#agent-lifecycle" title="Permanent link">&para;</a></h1>
-<p>Validated state machine for individual agent workers, with a tamper-evident event log. Thread-safe registry for concurrent access.</p>
-<h2 id="states">States<a class="headerlink" href="#states" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>IDLE → INITIALIZING → {WAITING_FOR_INPUT, RUNNING, FAILED}
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>WAITING_FOR_INPUT → {RUNNING, FAILED}
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>RUNNING → {COMPLETED, FAILED}
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>COMPLETED  # terminal
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>FAILED     # terminal
+<h1 id="governance-plane">Governance Plane<a class="headerlink" href="#governance-plane" title="Permanent link">&para;</a></h1>
+<p><code>GovernancePlane</code> is the runtime's last line of defense: hard-stop
+limits enforced <em>outside</em> agent code so the agent cannot bypass them
+via recovery. When a limit configured with <code>on_breach="terminate"</code> is
+exceeded, the orchestrator raises <code>GovernanceBreachError</code>, which the
+session marks as <code>FAILED</code> and re-raises <strong>without</strong> going through the
+failure classifier or the recovery loop.</p>
+<p>This is the technical primitive auditors expect for EU AI Act
+deployments — Article 14 (human oversight via stopping conditions),
+Article 15 (robustness / fail-safes), and Article 26 (deployer
+monitoring + reporting). The full article-by-article compliance mapping
+ships in 0.3.0 Sprint 6 (<code>docs/compliance/</code>).</p>
+<h2 id="when-to-use-this">When to use this<a class="headerlink" href="#when-to-use-this" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>You ship to EU customers</strong> and any user-deployed system would meet
+  the Annex III "high-risk" definition. Article 9 risk management,
+  Article 12 record-keeping, and Article 26 deployer-side monitoring
+  all want a runtime kill-switch.</li>
+<li><strong>Cost is dollars per token, not milliseconds per request.</strong> A
+  budget cap that the agent could in principle catch + recover from is
+  not a hard cap. <code>MaxBudgetLimit(on_breach="terminate")</code> is.</li>
+<li><strong>The agent runs unattended and must stop on its own.</strong> Production
+  multi-step agent loops can drift; a 25-turn iteration cap + a
+  consecutive-failure cap rules out the canonical runaway-loop
+  failure mode.</li>
+<li><strong>You need a rollout signal before flipping a knob to hard-stop.</strong>
+  Use <code>on_breach="alert"</code> first; measure breach rates from the
+  <code>governance.alert</code> events; flip to <code>"terminate"</code> when you trust the
+  threshold.</li>
+</ul>
+<h2 id="when-not-to-use-this">When NOT to use this<a class="headerlink" href="#when-not-to-use-this" title="Permanent link">&para;</a></h2>
+<ul>
+<li>For <em>recoverable</em> token / cost ceilings inside one session that the
+  agent is allowed to react to. Use <a href="../usage-tracking/"><code>UsageLimits</code></a>
+  instead — its <code>UsageLimitExceededError</code> is catchable and recovery
+  flows can respond.</li>
+<li>For per-tool authorization. Use <a href="../permissions/"><code>PermissionEnforcer</code></a>.</li>
+<li>For pattern blocking on tool inputs or outputs. Use the
+  built-in <code>PatternGuardrail</code> / <code>PromptInjectionGuardrail</code> (or a
+  custom <code>Guardrail</code>) — see <a href="../permissions/">Permissions</a> and
+  <a href="../../api/guardrails/">API: Guardrails</a>.</li>
+</ul>
+<h2 id="quickstart">Quickstart<a class="headerlink" href="#quickstart" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">techrevati.runtime</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">AgentSession</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">GovernancePlane</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">MaxBudgetLimit</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">MaxConsecutiveFailuresLimit</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">MaxIterationsLimit</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">MaxToolCallsLimit</span><span class="p">,</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">)</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">plane</span> <span class="o">=</span> <span class="n">GovernancePlane</span><span class="p">(</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">limits</span><span class="o">=</span><span class="p">(</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        <span class="n">MaxIterationsLimit</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">on_breach</span><span class="o">=</span><span class="s2">&quot;terminate&quot;</span><span class="p">),</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        <span class="n">MaxBudgetLimit</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mf">5.00</span><span class="p">,</span> <span class="n">on_breach</span><span class="o">=</span><span class="s2">&quot;terminate&quot;</span><span class="p">),</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>        <span class="n">MaxConsecutiveFailuresLimit</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">on_breach</span><span class="o">=</span><span class="s2">&quot;terminate&quot;</span><span class="p">),</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>        <span class="n">MaxToolCallsLimit</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">on_breach</span><span class="o">=</span><span class="s2">&quot;alert&quot;</span><span class="p">),</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="p">),</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="p">)</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="n">session</span> <span class="o">=</span> <span class="n">AgentSession</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="s2">&quot;writer&quot;</span><span class="p">,</span> <span class="n">phase</span><span class="o">=</span><span class="s2">&quot;draft&quot;</span><span class="p">,</span> <span class="n">governance</span><span class="o">=</span><span class="n">plane</span><span class="p">)</span>
 </code></pre></div>
-<p>Invalid transitions raise <code>InvalidTransitionError</code>.</p>
-<h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">techrevati.runtime</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentRegistry</span><span class="p">,</span> <span class="n">AgentStatus</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">registry</span> <span class="o">=</span> <span class="n">AgentRegistry</span><span class="p">()</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">worker</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="s2">&quot;writer&quot;</span><span class="p">,</span> <span class="n">phase</span><span class="o">=</span><span class="s2">&quot;draft&quot;</span><span class="p">,</span> <span class="n">project_id</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">worker</span><span class="o">.</span><span class="n">transition</span><span class="p">(</span><span class="n">AgentStatus</span><span class="o">.</span><span class="n">INITIALIZING</span><span class="p">)</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">worker</span><span class="o">.</span><span class="n">transition</span><span class="p">(</span><span class="n">AgentStatus</span><span class="o">.</span><span class="n">RUNNING</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;context_budget=8k&quot;</span><span class="p">)</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">worker</span><span class="o">.</span><span class="n">transition</span><span class="p">(</span><span class="n">AgentStatus</span><span class="o">.</span><span class="n">COMPLETED</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;observed=STRICT&quot;</span><span class="p">)</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">worker</span><span class="o">.</span><span class="n">events</span><span class="p">:</span>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">timestamp</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">detail</span><span class="p">)</span>
+<p>The orchestrator ticks the plane's counters at three points:</p>
+<ul>
+<li><strong>Pre-turn</strong> — <code>record_turn_start()</code> and <code>enforce()</code>. The iteration
+  cap fires here.</li>
+<li><strong>Pre-tool</strong> — <code>record_tool_call()</code> and <code>enforce()</code>. The tool-call
+  cap fires here.</li>
+<li><strong>Post-turn</strong> — <code>record_success()</code> or <code>record_failure()</code>,
+  <code>record_cost(cost_delta)</code>, and <code>enforce()</code>. The budget and
+  consecutive-failures caps fire here.</li>
+</ul>
+<h2 id="the-four-built-in-limits">The four built-in limits<a class="headerlink" href="#the-four-built-in-limits" title="Permanent link">&para;</a></h2>
+<h3 id="maxiterationslimit"><code>MaxIterationsLimit</code><a class="headerlink" href="#maxiterationslimit" title="Permanent link">&para;</a></h3>
+<p>Caps total turns in the session. Distinct from
+<code>AgentSession.max_iterations</code> — that one raises a recoverable
+<code>MaxIterationsExceededError</code>; this one is terminal.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">MaxIterationsLimit</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">on_breach</span><span class="o">=</span><span class="s2">&quot;terminate&quot;</span><span class="p">)</span>
 </code></pre></div>
-<h2 id="api">API<a class="headerlink" href="#api" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">AgentRegistry</span><span class="p">:</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">create</span><span class="p">(</span><span class="n">role</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">phase</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">project_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AgentWorker</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="n">worker_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AgentWorker</span> <span class="o">|</span> <span class="kc">None</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">transition</span><span class="p">(</span><span class="n">worker_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="n">AgentStatus</span><span class="p">,</span> <span class="n">detail</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AgentWorker</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">list_active</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">AgentWorker</span><span class="p">]</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_by_role_phase</span><span class="p">(</span><span class="n">role</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">phase</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AgentWorker</span> <span class="o">|</span> <span class="kc">None</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_by_project</span><span class="p">(</span><span class="n">project_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">AgentWorker</span><span class="p">]</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">clear</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>  <span class="c1"># testing</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="k">class</span><span class="w"> </span><span class="nc">AgentWorker</span><span class="p">:</span>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="n">worker_id</span><span class="p">:</span> <span class="nb">str</span>
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="n">role</span><span class="p">:</span> <span class="nb">str</span>
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="n">phase</span><span class="p">:</span> <span class="nb">str</span>
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="n">project_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span>
-<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    <span class="n">status</span><span class="p">:</span> <span class="n">AgentStatus</span>
-<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>    <span class="n">events</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">AgentWorkerEvent</span><span class="p">]</span>
-<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>    <span class="n">retry_count</span><span class="p">:</span> <span class="nb">int</span>
-<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>    <span class="n">last_error</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span>
-<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>    <span class="n">provider_used</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
-<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>    <span class="n">created_at</span><span class="p">:</span> <span class="nb">str</span>
-<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>    <span class="n">updated_at</span><span class="p">:</span> <span class="nb">str</span>
-<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>
-<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">transition</span><span class="p">(</span><span class="n">new_status</span><span class="p">:</span> <span class="n">AgentStatus</span><span class="p">,</span> <span class="n">detail</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AgentWorkerEvent</span>
-<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>    <span class="nd">@property</span> <span class="n">is_terminal</span><span class="p">:</span> <span class="nb">bool</span>
-<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span>
+<h3 id="maxbudgetlimit"><code>MaxBudgetLimit</code><a class="headerlink" href="#maxbudgetlimit" title="Permanent link">&para;</a></h3>
+<p>Caps cumulative cost in USD. Distinct from <code>UsageLimits.cost_usd_max</code>
+— that one is recoverable; this one is terminal.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">MaxBudgetLimit</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mf">5.00</span><span class="p">,</span> <span class="n">on_breach</span><span class="o">=</span><span class="s2">&quot;terminate&quot;</span><span class="p">)</span>
 </code></pre></div>
-<p><code>AgentWorkerEvent</code> records the seq, kind, status, detail, and an ISO 8601 timestamp.</p>
+<h3 id="maxconsecutivefailureslimit"><code>MaxConsecutiveFailuresLimit</code><a class="headerlink" href="#maxconsecutivefailureslimit" title="Permanent link">&para;</a></h3>
+<p>Counts consecutive failures. A single successful turn resets the
+counter to zero. Catches "the agent retries the same broken thing
+forever" failure modes that per-step retry budgets alone do not.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">MaxConsecutiveFailuresLimit</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">on_breach</span><span class="o">=</span><span class="s2">&quot;terminate&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="maxtoolcallslimit"><code>MaxToolCallsLimit</code><a class="headerlink" href="#maxtoolcallslimit" title="Permanent link">&para;</a></h3>
+<p>Caps total tool invocations in the session. Distinct from
+<code>UsageLimits.tool_calls_max</code> only in being terminal.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">MaxToolCallsLimit</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">on_breach</span><span class="o">=</span><span class="s2">&quot;alert&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="on_breach-modes"><code>on_breach</code> modes<a class="headerlink" href="#on_breach-modes" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>"terminate"</code> (default)</td>
+<td>Raises <code>GovernanceBreachError</code>. Worker → <code>FAILED</code>. Recovery loop is <strong>NOT</strong> invoked.</td>
+</tr>
+<tr>
+<td><code>"alert"</code></td>
+<td>Emits a <code>governance.alert</code> event on every breached evaluation. Session continues.</td>
+</tr>
+</tbody>
+</table>
+<p>Rolling out a new limit safely: deploy with <code>"alert"</code> for 1–2 weeks,
+observe the <code>governance.alert</code> event rate, then flip to <code>"terminate"</code>.</p>
+<h2 id="event-surface">Event surface<a class="headerlink" href="#event-surface" title="Permanent link">&para;</a></h2>
+<p>Two new <code>AgentEventName</code> values surface in 0.3.0:</p>
+<ul>
+<li><code>governance.breach</code> — emitted <strong>before</strong> <code>GovernanceBreachError</code>
+  raises so downstream sinks see the breach in the audit log even when
+  the exception propagates past them.</li>
+<li><code>governance.alert</code> — emitted once per evaluation per breached
+  alert-mode limit.</li>
+</ul>
+<p>Both carry <code>data = {limit_name, observed, ceiling, scope}</code> for sink
+serialization.</p>
+<h2 id="composing-with-usagelimits">Composing with <code>UsageLimits</code><a class="headerlink" href="#composing-with-usagelimits" title="Permanent link">&para;</a></h2>
+<p>These two primitives are not redundant — they sit at different layers.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">sess</span> <span class="o">=</span> <span class="n">AgentSession</span><span class="p">(</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">role</span><span class="o">=</span><span class="s2">&quot;writer&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">phase</span><span class="o">=</span><span class="s2">&quot;draft&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="c1"># Soft cap: agent code can catch UsageLimitExceededError and react.</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="n">usage_limits</span><span class="o">=</span><span class="n">UsageLimits</span><span class="p">(</span><span class="n">total_tokens_max</span><span class="o">=</span><span class="mi">200_000</span><span class="p">),</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="c1"># Hard cap: governance breach terminates the session regardless.</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    <span class="n">governance</span><span class="o">=</span><span class="n">GovernancePlane</span><span class="p">(</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>        <span class="n">limits</span><span class="o">=</span><span class="p">(</span><span class="n">MaxBudgetLimit</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mf">10.00</span><span class="p">,</span> <span class="n">on_breach</span><span class="o">=</span><span class="s2">&quot;terminate&quot;</span><span class="p">),),</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    <span class="p">),</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="p">)</span>
+</code></pre></div>
+<p>A common pattern is: <code>usage_limits</code> cap at 80% of the budget, <code>governance</code>
+hard-stop at 100%. The agent gets a recoverable warning before the
+session dies.</p>
+<h2 id="tuning-the-knobs">Tuning the knobs<a class="headerlink" href="#tuning-the-knobs" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Knob</th>
+<th>Reasonable range</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MaxIterationsLimit.value</code></td>
+<td>10–50 for production loops</td>
+<td>Same default as OpenAI Agents SDK.</td>
+</tr>
+<tr>
+<td><code>MaxBudgetLimit.value</code></td>
+<td>per-customer / per-session limit</td>
+<td>Pair with <code>UsageLimits.cost_usd_max</code> at 80%.</td>
+</tr>
+<tr>
+<td><code>MaxConsecutiveFailuresLimit.value</code></td>
+<td>2–5</td>
+<td>Below 2 is twitchy; above 5 hides real reliability bugs.</td>
+</tr>
+<tr>
+<td><code>MaxToolCallsLimit.value</code></td>
+<td>5×–10× expected</td>
+<td>Useful as an alert before flipping to terminate.</td>
+</tr>
+<tr>
+<td><code>on_breach="alert"</code></td>
+<td>Always start here for new limits</td>
+<td>Measure first, terminate second.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="anti-patterns">Anti-patterns<a class="headerlink" href="#anti-patterns" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Catching <code>GovernanceBreachError</code> and retrying.</strong> Don't. The point
+  of the plane is that the agent cannot bypass it. If you want
+  recoverable behavior, use <code>UsageLimits</code> instead.</li>
+<li><strong>Putting business logic in <code>GovernanceState.record_*</code>.</strong> The state
+  object is a counter; do not subclass it to fire side effects on
+  every tick. Add a custom <code>EventSink</code> for that.</li>
+<li><strong>One plane per turn.</strong> Construct the plane once and pass it to
+  <code>AgentSession</code>; do not create a new plane on each turn — counters
+  reset.</li>
+<li><strong>Mixing <code>"alert"</code> and <code>"terminate"</code> randomly across limits.</strong> Pick a
+  rollout phase per limit, document it, and don't half-migrate.</li>
+</ul>
+<h2 id="sources">Sources<a class="headerlink" href="#sources" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Waxell — <em>AI Agent Circuit Breakers: The Reliability Pattern Production
+  Teams Are Missing</em> — <a href="https://dev.to/waxell/ai-agent-circuit-breakers-the-reliability-pattern-production-teams-are-missing-5bpg">https://dev.to/waxell/ai-agent-circuit-breakers-...</a></li>
+<li>DZone — <em>Engineering Hard-Stop Safety Into Autonomous Agent
+  Workflows</em> — <a href="https://dzone.com/articles/algorithmic-circuit-breakers-agent-safety">https://dzone.com/articles/algorithmic-circuit-breakers-agent-safety</a></li>
+<li>EU AI Act Articles 9, 12, 14, 15, 26 — <a href="https://artificialintelligenceact.eu/section/3-2/">artificialintelligenceact.eu</a></li>
+</ul>
 
 
 

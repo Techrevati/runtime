@@ -931,6 +931,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../patterns/governance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Governance Plane
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1424,6 +1452,34 @@
     
   
     Guardrails
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../governance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Governance
   
 
     
@@ -2033,12 +2089,24 @@ how to retry; this module provides the recipe + bookkeeping.</p>
 
 
         <p>Recovery plan for a failure scenario.</p>
-<p><code>step_retries</code> is an optional per-step retry budget the caller is
-expected to honor when actually executing a step. The default empty
-mapping preserves the 0.1.0 single-attempt semantics; populate it
-when you want, e.g. <code>RETRY_WITH_BACKOFF</code> to fire three times
-before the recipe moves on to <code>SWITCH_PROVIDER</code>. This module
-only records the budget — execution happens in the caller.</p>
+<p><code>step_retries</code> is an optional per-step retry budget. When a step
+fails (the recovery context's <code>_fail_at_attempt</code> hook returns
+True), the executor retries that same step up to <code>step_retries[step]</code>
+times before declaring it a failure and moving on to the next step
+(which becomes <code>remaining_steps</code> in partial recovery). Missing keys
+default to a budget of 1 (single attempt) — preserving 0.1.0 / 0.2.0
+semantics.</p>
+<p>Example::</p>
+<div class="highlight"><pre><span></span><code>RecoveryRecipe(
+    scenario=FailureScenario.LLM_ERROR,
+    steps=(RecoveryStep.RETRY_WITH_BACKOFF, RecoveryStep.SWITCH_PROVIDER),
+    max_attempts=2,
+    escalation_policy=EscalationPolicy.ALERT_HUMAN,
+    step_retries={RecoveryStep.RETRY_WITH_BACKOFF: 3},
+)
+</code></pre></div>
+<p>fires the backoff step up to three times before failing over to the
+provider switch.</p>
 
 
 
