@@ -5,6 +5,54 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the project
 follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html), with the
 caveat that 0.x APIs are explicitly unstable.
 
+## [0.1.0.rc1] — 2026-05-20
+
+Sprint 5 milestone. Documentation, examples, and repo hygiene catch up
+to the runtime that Sprints 2-4 built. The shape of 0.1.0 is now
+locked; this is a release candidate.
+
+### Added
+- `docs/tutorials/end-to-end.md` — a guided 30-line tour of every
+  primitive composed together: pricing → orchestrator → permissions
+  → circuit breaker → budget → guardrails → tool gating → handoff →
+  summary. Includes the async path and OTel switchover.
+- `examples/tiny_agent.py` — runnable companion to the tutorial.
+  Two functions marked `# REPLACE` swap mocks for real SDK calls.
+  Not bundled in the wheel.
+- `examples/pricing.json` — reference template with illustrative
+  values for current-generation Claude and GPT models. Not bundled;
+  not normative.
+- `docs/api/*.md` — eight `mkdocstrings`-backed API reference pages
+  (one per public module). `mkdocs.yml` now wires the `mkdocstrings`
+  plugin with the Python handler; `docs build --strict` will catch
+  drift between code and reference.
+- Pattern doc template applied to `docs/patterns/orchestrator.md`:
+  *Quick example (sync + async)*, *When to use this*,
+  *When not to use this*, *Anti-patterns*, *Tuning the knobs*,
+  *See also*. Includes a prominent naming-disambiguation callout
+  separating our `Orchestrator` (session wrapper) from Anthropic's
+  *orchestrator-workers* delegation pattern (which is now
+  expressible via `session.handoff_to()`).
+- `CONTRIBUTING.md` — setup, local checks, primitive-addition recipe,
+  async-vs-sync invariants, release process.
+- `SECURITY.md` — disclosure policy + explicit threat model
+  documenting that `PermissionEnforcer` and `Guardrail` are *gates,
+  not sandboxes*.
+- `CODEOWNERS` — auto-review for public API, security primitives,
+  release infrastructure.
+- `.github/dependabot.yml` — weekly pip and github-actions updates,
+  grouped so the dev-tools bump together.
+- `.github/ISSUE_TEMPLATE/{bug,feature}.md` — structured intake
+  forms with environment + reproduction prompts.
+
+### Changed
+- README revised end-to-end. Headline pitch now matches what the
+  package actually does in 0.1.0 (sync **and** async, four standard
+  primitives, OTel GenAI semconv). Added a *"Why not LangGraph /
+  OpenAI Agents SDK?"* positioning section that admits where each
+  alternative is the better choice. Limitations list pared down to
+  what still applies after Sprint 4.
+
 ## [0.1.0.dev3] — 2026-05-20
 
 Sprint 4 milestone. Hooks the runtime into OpenTelemetry GenAI
@@ -209,6 +257,7 @@ loops with reliability and cost visibility:
 - `PermissionPolicy` + `PermissionEnforcer` — deny-first role × tool gating.
 - `PolicyEngine` + composable conditions — declarative rule evaluator.
 
+[0.1.0.rc1]: https://github.com/Techrevati/runtime/releases/tag/v0.1.0.rc1
 [0.1.0.dev3]: https://github.com/Techrevati/runtime/releases/tag/v0.1.0.dev3
 [0.1.0.dev2]: https://github.com/Techrevati/runtime/releases/tag/v0.1.0.dev2
 [0.1.0.dev1]: https://github.com/Techrevati/runtime/releases/tag/v0.1.0.dev1
