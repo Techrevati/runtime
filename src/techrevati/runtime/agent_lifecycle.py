@@ -29,20 +29,37 @@ class AgentStatus(str, Enum):
     RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
+    CANCELLED = "cancelled"
 
 
-# Valid state transitions
+# Valid state transitions. CANCELLED is reachable from any non-terminal state
+# (caller-driven cancellation, asyncio.CancelledError, timeout, etc.).
 _VALID_TRANSITIONS: dict[AgentStatus, set[AgentStatus]] = {
-    AgentStatus.IDLE: {AgentStatus.INITIALIZING, AgentStatus.FAILED},
+    AgentStatus.IDLE: {
+        AgentStatus.INITIALIZING,
+        AgentStatus.FAILED,
+        AgentStatus.CANCELLED,
+    },
     AgentStatus.INITIALIZING: {
         AgentStatus.WAITING_FOR_INPUT,
         AgentStatus.RUNNING,
         AgentStatus.FAILED,
+        AgentStatus.CANCELLED,
     },
-    AgentStatus.WAITING_FOR_INPUT: {AgentStatus.RUNNING, AgentStatus.FAILED},
-    AgentStatus.RUNNING: {AgentStatus.COMPLETED, AgentStatus.FAILED},
+    AgentStatus.WAITING_FOR_INPUT: {
+        AgentStatus.RUNNING,
+        AgentStatus.FAILED,
+        AgentStatus.CANCELLED,
+    },
+    AgentStatus.RUNNING: {
+        AgentStatus.WAITING_FOR_INPUT,
+        AgentStatus.COMPLETED,
+        AgentStatus.FAILED,
+        AgentStatus.CANCELLED,
+    },
     AgentStatus.COMPLETED: set(),  # terminal
     AgentStatus.FAILED: set(),  # terminal
+    AgentStatus.CANCELLED: set(),  # terminal
 }
 
 
@@ -123,7 +140,11 @@ class AgentWorker:
 
     @property
     def is_terminal(self) -> bool:
-        return self.status in (AgentStatus.COMPLETED, AgentStatus.FAILED)
+        return self.status in (
+            AgentStatus.COMPLETED,
+            AgentStatus.FAILED,
+            AgentStatus.CANCELLED,
+        )
 
     def to_dict(self) -> dict[str, Any]:
         return {

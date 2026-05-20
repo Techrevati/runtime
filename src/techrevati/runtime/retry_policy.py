@@ -14,6 +14,7 @@ import asyncio
 import json
 import logging
 import random
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
@@ -245,6 +246,30 @@ def attempt_recovery(
     )
     ctx._emit("succeeded", scenario, recipe, result)
     return result
+
+
+async def aattempt_recovery(
+    scenario: FailureScenario,
+    ctx: RecoveryContext,
+    *,
+    sleeper: Callable[[float], Awaitable[None]] | None = None,
+) -> RecoveryResult:
+    """Async variant of attempt_recovery.
+
+    Behavior matches the sync version step-for-step. The ``sleeper``
+    parameter is reserved for future steps that need to await a delay
+    (e.g. backoff). Pass ``asyncio.sleep`` in production code; pass a
+    no-op or a fake in tests for determinism. Today no step in
+    ``RecoveryRecipe`` actually sleeps, so ``sleeper`` is unused in
+    practice — but the contract is established now so 0.1.0 callers
+    can rely on it.
+    """
+    if sleeper is None:
+        sleeper = asyncio.sleep
+    # Sleeper is reserved for future use; record it on the context so
+    # subclasses can read it. The default behavior is identical to sync.
+    _ = sleeper  # noqa: F841 - reserved for future steps
+    return attempt_recovery(scenario, ctx)
 
 
 # -- Step handlers (actual implementations) --

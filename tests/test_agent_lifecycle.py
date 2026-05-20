@@ -60,6 +60,27 @@ def test_any_state_can_fail():
         assert w.status == AgentStatus.FAILED
 
 
+def test_any_non_terminal_state_can_cancel():
+    """Sprint 2.4: CANCELLED is reachable from any non-terminal state."""
+    for start in [
+        AgentStatus.IDLE,
+        AgentStatus.INITIALIZING,
+        AgentStatus.WAITING_FOR_INPUT,
+        AgentStatus.RUNNING,
+    ]:
+        w = AgentWorker(worker_id="test", role="writer", phase="f", status=start)
+        w.transition(AgentStatus.CANCELLED, "cancelled by user")
+        assert w.status == AgentStatus.CANCELLED
+        assert w.is_terminal
+
+
+def test_cancelled_is_terminal():
+    """Cannot transition out of CANCELLED."""
+    w = AgentWorker(worker_id="t", role="r", phase="p", status=AgentStatus.CANCELLED)
+    with pytest.raises(InvalidTransitionError):
+        w.transition(AgentStatus.RUNNING)
+
+
 def test_failure_records_error():
     reg = AgentRegistry()
     w = reg.create("writer", "draft")

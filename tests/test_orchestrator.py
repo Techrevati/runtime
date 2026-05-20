@@ -1,5 +1,7 @@
 """Tests for techrevati.runtime.orchestrator"""
 
+import time
+
 import pytest
 
 from techrevati.runtime import (
@@ -20,6 +22,7 @@ from techrevati.runtime import (
     QualityGate,
     QualityLevel,
     RolePermissionConfig,
+    TurnTimeoutError,
     UsageSnapshot,
     register_pricing,
 )
@@ -219,3 +222,66 @@ def test_enforce_budget_does_not_fire_when_under_budget():
             usage=UsageSnapshot(input_tokens=1000, output_tokens=100),
         )
     assert result == "ok"
+
+
+# -- Sync timeout (Sprint 2.6) --
+
+
+def test_run_turn_timeout_raises_turn_timeout_error():
+    orch = Orchestrator(role="writer", phase="draft")
+
+    def slow():
+        time.sleep(0.5)
+        return "too late"
+
+    with pytest.raises(TurnTimeoutError) as exc_info:
+        with orch.session() as session:
+            session.run_turn(slow, timeout=0.05)
+
+    assert exc_info.value.timeout_seconds == 0.05
+
+
+def test_run_turn_no_timeout_completes():
+    orch = Orchestrator(role="writer", phase="draft")
+    with orch.session() as session:
+        result, _ = session.run_turn(lambda: "fast", timeout=1.0)
+    assert result == "fast"
+
+
+# -- Auto-wired elapsed (Sprint 2.7) --
+
+
+def test_evaluate_policy_auto_elapsed_sync():
+    from techrevati.runtime.policy_engine import TimedOut
+
+    rule = PolicyRule(
+        name="hit-deadline",
+        condition=TimedOut(seconds=0.0),
+        actions=[PolicyActionData(PolicyAction.ABORT_PHASE)],
+        priority=10,
+    )
+    orch = Orchestrator(
+        role="writer", phase="draft", policy_engine=PolicyEngine([rule])
+    )
+    with orch.session() as session:
+        time.sleep(0.02)
+        actions = session.evaluate_policy()  # no explicit elapsed
+        assert any(a.action == PolicyAction.ABORT_PHASE for a in actions)
+
+
+def test_evaluate_policy_explicit_elapsed_overrides_auto():
+    from techrevati.runtime.policy_engine import TimedOut
+
+    rule = PolicyRule(
+        name="hit-deadline",
+        condition=TimedOut(seconds=100.0),
+        actions=[PolicyActionData(PolicyAction.ABORT_PHASE)],
+        priority=10,
+    )
+    orch = Orchestrator(
+        role="writer", phase="draft", policy_engine=PolicyEngine([rule])
+    )
+    with orch.session() as session:
+        actions = session.evaluate_policy(elapsed_seconds=200.0)
+        assert any(a.action == PolicyAction.ABORT_PHASE for a in actions)
+        # Auto-elapsed alone would be <<100s; explicit value made it fire.

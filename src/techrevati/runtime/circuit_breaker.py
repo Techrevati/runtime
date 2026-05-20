@@ -13,9 +13,10 @@ behavior; the clock function is injectable for deterministic tests.
 
 from __future__ import annotations
 
+import asyncio
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, TypeVar
@@ -136,6 +137,100 @@ class CircuitBreaker:
     def reset(self) -> None:
         """Manually reset the circuit to CLOSED state."""
         with self._lock:
+            self._state = CircuitState.CLOSED
+            self._failure_count = 0
+            self._last_failure_time = None
+            self._probe_in_flight = 0
+
+    def _should_attempt_reset(self) -> bool:
+        """Check if recovery timeout has elapsed since last failure."""
+        if self._last_failure_time is None:
+            return False
+        return (self.clock() - self._last_failure_time) >= self.recovery_timeout_seconds
+
+
+@dataclass
+class AsyncCircuitBreaker:
+    """Async sibling of CircuitBreaker — same state semantics, asyncio.Lock.
+
+    Independent from the sync variant: state is not shared. Choose one
+    per downstream. The probe-serialization, monotonic clock, and
+    clock-injection contracts match the sync class exactly so behavior
+    is portable between sync and async code paths.
+    """
+
+    name: str
+    failure_threshold: int = 5
+    recovery_timeout_seconds: float = 60.0
+    half_open_max_probes: int = 1
+    clock: Callable[[], float] = field(default=time.monotonic)
+
+    _state: CircuitState = field(default=CircuitState.CLOSED, init=False, repr=False)
+    _failure_count: int = field(default=0, init=False, repr=False)
+    _last_failure_time: float | None = field(default=None, init=False, repr=False)
+    _probe_in_flight: int = field(default=0, init=False, repr=False)
+    _lock: asyncio.Lock = field(default_factory=asyncio.Lock, init=False, repr=False)
+
+    async def call(
+        self,
+        coro_factory: Callable[..., Awaitable[T]],
+        *args: Any,
+        **kwargs: Any,
+    ) -> T:
+        """Execute coro with breaker protection. Raises CircuitOpenError if open."""
+        async with self._lock:
+            if self._state == CircuitState.OPEN:
+                if self._should_attempt_reset():
+                    self._state = CircuitState.HALF_OPEN
+                    self._probe_in_flight = 1
+                else:
+                    raise CircuitOpenError(self.name)
+            elif self._state == CircuitState.HALF_OPEN:
+                if self._probe_in_flight >= self.half_open_max_probes:
+                    raise CircuitOpenError(self.name)
+                self._probe_in_flight += 1
+
+        try:
+            result = await coro_factory(*args, **kwargs)
+        except Exception:
+            await self.record_failure()
+            raise
+        await self.record_success()
+        return result
+
+    async def record_success(self) -> None:
+        """Record a successful execution. Closes the circuit if HALF_OPEN."""
+        async with self._lock:
+            self._failure_count = 0
+            if self._state == CircuitState.HALF_OPEN:
+                self._state = CircuitState.CLOSED
+                self._probe_in_flight = 0
+
+    async def record_failure(self) -> None:
+        """Record a failed execution. Opens the circuit at threshold."""
+        async with self._lock:
+            self._failure_count += 1
+            self._last_failure_time = self.clock()
+            if self._state == CircuitState.HALF_OPEN:
+                self._state = CircuitState.OPEN
+                self._probe_in_flight = 0
+            elif self._failure_count >= self.failure_threshold:
+                self._state = CircuitState.OPEN
+
+    async def state(self) -> CircuitState:
+        """Get current circuit state."""
+        async with self._lock:
+            if self._state == CircuitState.OPEN and self._should_attempt_reset():
+                return CircuitState.HALF_OPEN
+            return self._state
+
+    async def is_open(self) -> bool:
+        """Return True if circuit is open (blocking requests)."""
+        return (await self.state()) == CircuitState.OPEN
+
+    async def reset(self) -> None:
+        """Manually reset the circuit to CLOSED state."""
+        async with self._lock:
             self._state = CircuitState.CLOSED
             self._failure_count = 0
             self._last_failure_time = None
