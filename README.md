@@ -6,7 +6,7 @@
 [![Zero Dependencies](https://img.shields.io/badge/dependencies-zero-green.svg)](#design-goals)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Runtime primitives for multi-step LLM agent loops — sync **and** async, with retry classification, circuit-breaker protection, per-model cost tracking, opt-in budget enforcement, role-based tool gating, content guardrails, agent-to-agent handoffs, declarative policy, and OpenTelemetry GenAI semantic conventions out of the box. **Alpha; API unstable until 0.2.0.**
+Production-grade runtime primitives for multi-step LLM agent loops — sync **and** async, with retry classification, circuit-breaker protection, per-model cost tracking, opt-in budget enforcement, role-based tool gating, content guardrails, agent-to-agent handoffs, declarative policy, and OpenTelemetry GenAI semantic conventions out of the box. **Beta — 0.1.x; minor breaking changes possible until 0.2.0.**
 
 ```bash
 pip install techrevati-runtime
@@ -162,7 +162,7 @@ The runtime is **not** a durable workflow engine. Sessions are in-memory; a plug
 
 ## Status
 
-`techrevati-runtime` is at version **0.1.0.dev3** (pre-release). The 0.1.0 release ships async-first execution, the four standard primitives (Sessions, Tools, Handoffs, Guardrails), max-iterations cap, and OpenTelemetry GenAI semantic conventions support. Pinning Python 3.11+ for `from __future__ import annotations` ergonomics and modern asyncio.
+`techrevati-runtime` is at version **0.1.0** (beta). This release ships async-first execution, the four standard primitives (Sessions, Tools, Handoffs, Guardrails), `max_iterations` cap, and OpenTelemetry GenAI semantic conventions. Minor breaking changes are possible between 0.1.x and 0.2.0 — they will be documented in [docs/migrating-from-0.0.x.md](docs/migrating-from-0.0.x.md) and gated by deprecation warnings. Pinning Python 3.11+ for `from __future__ import annotations` ergonomics and modern asyncio.
 
 See [CHANGELOG.md](CHANGELOG.md) for the per-sprint release notes and [docs/tutorials/end-to-end.md](docs/tutorials/end-to-end.md) for a guided tour of every primitive.
 

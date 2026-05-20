@@ -38,6 +38,7 @@ nav:
   - Home: index.md
   - Getting Started: getting-started.md
   - End-to-End Tutorial: tutorials/end-to-end.md
+  - Migrating from 0.0.x: migrating-from-0.0.x.md
   - Patterns:
     - Orchestrator: patterns/orchestrator.md
     - Retry Policy: patterns/retry.md

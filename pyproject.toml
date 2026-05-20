@@ -4,15 +4,16 @@ build-backend = "hatchling.build"
 
 [project]
 name = "techrevati-runtime"
-version = "0.1.0.rc1"
-description = "Production runtime primitives for multi-step LLM agent loops."
+version = "0.1.0"
+description = "Async-aware runtime primitives for multi-step LLM agent loops."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 authors = [{ name = "TechRevati doo" }]
 keywords = ["agents", "orchestration", "retry", "circuit-breaker", "cost-tracking", "runtime"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
+    "Framework :: AsyncIO",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.11",
