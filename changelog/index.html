@@ -1596,15 +1596,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#unreleased-030-dev" class="md-nav__link">
+  <a href="#030dev1-2026-05-22" class="md-nav__link">
     <span class="md-ellipsis">
       
-        [Unreleased] — 0.3.0-dev
+        [0.3.0.dev1] — 2026-05-22
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="[Unreleased] — 0.3.0-dev">
+    <nav class="md-nav" aria-label="[0.3.0.dev1] — 2026-05-22">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1996,15 +1996,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#unreleased-030-dev" class="md-nav__link">
+  <a href="#030dev1-2026-05-22" class="md-nav__link">
     <span class="md-ellipsis">
       
-        [Unreleased] — 0.3.0-dev
+        [0.3.0.dev1] — 2026-05-22
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="[Unreleased] — 0.3.0-dev">
+    <nav class="md-nav" aria-label="[0.3.0.dev1] — 2026-05-22">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2386,10 +2386,17 @@
 follows <a href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>; the project
 follows <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>, with the
 caveat that 0.x APIs are explicitly unstable.</p>
-<h2 id="unreleased-030-dev">[Unreleased] — 0.3.0-dev<a class="headerlink" href="#unreleased-030-dev" title="Permanent link">&para;</a></h2>
-<p>Rolling tip-of-main entry for the 0.3.0 milestone (EU AI Act compliance
-release). Items below ship under <code>main</code> and will roll up into the
-tagged <code>0.3.0</code> cut once Sprint 7 lands. <strong>Nothing here is on PyPI yet.</strong></p>
+<h2 id="030dev1-2026-05-22">[0.3.0.dev1] — 2026-05-22<a class="headerlink" href="#030dev1-2026-05-22" title="Permanent link">&para;</a></h2>
+<p>First preview of the 0.3.0 milestone (EU AI Act compliance release).
+Bundles Sprint 2 (governance plane + async guardrails) and Sprint 3
+(streaming + mutating hook chain) plus all the 0.2.1 sharp-edges
+fixes — 0.2.1 itself was committed but never tagged for PyPI, so its
+fixes ride into 0.3.0 instead. Install with
+<code>pip install --pre techrevati-runtime</code> to try the preview; the stable
+channel still resolves to 0.2.0.</p>
+<p>This is a <strong>dev release</strong> (PEP 440 <code>.dev1</code>). API surface is
+forward-compatible with planned 0.3.0 features but may shift before the
+final cut; pin to <code>==0.3.0.dev1</code> if you depend on the exact surface.</p>
 <h3 id="added-sprint-3-streaming-lifecycle-hooks">Added — Sprint 3 (streaming + lifecycle hooks)<a class="headerlink" href="#added-sprint-3-streaming-lifecycle-hooks" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong><code>AsyncOrchestrationSession.arun_turn_stream</code></strong> — structured
