@@ -5,11 +5,19 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the project
 follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html), with the
 caveat that 0.x APIs are explicitly unstable.
 
-## [Unreleased] — 0.3.0-dev
+## [0.3.0.dev1] — 2026-05-22
 
-Rolling tip-of-main entry for the 0.3.0 milestone (EU AI Act compliance
-release). Items below ship under `main` and will roll up into the
-tagged `0.3.0` cut once Sprint 7 lands. **Nothing here is on PyPI yet.**
+First preview of the 0.3.0 milestone (EU AI Act compliance release).
+Bundles Sprint 2 (governance plane + async guardrails) and Sprint 3
+(streaming + mutating hook chain) plus all the 0.2.1 sharp-edges
+fixes — 0.2.1 itself was committed but never tagged for PyPI, so its
+fixes ride into 0.3.0 instead. Install with
+`pip install --pre techrevati-runtime` to try the preview; the stable
+channel still resolves to 0.2.0.
+
+This is a **dev release** (PEP 440 `.dev1`). API surface is
+forward-compatible with planned 0.3.0 features but may shift before the
+final cut; pin to `==0.3.0.dev1` if you depend on the exact surface.
 
 ### Added — Sprint 3 (streaming + lifecycle hooks)
 
