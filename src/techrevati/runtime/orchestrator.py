@@ -62,6 +62,18 @@ from techrevati.runtime.guardrails import (
     run_pre_checks,
 )
 from techrevati.runtime.handoffs import Handoff
+from techrevati.runtime.hooks import (
+    HookContext,
+    HookLike,
+    arun_after_model,
+    arun_after_tool,
+    arun_before_model,
+    arun_before_tool,
+    run_after_model,
+    run_after_tool,
+    run_before_model,
+    run_before_tool,
+)
 from techrevati.runtime.permissions import PermissionEnforcer, PermissionOutcome
 from techrevati.runtime.policy_engine import (
     PhaseContext,
@@ -88,6 +100,7 @@ from techrevati.runtime.sinks import (
     NoopUsageSink,
     UsageSink,
 )
+from techrevati.runtime.streaming import StreamEvent
 from techrevati.runtime.usage_tracking import (
     BudgetExceededError,
     UsageLimits,
@@ -225,6 +238,7 @@ class AgentSession:
     provider_router: ProviderRouter | None = None
     usage_limits: UsageLimits | None = None
     governance: GovernancePlane | None = None
+    hooks: list[HookLike] = field(default_factory=list)
 
     @contextmanager
     def session(
@@ -264,6 +278,7 @@ class AgentSession:
             rate_limiter=self.rate_limiter,
             usage_limits=self.usage_limits,
             governance=self.governance,
+            hooks=list(self.hooks),
         )
 
         try:
@@ -322,6 +337,7 @@ class AgentSession:
             async_rate_limiter=self.async_rate_limiter,
             usage_limits=self.usage_limits,
             governance=self.governance,
+            hooks=list(self.hooks),
         )
 
         try:
@@ -379,8 +395,46 @@ class _SessionBase:
     provider_router: ProviderRouter | None = None
     usage_limits: UsageLimits | None = None
     governance: GovernancePlane | None = None
+    hooks: list[HookLike] = field(default_factory=list)
     _started_at: float = field(default_factory=time.monotonic, init=False, repr=False)
     _iteration_count: int = field(default=0, init=False, repr=False)
+    _last_stream_cancelled: bool = field(default=False, init=False, repr=False)
+
+    def _resolve_hook_ctx(
+        self,
+        ctx: HookContext | None,
+        *,
+        model: str = "",
+        prompt: Any = None,
+        tool: str = "",
+        args: dict[str, Any] | None = None,
+    ) -> HookContext:
+        """Return a HookContext for the current call, synthesizing one if absent.
+
+        Mutates the supplied ``ctx`` (when provided) to attach the role / phase /
+        model / tool defaults, so hooks always see them even when the caller
+        passed a partially-populated context.
+        """
+        if ctx is None:
+            return HookContext(
+                role=self.role,
+                phase=self.phase,
+                model=model,
+                prompt=prompt,
+                tool=tool,
+                args=args or {},
+            )
+        ctx.role = self.role
+        ctx.phase = self.phase
+        if model:
+            ctx.model = model
+        if prompt is not None and ctx.prompt is None:
+            ctx.prompt = prompt
+        if tool:
+            ctx.tool = tool
+        if args is not None and not ctx.args:
+            ctx.args = args
+        return ctx
 
     # -- Durable execution helpers (idempotent replay + per-turn checkpoint).
     # Both no-op gracefully when either ``thread_id`` or ``saver`` is absent,
@@ -793,18 +847,31 @@ class OrchestrationSession(_SessionBase):
         self,
         tool_name: str,
         fn: Callable[[], T],
+        *,
+        hook_ctx: HookContext | None = None,
     ) -> T:
-        """Execute a tool with permission + guardrail + governance checks around it.
+        """Execute a tool with permission + guardrail + governance + hook checks.
 
-        Order: permission → governance → pre-guardrails → fn() → post-guardrails.
+        Order: permission → governance → before_tool hooks → pre-guardrails →
+        fn() → post-guardrails → after_tool hooks.
+
+        ``hook_ctx`` is a mutable context shared with the hook chain. When
+        omitted the runtime synthesizes a fresh ``HookContext`` so hooks still
+        fire — but any mutation hooks attempt on ``ctx.args`` is lost because
+        the caller's closure does not see it. Pass a context (and close over
+        ``ctx.args`` inside ``fn``) when you want hooks to redact or rewrite
+        tool inputs.
         """
         outcome = self.authorize(tool_name)
         if not outcome.allowed:
             raise PermissionDeniedError(outcome)
         self._check_governance_pre_tool()
+        ctx = self._resolve_hook_ctx(hook_ctx, tool=tool_name)
+        run_before_tool(self.hooks, ctx)
         run_pre_checks(self.guardrails, role=self.role, tool=tool_name)
-        result = fn()
-        run_post_checks(self.guardrails, result, role=self.role, tool=tool_name)
+        result_raw: T = fn()
+        run_post_checks(self.guardrails, result_raw, role=self.role, tool=tool_name)
+        result: T = run_after_tool(self.hooks, ctx, result_raw)
         return result
 
     def run_turn(
@@ -815,6 +882,8 @@ class OrchestrationSession(_SessionBase):
         estimate_usage: Callable[[T], UsageSnapshot] | None = None,
         timeout: float | None = None,
         idempotency_key: str | None = None,
+        *,
+        hook_ctx: HookContext | None = None,
     ) -> tuple[T, UsageSnapshot]:
         """Execute one model turn with circuit-breaker + recovery wiring.
 
@@ -847,6 +916,11 @@ class OrchestrationSession(_SessionBase):
 
         self._check_iteration_cap()
         self._check_governance_pre_turn()
+        ctx = self._resolve_hook_ctx(hook_ctx, model=model)
+        # Hooks run BEFORE the model call so they can mutate ctx.prompt
+        # in place. Caller's fn() must close over ctx.prompt to see the
+        # mutated value — see docs/patterns/hooks.md for the pattern.
+        run_before_model(self.hooks, ctx)
         cost_before = self.tracker.total_cost()
         try:
             result = self._invoke_fn(fn, timeout=timeout)
@@ -861,6 +935,7 @@ class OrchestrationSession(_SessionBase):
             self._record_governance_turn_outcome(success=False)
             raise
 
+        result = run_after_model(self.hooks, ctx, result)
         snapshot = self._resolve_usage(result, usage, estimate_usage)
         if self.rate_limiter is not None:
             self.rate_limiter.acquire_usage(
@@ -931,20 +1006,28 @@ class AsyncOrchestrationSession(_SessionBase):
         self,
         tool_name: str,
         coro_factory: Callable[[], Awaitable[T]],
+        *,
+        hook_ctx: HookContext | None = None,
     ) -> T:
         """Async sibling of run_tool.
 
         Permission + governance are sync; guardrails are awaited when
         they implement ``AsyncGuardrail`` and called inline when they
-        are sync ``Guardrail`` instances.
+        are sync ``Guardrail`` instances. Hooks are dispatched both
+        sync and async — see ``hooks.py``.
         """
         outcome = self.authorize(tool_name)
         if not outcome.allowed:
             raise PermissionDeniedError(outcome)
         self._check_governance_pre_tool()
+        ctx = self._resolve_hook_ctx(hook_ctx, tool=tool_name)
+        await arun_before_tool(self.hooks, ctx)
         await arun_pre_checks(self.guardrails, role=self.role, tool=tool_name)
-        result = await coro_factory()
-        await arun_post_checks(self.guardrails, result, role=self.role, tool=tool_name)
+        result_raw: T = await coro_factory()
+        await arun_post_checks(
+            self.guardrails, result_raw, role=self.role, tool=tool_name
+        )
+        result: T = await arun_after_tool(self.hooks, ctx, result_raw)
         return result
 
     async def arun_turn(
@@ -955,6 +1038,8 @@ class AsyncOrchestrationSession(_SessionBase):
         estimate_usage: Callable[[T], UsageSnapshot] | None = None,
         timeout: float | None = None,
         idempotency_key: str | None = None,
+        *,
+        hook_ctx: HookContext | None = None,
     ) -> tuple[T, UsageSnapshot]:
         """Execute one model turn with async circuit-breaker + recovery wiring.
 
@@ -978,6 +1063,8 @@ class AsyncOrchestrationSession(_SessionBase):
 
         self._check_iteration_cap()
         self._check_governance_pre_turn()
+        ctx = self._resolve_hook_ctx(hook_ctx, model=model)
+        await arun_before_model(self.hooks, ctx)
         cost_before = self.tracker.total_cost()
         try:
             result = await self._ainvoke(coro_factory, timeout=timeout)
@@ -994,6 +1081,7 @@ class AsyncOrchestrationSession(_SessionBase):
             self._record_governance_turn_outcome(success=False)
             raise
 
+        result = await arun_after_model(self.hooks, ctx, result)
         snapshot = self._resolve_usage(result, usage, estimate_usage)
         if self.async_rate_limiter is not None:
             await self.async_rate_limiter.acquire_usage(
@@ -1010,6 +1098,121 @@ class AsyncOrchestrationSession(_SessionBase):
         cost_delta = self.tracker.total_cost() - cost_before
         self._record_governance_turn_outcome(success=True, cost_usd=cost_delta)
         return result, snapshot
+
+    async def arun_turn_stream(
+        self,
+        chunk_factory: Callable[[], AsyncIterator[str]],
+        *,
+        model: str = "",
+        usage: UsageSnapshot | None = None,
+        estimate_usage: Callable[[str], UsageSnapshot] | None = None,
+        timeout: float | None = None,
+        hook_ctx: HookContext | None = None,
+    ) -> AsyncIterator[StreamEvent]:
+        """Stream a model turn as a sequence of ``StreamEvent`` values.
+
+        ``chunk_factory`` returns an async iterator over text chunks
+        (e.g. SSE deltas from a provider client). Each chunk is reemitted
+        as ``StreamEvent.text(delta)``. After upstream exhausts, the
+        generator yields a terminal ``StreamEvent.final("completed", usage=...)``
+        carrying the resolved usage snapshot.
+
+        Hook chain runs once before iteration begins (``before_model``)
+        and once after the aggregated text is computed (``after_model``).
+        Per-chunk hooks are intentionally out of scope — they would invert
+        the cost model of streaming.
+
+        Cancellation: if the consumer breaks out of the ``async for`` loop,
+        the upstream iterator's ``aclose()`` is awaited and
+        ``session._last_stream_cancelled`` flips to ``True``. The generator
+        does NOT emit a ``final("cancelled")`` event in that case because
+        the consumer is no longer listening; check the flag instead.
+
+        On upstream exception: ``error`` + ``final("failed")`` events are
+        yielded and the exception is re-raised so callers see it.
+        """
+        self._check_iteration_cap()
+        self._check_governance_pre_turn()
+        ctx = self._resolve_hook_ctx(hook_ctx, model=model)
+        await arun_before_model(self.hooks, ctx)
+
+        if self.async_rate_limiter is not None:
+            await self.async_rate_limiter.acquire_pre_call()
+
+        self._last_stream_cancelled = False
+        cost_before = self.tracker.total_cost()
+        aggregated: list[str] = []
+        upstream: AsyncIterator[str] | None = None
+
+        try:
+            try:
+                upstream = chunk_factory().__aiter__()
+                if timeout is None:
+                    async for chunk in upstream:
+                        aggregated.append(chunk)
+                        yield StreamEvent.text(chunk)
+                else:
+                    async with asyncio.timeout(timeout):
+                        async for chunk in upstream:
+                            aggregated.append(chunk)
+                            yield StreamEvent.text(chunk)
+            except TimeoutError as exc:
+                yield StreamEvent.error("timeout", f"stream exceeded {timeout}s")
+                yield StreamEvent.final("failed", detail="timeout")
+                self._record_governance_turn_outcome(success=False)
+                raise TurnTimeoutError(timeout or 0.0) from exc
+            except GeneratorExit:
+                # Consumer broke the async-for loop. Flag + finally cleanup
+                # run; we cannot yield further since the consumer is gone.
+                self._last_stream_cancelled = True
+                self._record_governance_turn_outcome(success=False)
+                logger.info(
+                    "stream_cancelled",
+                    extra={
+                        "role": self.role,
+                        "phase": self.phase,
+                        "project_id": self.project_id,
+                        "chunks_received": len(aggregated),
+                    },
+                )
+                raise
+            except asyncio.CancelledError:
+                self._last_stream_cancelled = True
+                self._record_governance_turn_outcome(success=False)
+                raise
+            except Exception as exc:
+                yield StreamEvent.error(type(exc).__name__, str(exc))
+                yield StreamEvent.final("failed", detail=str(exc))
+                await _arecord_recovery_event(self, exc)
+                self._record_governance_turn_outcome(success=False)
+                raise
+
+            full_text = "".join(aggregated)
+            transformed = await arun_after_model(self.hooks, ctx, full_text)
+            snapshot = self._resolve_usage(transformed, usage, estimate_usage)
+            if self.async_rate_limiter is not None:
+                await self.async_rate_limiter.acquire_usage(
+                    input_tokens=snapshot.input_tokens,
+                    output_tokens=snapshot.output_tokens,
+                )
+            self._apply_usage_and_check_budget(model, snapshot)
+            cost_delta = self.tracker.total_cost() - cost_before
+            self._record_governance_turn_outcome(success=True, cost_usd=cost_delta)
+            yield StreamEvent.final("completed", usage=snapshot.to_dict())
+        finally:
+            # Close upstream so a generator-based provider client can
+            # release its underlying connection. aclose() is idempotent
+            # for `async def`-defined generators, so calling it after a
+            # naturally-exhausted iteration is a no-op. Swallow any
+            # error here so the finally block does not mask the original
+            # failure path.
+            if upstream is not None:
+                aclose = getattr(upstream, "aclose", None)
+                if aclose is not None:
+                    try:
+                        await aclose()
+                    except Exception:
+                        logger.exception("arun_turn_stream: upstream.aclose() raised")
 
     async def _ainvoke(
         self,

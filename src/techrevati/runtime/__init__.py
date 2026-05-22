@@ -69,6 +69,15 @@ from techrevati.runtime.guardrails import (
     PromptInjectionGuardrail,
 )
 from techrevati.runtime.handoffs import Handoff
+from techrevati.runtime.hooks import (
+    AsyncHook,
+    Hook,
+    HookBudgetExceededError,
+    HookContext,
+    LogModelIOHook,
+    RedactPIIHook,
+    TokenBudgetCheckHook,
+)
 from techrevati.runtime.orchestrator import (
     AgentSession,
     AsyncOrchestrationSession,
@@ -145,6 +154,11 @@ from techrevati.runtime.sinks import (
     RingBufferUsageSink,
     UsageSink,
 )
+from techrevati.runtime.streaming import (
+    StreamEvent,
+    StreamEventType,
+    StreamFinalStatus,
+)
 from techrevati.runtime.usage_tracking import (
     PRICING_TABLE,
     BudgetExceededError,
@@ -173,6 +187,7 @@ __all__ = [
     "AllowAllGuardrail",
     "AsyncCircuitBreaker",
     "AsyncGuardrail",
+    "AsyncHook",
     "AsyncOrchestrationSession",
     "AsyncRateLimiter",
     "AsyncTokenBucket",
@@ -197,11 +212,15 @@ __all__ = [
     "GuardrailViolatedError",
     "GuardrailViolation",
     "Handoff",
+    "Hook",
+    "HookBudgetExceededError",
+    "HookContext",
     "InMemorySaver",
     "InvalidTransitionError",
     "Limit",
     "LimitOutcome",
     "LimitScope",
+    "LogModelIOHook",
     "ManualClock",
     "MaxBudgetLimit",
     "MaxConsecutiveFailuresLimit",
@@ -215,6 +234,7 @@ __all__ = [
     "PatternGuardrail",
     "PromptInjectionGuardrail",
     "Orchestrator",
+    "RedactPIIHook",
     "PermissionDeniedError",
     "PermissionEnforcer",
     "PermissionMode",
@@ -247,8 +267,12 @@ __all__ = [
     "SqliteSaver",
     "SqliteUsageSink",
     "StaticProviderRouter",
+    "StreamEvent",
+    "StreamEventType",
+    "StreamFinalStatus",
     "SystemClock",
     "TokenBucket",
+    "TokenBudgetCheckHook",
     "TurnTimeoutError",
     "UsageBoundExceededError",
     "UsageLimitExceededError",

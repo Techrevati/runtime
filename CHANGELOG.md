@@ -5,6 +5,71 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the project
 follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html), with the
 caveat that 0.x APIs are explicitly unstable.
 
+## [Unreleased] — 0.3.0-dev
+
+Rolling tip-of-main entry for the 0.3.0 milestone (EU AI Act compliance
+release). Items below ship under `main` and will roll up into the
+tagged `0.3.0` cut once Sprint 7 lands. **Nothing here is on PyPI yet.**
+
+### Added — Sprint 3 (streaming + lifecycle hooks)
+
+- **`AsyncOrchestrationSession.arun_turn_stream`** — structured
+  `StreamEvent` generator that reemits caller-produced text chunks and
+  terminates with a `final` event carrying the resolved usage snapshot.
+  Participates in the full session bookkeeping (iteration cap,
+  governance plane, rate limiter, usage tracker) exactly like
+  `arun_turn`. Cancellation is consumer-driven: wrap with
+  `contextlib.aclosing` to get deterministic cleanup of the upstream
+  generator; `session._last_stream_cancelled` flips to `True` on the
+  cancelled path.
+- **`StreamEvent`** frozen dataclass + classmethod constructors
+  (`text`, `tool_call`, `tool_result`, `handoff`, `final`, `error`),
+  `to_dict()` / `to_json()` for wire serialization. `StreamEventType`
+  and `StreamFinalStatus` type aliases exported for consumer typing.
+- **`Hook` + `AsyncHook` Protocols** — interceptor chain that *mutates*
+  data, in contrast to the observe-only `EventSink`. Methods are
+  optional via `hasattr` dispatch; implement only what you need.
+- **`HookContext`** — mutable dataclass shared across the hook chain.
+  Fields: `role`, `phase`, `model`, `prompt`, `tool`, `args`, `extra`.
+  Pass via `hook_ctx=` on `run_turn` / `arun_turn` / `run_tool` /
+  `arun_tool` / `arun_turn_stream`.
+- **`AgentSession(hooks=[...])`** — hook chain wired through every
+  sync + async session. Chain runs left-to-right; later hooks see
+  earlier mutations.
+- **Built-in hooks:** `RedactPIIHook` (best-effort PII scrubbing for
+  strings, dicts, OpenAI-style message lists; runs `before_model` and
+  `after_model`), `LogModelIOHook` (stdlib logger emits model input +
+  output with truncation), `TokenBudgetCheckHook` (pre-flight token
+  budget guard that raises `HookBudgetExceededError`).
+- **Docs:** `docs/patterns/streaming.md`, `docs/patterns/hooks.md`,
+  plus API reference stubs `docs/api/streaming.md`,
+  `docs/api/hooks.md`; mkdocs nav updated.
+
+### Added — Sprint 2 (governance plane + async guardrails)
+
+- **`GovernancePlane`** primitive — hard-stop limit enforcement
+  *outside* agent code, terminal on breach (does NOT route through
+  recovery). Built-in limits: `MaxIterationsLimit`, `MaxBudgetLimit`,
+  `MaxConsecutiveFailuresLimit`, `MaxToolCallsLimit`. Each carries a
+  `value`, `scope` (`session` for now), and `on_breach` mode
+  (`terminate` raises `GovernanceBreachError`; `alert` emits
+  `governance.alert` events and continues).
+- **`AgentSession(governance=...)`** wired through both sync and async
+  sessions. The plane ticks turn counter pre-turn, tool counter
+  pre-tool, and cost / success-streak post-turn.
+- **`AsyncGuardrail`** Protocol (`acheck_pre` / `acheck_post`) for
+  guardrails that need I/O. Mixed sync + async guardrail lists
+  supported on async sessions.
+- **`PatternGuardrail`** (regex deny-list, one compiled alternation
+  per instance) and **`PromptInjectionGuardrail`** (subclass with 11
+  canonical injection signatures: instruction override, role hijack,
+  delimiter abuse, base64 blob, system-prompt extraction).
+- **`governance.breach`** + **`governance.alert`** event names in
+  `AgentEventName` — emitted via `EventSink` before the breach
+  exception raises so audit logs catch them even when the exception
+  propagates past handlers.
+- **Docs:** `docs/patterns/governance.md` + `docs/api/governance.md`.
+
 ## [0.2.1] — 2026-05-20
 
 Sharp-edges patch landed the same day as 0.2.0 to close silent footguns

@@ -54,6 +54,8 @@ nav:
     - Policy Engine: patterns/policy.md
     - Usage Tracking: patterns/usage-tracking.md
     - Governance Plane: patterns/governance.md
+    - Streaming: patterns/streaming.md
+    - Hooks: patterns/hooks.md
   - API Reference:
     - Orchestrator: api/orchestrator.md
     - Circuit Breaker: api/circuit_breaker.md
@@ -65,6 +67,8 @@ nav:
     - Guardrails: api/guardrails.md
     - Governance: api/governance.md
     - Handoffs: api/handoffs.md
+    - Hooks: api/hooks.md
+    - Streaming: api/streaming.md
     - Sinks: api/sinks.md
     - Persistence: api/persistence.md
     - Scheduler: api/scheduler.md
