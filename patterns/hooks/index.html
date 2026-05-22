@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://Techrevati.github.io/runtime/patterns/governance/">
+        <link rel="canonical" href="https://Techrevati.github.io/runtime/patterns/hooks/">
       
       
-        <link rel="prev" href="../usage-tracking/">
+        <link rel="prev" href="../streaming/">
       
       
-        <link rel="next" href="../streaming/">
+        <link rel="next" href="../../api/orchestrator/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Governance Plane - techrevati-runtime</title>
+        <title>Hooks - techrevati-runtime</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#governance-plane" class="md-skip">
+        <a href="#hooks" class="md-skip">
           Skip to content
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Governance Plane
+              Hooks
             
           </span>
         </div>
@@ -938,6 +938,62 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../governance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Governance Plane
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../streaming/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Streaming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -957,7 +1013,7 @@
   <span class="md-ellipsis">
     
   
-    Governance Plane
+    Hooks
   
 
     
@@ -975,7 +1031,7 @@
   <span class="md-ellipsis">
     
   
-    Governance Plane
+    Hooks
   
 
     
@@ -1034,22 +1090,44 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#the-four-built-in-limits" class="md-nav__link">
+  <a href="#the-four-lifecycle-methods" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The four built-in limits
+        The four lifecycle methods
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="The four built-in limits">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hookcontext" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HookContext
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#built-in-hooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Built-in hooks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Built-in hooks">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#maxiterationslimit" class="md-nav__link">
+  <a href="#redactpiihook" class="md-nav__link">
     <span class="md-ellipsis">
       
-        MaxIterationsLimit
+        RedactPIIHook
       
     </span>
   </a>
@@ -1057,10 +1135,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#maxbudgetlimit" class="md-nav__link">
+  <a href="#logmodeliohook" class="md-nav__link">
     <span class="md-ellipsis">
       
-        MaxBudgetLimit
+        LogModelIOHook
       
     </span>
   </a>
@@ -1068,21 +1146,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#maxconsecutivefailureslimit" class="md-nav__link">
+  <a href="#tokenbudgetcheckhook" class="md-nav__link">
     <span class="md-ellipsis">
       
-        MaxConsecutiveFailuresLimit
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#maxtoolcallslimit" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        MaxToolCallsLimit
+        TokenBudgetCheckHook
       
     </span>
   </a>
@@ -1095,10 +1162,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#on_breach-modes" class="md-nav__link">
+  <a href="#writing-your-own-hook" class="md-nav__link">
     <span class="md-ellipsis">
       
-        on_breach modes
+        Writing your own hook
       
     </span>
   </a>
@@ -1106,10 +1173,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#event-surface" class="md-nav__link">
+  <a href="#chain-ordering" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Event surface
+        Chain ordering
       
     </span>
   </a>
@@ -1117,10 +1184,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#composing-with-usagelimits" class="md-nav__link">
+  <a href="#exception-semantics" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Composing with UsageLimits
+        Exception semantics
       
     </span>
   </a>
@@ -1128,10 +1195,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#tuning-the-knobs" class="md-nav__link">
+  <a href="#composing-with-guardrails" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Tuning the knobs
+        Composing with guardrails
       
     </span>
   </a>
@@ -1164,62 +1231,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../streaming/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Streaming
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../hooks/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Hooks
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -1828,22 +1839,44 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#the-four-built-in-limits" class="md-nav__link">
+  <a href="#the-four-lifecycle-methods" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The four built-in limits
+        The four lifecycle methods
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="The four built-in limits">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hookcontext" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HookContext
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#built-in-hooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Built-in hooks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Built-in hooks">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#maxiterationslimit" class="md-nav__link">
+  <a href="#redactpiihook" class="md-nav__link">
     <span class="md-ellipsis">
       
-        MaxIterationsLimit
+        RedactPIIHook
       
     </span>
   </a>
@@ -1851,10 +1884,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#maxbudgetlimit" class="md-nav__link">
+  <a href="#logmodeliohook" class="md-nav__link">
     <span class="md-ellipsis">
       
-        MaxBudgetLimit
+        LogModelIOHook
       
     </span>
   </a>
@@ -1862,21 +1895,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#maxconsecutivefailureslimit" class="md-nav__link">
+  <a href="#tokenbudgetcheckhook" class="md-nav__link">
     <span class="md-ellipsis">
       
-        MaxConsecutiveFailuresLimit
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#maxtoolcallslimit" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        MaxToolCallsLimit
+        TokenBudgetCheckHook
       
     </span>
   </a>
@@ -1889,10 +1911,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#on_breach-modes" class="md-nav__link">
+  <a href="#writing-your-own-hook" class="md-nav__link">
     <span class="md-ellipsis">
       
-        on_breach modes
+        Writing your own hook
       
     </span>
   </a>
@@ -1900,10 +1922,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#event-surface" class="md-nav__link">
+  <a href="#chain-ordering" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Event surface
+        Chain ordering
       
     </span>
   </a>
@@ -1911,10 +1933,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#composing-with-usagelimits" class="md-nav__link">
+  <a href="#exception-semantics" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Composing with UsageLimits
+        Exception semantics
       
     </span>
   </a>
@@ -1922,10 +1944,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#tuning-the-knobs" class="md-nav__link">
+  <a href="#composing-with-guardrails" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Tuning the knobs
+        Composing with guardrails
       
     </span>
   </a>
@@ -1974,208 +1996,250 @@
   
 
 
-<h1 id="governance-plane">Governance Plane<a class="headerlink" href="#governance-plane" title="Permanent link">&para;</a></h1>
-<p><code>GovernancePlane</code> is the runtime's last line of defense: hard-stop
-limits enforced <em>outside</em> agent code so the agent cannot bypass them
-via recovery. When a limit configured with <code>on_breach="terminate"</code> is
-exceeded, the orchestrator raises <code>GovernanceBreachError</code>, which the
-session marks as <code>FAILED</code> and re-raises <strong>without</strong> going through the
-failure classifier or the recovery loop.</p>
-<p>This is the technical primitive auditors expect for EU AI Act
-deployments — Article 14 (human oversight via stopping conditions),
-Article 15 (robustness / fail-safes), and Article 26 (deployer
-monitoring + reporting). The full article-by-article compliance mapping
-ships in 0.3.0 Sprint 6 (<code>docs/compliance/</code>).</p>
+<h1 id="hooks">Hooks<a class="headerlink" href="#hooks" title="Permanent link">&para;</a></h1>
+<p>Hooks are the runtime's <strong>interceptor chain</strong>. Unlike <code>EventSink</code>
+(which observes) or <code>Guardrail</code> (which blocks), a hook may <strong>mutate</strong>
+the data flowing through a turn or tool call — redact PII before a
+prompt reaches the model, log model I/O for audit, wrap a result in a
+post-processing step, fail fast on a token-budget pre-flight check.</p>
+<p>The chain runs left-to-right around every <code>run_turn</code> / <code>arun_turn</code> and
+<code>run_tool</code> / <code>arun_tool</code> call. Each hook sees the post-mutation output
+of the previous one.</p>
 <h2 id="when-to-use-this">When to use this<a class="headerlink" href="#when-to-use-this" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>You ship to EU customers</strong> and any user-deployed system would meet
-  the Annex III "high-risk" definition. Article 9 risk management,
-  Article 12 record-keeping, and Article 26 deployer-side monitoring
-  all want a runtime kill-switch.</li>
-<li><strong>Cost is dollars per token, not milliseconds per request.</strong> A
-  budget cap that the agent could in principle catch + recover from is
-  not a hard cap. <code>MaxBudgetLimit(on_breach="terminate")</code> is.</li>
-<li><strong>The agent runs unattended and must stop on its own.</strong> Production
-  multi-step agent loops can drift; a 25-turn iteration cap + a
-  consecutive-failure cap rules out the canonical runaway-loop
-  failure mode.</li>
-<li><strong>You need a rollout signal before flipping a knob to hard-stop.</strong>
-  Use <code>on_breach="alert"</code> first; measure breach rates from the
-  <code>governance.alert</code> events; flip to <code>"terminate"</code> when you trust the
-  threshold.</li>
+<li><strong>Cross-cutting concerns</strong> that several agents share: PII redaction,
+  audit logging, request signing, cost pre-flight checks.</li>
+<li><strong>Surgical input/output rewriting</strong> at the runtime boundary — caller
+  builds the prompt; hook sanitizes it; model receives the cleaned
+  version.</li>
+<li><strong>Composable safety primitives</strong> that are too lightweight for a
+  full <code>Guardrail</code> and too coupled to the value to belong in an
+  <code>EventSink</code>.</li>
 </ul>
 <h2 id="when-not-to-use-this">When NOT to use this<a class="headerlink" href="#when-not-to-use-this" title="Permanent link">&para;</a></h2>
 <ul>
-<li>For <em>recoverable</em> token / cost ceilings inside one session that the
-  agent is allowed to react to. Use <a href="../usage-tracking/"><code>UsageLimits</code></a>
-  instead — its <code>UsageLimitExceededError</code> is catchable and recovery
-  flows can respond.</li>
-<li>For per-tool authorization. Use <a href="../permissions/"><code>PermissionEnforcer</code></a>.</li>
-<li>For pattern blocking on tool inputs or outputs. Use the
-  built-in <code>PatternGuardrail</code> / <code>PromptInjectionGuardrail</code> (or a
-  custom <code>Guardrail</code>) — see <a href="../permissions/">Permissions</a> and
-  <a href="../../api/guardrails/">API: Guardrails</a>.</li>
+<li><strong>Heavy per-turn logic</strong> that does substantive work the agent itself
+  should orchestrate. Hooks should be fast and side-effect-clear.</li>
+<li><strong>Long-running I/O on the sync path.</strong> Use the async hook variants
+  (<code>abefore_model</code>, <code>aafter_tool</code>, …) and an <code>AsyncOrchestrationSession</code>.</li>
+<li><strong>Blocking the call entirely.</strong> Hooks raise exceptions, which the
+  caller sees as the turn's failure — but this is not the cleanest
+  contract for "this content is forbidden." Use a
+  <a href="../../api/guardrails/"><code>Guardrail</code></a> for that.</li>
 </ul>
 <h2 id="quickstart">Quickstart<a class="headerlink" href="#quickstart" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">techrevati.runtime</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">AgentSession</span><span class="p">,</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">GovernancePlane</span><span class="p">,</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">MaxBudgetLimit</span><span class="p">,</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">MaxConsecutiveFailuresLimit</span><span class="p">,</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">MaxIterationsLimit</span><span class="p">,</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">MaxToolCallsLimit</span><span class="p">,</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">)</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">HookContext</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">LogModelIOHook</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">RedactPIIHook</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">TokenBudgetCheckHook</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">plane</span> <span class="o">=</span> <span class="n">GovernancePlane</span><span class="p">(</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">limits</span><span class="o">=</span><span class="p">(</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        <span class="n">MaxIterationsLimit</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">on_breach</span><span class="o">=</span><span class="s2">&quot;terminate&quot;</span><span class="p">),</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        <span class="n">MaxBudgetLimit</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mf">5.00</span><span class="p">,</span> <span class="n">on_breach</span><span class="o">=</span><span class="s2">&quot;terminate&quot;</span><span class="p">),</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>        <span class="n">MaxConsecutiveFailuresLimit</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">on_breach</span><span class="o">=</span><span class="s2">&quot;terminate&quot;</span><span class="p">),</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>        <span class="n">MaxToolCallsLimit</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">on_breach</span><span class="o">=</span><span class="s2">&quot;alert&quot;</span><span class="p">),</span>
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="p">),</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="p">)</span>
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="n">session</span> <span class="o">=</span> <span class="n">AgentSession</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="s2">&quot;writer&quot;</span><span class="p">,</span> <span class="n">phase</span><span class="o">=</span><span class="s2">&quot;draft&quot;</span><span class="p">,</span> <span class="n">governance</span><span class="o">=</span><span class="n">plane</span><span class="p">)</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">sess</span> <span class="o">=</span> <span class="n">AgentSession</span><span class="p">(</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">role</span><span class="o">=</span><span class="s2">&quot;writer&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">phase</span><span class="o">=</span><span class="s2">&quot;draft&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="n">hooks</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>        <span class="n">RedactPIIHook</span><span class="p">(),</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>        <span class="n">LogModelIOHook</span><span class="p">(),</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>        <span class="n">TokenBudgetCheckHook</span><span class="p">(</span><span class="n">token_limit</span><span class="o">=</span><span class="mi">8_000</span><span class="p">),</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    <span class="p">],</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="p">)</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="n">ctx</span> <span class="o">=</span> <span class="n">HookContext</span><span class="p">(</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    <span class="n">role</span><span class="o">=</span><span class="s2">&quot;writer&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    <span class="n">phase</span><span class="o">=</span><span class="s2">&quot;draft&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;Email me at alice@example.com — SSN 123-45-6789.&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="p">)</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="k">async</span> <span class="k">with</span> <span class="n">sess</span><span class="o">.</span><span class="n">asession</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>        <span class="c1"># Closure reads ctx.prompt AFTER hooks have mutated it,</span>
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>        <span class="c1"># so the model sees the redacted value.</span>
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>        <span class="k">return</span> <span class="k">await</span> <span class="n">acall_model</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">prompt</span><span class="p">)</span>
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>    <span class="n">result</span><span class="p">,</span> <span class="n">usage</span> <span class="o">=</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">arun_turn</span><span class="p">(</span>
+<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>        <span class="n">call</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;claude-opus-4-7&quot;</span><span class="p">,</span> <span class="n">hook_ctx</span><span class="o">=</span><span class="n">ctx</span><span class="p">,</span>
+<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>    <span class="p">)</span>
 </code></pre></div>
-<p>The orchestrator ticks the plane's counters at three points:</p>
-<ul>
-<li><strong>Pre-turn</strong> — <code>record_turn_start()</code> and <code>enforce()</code>. The iteration
-  cap fires here.</li>
-<li><strong>Pre-tool</strong> — <code>record_tool_call()</code> and <code>enforce()</code>. The tool-call
-  cap fires here.</li>
-<li><strong>Post-turn</strong> — <code>record_success()</code> or <code>record_failure()</code>,
-  <code>record_cost(cost_delta)</code>, and <code>enforce()</code>. The budget and
-  consecutive-failures caps fire here.</li>
-</ul>
-<h2 id="the-four-built-in-limits">The four built-in limits<a class="headerlink" href="#the-four-built-in-limits" title="Permanent link">&para;</a></h2>
-<h3 id="maxiterationslimit"><code>MaxIterationsLimit</code><a class="headerlink" href="#maxiterationslimit" title="Permanent link">&para;</a></h3>
-<p>Caps total turns in the session. Distinct from
-<code>AgentSession.max_iterations</code> — that one raises a recoverable
-<code>MaxIterationsExceededError</code>; this one is terminal.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">MaxIterationsLimit</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">on_breach</span><span class="o">=</span><span class="s2">&quot;terminate&quot;</span><span class="p">)</span>
-</code></pre></div>
-<h3 id="maxbudgetlimit"><code>MaxBudgetLimit</code><a class="headerlink" href="#maxbudgetlimit" title="Permanent link">&para;</a></h3>
-<p>Caps cumulative cost in USD. Distinct from <code>UsageLimits.cost_usd_max</code>
-— that one is recoverable; this one is terminal.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">MaxBudgetLimit</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mf">5.00</span><span class="p">,</span> <span class="n">on_breach</span><span class="o">=</span><span class="s2">&quot;terminate&quot;</span><span class="p">)</span>
-</code></pre></div>
-<h3 id="maxconsecutivefailureslimit"><code>MaxConsecutiveFailuresLimit</code><a class="headerlink" href="#maxconsecutivefailureslimit" title="Permanent link">&para;</a></h3>
-<p>Counts consecutive failures. A single successful turn resets the
-counter to zero. Catches "the agent retries the same broken thing
-forever" failure modes that per-step retry budgets alone do not.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">MaxConsecutiveFailuresLimit</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">on_breach</span><span class="o">=</span><span class="s2">&quot;terminate&quot;</span><span class="p">)</span>
-</code></pre></div>
-<h3 id="maxtoolcallslimit"><code>MaxToolCallsLimit</code><a class="headerlink" href="#maxtoolcallslimit" title="Permanent link">&para;</a></h3>
-<p>Caps total tool invocations in the session. Distinct from
-<code>UsageLimits.tool_calls_max</code> only in being terminal.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">MaxToolCallsLimit</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">on_breach</span><span class="o">=</span><span class="s2">&quot;alert&quot;</span><span class="p">)</span>
-</code></pre></div>
-<h2 id="on_breach-modes"><code>on_breach</code> modes<a class="headerlink" href="#on_breach-modes" title="Permanent link">&para;</a></h2>
+<h2 id="the-four-lifecycle-methods">The four lifecycle methods<a class="headerlink" href="#the-four-lifecycle-methods" title="Permanent link">&para;</a></h2>
+<p>Hooks implement any subset of:</p>
 <table>
 <thead>
 <tr>
-<th>Mode</th>
-<th>Behavior</th>
+<th>method</th>
+<th>when</th>
+<th>mutates</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>"terminate"</code> (default)</td>
-<td>Raises <code>GovernanceBreachError</code>. Worker → <code>FAILED</code>. Recovery loop is <strong>NOT</strong> invoked.</td>
+<td><code>before_model</code></td>
+<td>before <code>run_turn</code> / <code>arun_turn</code></td>
+<td><code>ctx.prompt</code> (in place)</td>
 </tr>
 <tr>
-<td><code>"alert"</code></td>
-<td>Emits a <code>governance.alert</code> event on every breached evaluation. Session continues.</td>
+<td><code>after_model</code></td>
+<td>after the model returns</td>
+<td>returns the new result</td>
+</tr>
+<tr>
+<td><code>before_tool</code></td>
+<td>before <code>run_tool</code> / <code>arun_tool</code></td>
+<td><code>ctx.args</code> (in place)</td>
+</tr>
+<tr>
+<td><code>after_tool</code></td>
+<td>after the tool returns</td>
+<td>returns the new result</td>
+</tr>
+<tr>
+<td><code>before_handoff</code></td>
+<td>reserved (not yet wired)</td>
+<td>n/a</td>
 </tr>
 </tbody>
 </table>
-<p>Rolling out a new limit safely: deploy with <code>"alert"</code> for 1–2 weeks,
-observe the <code>governance.alert</code> event rate, then flip to <code>"terminate"</code>.</p>
-<h2 id="event-surface">Event surface<a class="headerlink" href="#event-surface" title="Permanent link">&para;</a></h2>
-<p>Two new <code>AgentEventName</code> values surface in 0.3.0:</p>
-<ul>
-<li><code>governance.breach</code> — emitted <strong>before</strong> <code>GovernanceBreachError</code>
-  raises so downstream sinks see the breach in the audit log even when
-  the exception propagates past them.</li>
-<li><code>governance.alert</code> — emitted once per evaluation per breached
-  alert-mode limit.</li>
-</ul>
-<p>Both carry <code>data = {limit_name, observed, ceiling, scope}</code> for sink
-serialization.</p>
-<h2 id="composing-with-usagelimits">Composing with <code>UsageLimits</code><a class="headerlink" href="#composing-with-usagelimits" title="Permanent link">&para;</a></h2>
-<p>These two primitives are not redundant — they sit at different layers.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">sess</span> <span class="o">=</span> <span class="n">AgentSession</span><span class="p">(</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">role</span><span class="o">=</span><span class="s2">&quot;writer&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">phase</span><span class="o">=</span><span class="s2">&quot;draft&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="c1"># Soft cap: agent code can catch UsageLimitExceededError and react.</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="n">usage_limits</span><span class="o">=</span><span class="n">UsageLimits</span><span class="p">(</span><span class="n">total_tokens_max</span><span class="o">=</span><span class="mi">200_000</span><span class="p">),</span>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="c1"># Hard cap: governance breach terminates the session regardless.</span>
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    <span class="n">governance</span><span class="o">=</span><span class="n">GovernancePlane</span><span class="p">(</span>
-<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>        <span class="n">limits</span><span class="o">=</span><span class="p">(</span><span class="n">MaxBudgetLimit</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mf">10.00</span><span class="p">,</span> <span class="n">on_breach</span><span class="o">=</span><span class="s2">&quot;terminate&quot;</span><span class="p">),),</span>
-<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    <span class="p">),</span>
-<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="p">)</span>
+<p>Async sessions look up <code>abefore_model</code> / <code>aafter_model</code> first; if
+absent, they fall back to the sync method and call it inline. So a
+hook that implements only <code>before_model</code> works in both sync and async
+sessions; a hook with only <code>abefore_model</code> works in async sessions
+only (the sync path silently skips it — matching the
+<code>AsyncGuardrail</code> behavior).</p>
+<h2 id="hookcontext"><code>HookContext</code><a class="headerlink" href="#hookcontext" title="Permanent link">&para;</a></h2>
+<p>The same mutable <code>HookContext</code> instance flows through the whole chain
+for a single call. Hooks may mutate any field.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nd">@dataclass</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">HookContext</span><span class="p">:</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">role</span><span class="p">:</span> <span class="nb">str</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">phase</span><span class="p">:</span> <span class="nb">str</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>        <span class="c1"># set by the session for *_model hooks</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">prompt</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>     <span class="c1"># caller-supplied; redacted/logged by hooks</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">tool</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>         <span class="c1"># set by the session for *_tool hooks</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">args</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="n">extra</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>  <span class="c1"># free-form caller scratch</span>
 </code></pre></div>
-<p>A common pattern is: <code>usage_limits</code> cap at 80% of the budget, <code>governance</code>
-hard-stop at 100%. The agent gets a recoverable warning before the
-session dies.</p>
-<h2 id="tuning-the-knobs">Tuning the knobs<a class="headerlink" href="#tuning-the-knobs" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Knob</th>
-<th>Reasonable range</th>
-<th>Notes</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>MaxIterationsLimit.value</code></td>
-<td>10–50 for production loops</td>
-<td>Same default as OpenAI Agents SDK.</td>
-</tr>
-<tr>
-<td><code>MaxBudgetLimit.value</code></td>
-<td>per-customer / per-session limit</td>
-<td>Pair with <code>UsageLimits.cost_usd_max</code> at 80%.</td>
-</tr>
-<tr>
-<td><code>MaxConsecutiveFailuresLimit.value</code></td>
-<td>2–5</td>
-<td>Below 2 is twitchy; above 5 hides real reliability bugs.</td>
-</tr>
-<tr>
-<td><code>MaxToolCallsLimit.value</code></td>
-<td>5×–10× expected</td>
-<td>Useful as an alert before flipping to terminate.</td>
-</tr>
-<tr>
-<td><code>on_breach="alert"</code></td>
-<td>Always start here for new limits</td>
-<td>Measure first, terminate second.</td>
-</tr>
-</tbody>
-</table>
+<p>Pass an instance via <code>hook_ctx=</code> on <code>run_turn</code> / <code>arun_turn</code> /
+<code>run_tool</code> / <code>arun_tool</code> / <code>arun_turn_stream</code>. <strong>The caller's
+<code>coro_factory</code> / <code>fn</code> must close over <code>ctx.prompt</code> (or <code>ctx.args</code>) to
+see the post-hook value</strong> — the runtime does not pass the mutated
+prompt into your factory, since the factory shape is unconstrained.</p>
+<p>If <code>hook_ctx</code> is omitted, the runtime synthesizes a fresh
+<code>HookContext</code> so hooks still fire — but mutations to <code>ctx.prompt</code>
+have no observer.</p>
+<h2 id="built-in-hooks">Built-in hooks<a class="headerlink" href="#built-in-hooks" title="Permanent link">&para;</a></h2>
+<h3 id="redactpiihook"><code>RedactPIIHook</code><a class="headerlink" href="#redactpiihook" title="Permanent link">&para;</a></h3>
+<p>Best-effort PII scrubber for strings, dicts, and OpenAI-style message
+lists. Defaults to SSN, email, credit card, IPv4, and long API-key
+heuristics; pass <code>patterns=</code> to override.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">RedactPIIHook</span><span class="p">(</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">patterns</span><span class="o">=</span><span class="p">[</span><span class="sa">r</span><span class="s2">&quot;\b\d</span><span class="si">{3}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">-\d</span><span class="si">{4}</span><span class="s2">\b&quot;</span><span class="p">],</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">replacement</span><span class="o">=</span><span class="s2">&quot;[REDACTED]&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="p">)</span>
+</code></pre></div>
+<p>Runs in <strong>both</strong> <code>before_model</code> (input scrub) and <code>after_model</code>
+(output scrub) so log sinks downstream cannot leak what the upstream
+redactor caught.</p>
+<p>This is a first-line defense, not a substitute for a dedicated PII
+scrubber. Pattern-based redaction misses paraphrased PII and
+context-aware references; for high-risk deployments, swap in or
+prepend a model-based scrubber.</p>
+<h3 id="logmodeliohook"><code>LogModelIOHook</code><a class="headerlink" href="#logmodeliohook" title="Permanent link">&para;</a></h3>
+<p>Logs model input + output via a stdlib logger. Useful for
+development, audit dumps, and reproducing model behavior offline.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">LogModelIOHook</span><span class="p">(</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">include_prompt</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">include_result</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="n">max_chars</span><span class="o">=</span><span class="mi">4_000</span><span class="p">,</span>  <span class="c1"># truncates oversized payloads</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="p">)</span>
+</code></pre></div>
+<p>Truncates above <code>max_chars</code> and suffixes <code>"…(truncated)"</code> so a runaway
+100 K-token blob does not flood your log pipeline. Set
+<code>include_prompt=False</code> to log only outputs, or vice versa.</p>
+<h3 id="tokenbudgetcheckhook"><code>TokenBudgetCheckHook</code><a class="headerlink" href="#tokenbudgetcheckhook" title="Permanent link">&para;</a></h3>
+<p>Pre-flight token-budget guard. Raises <code>HookBudgetExceededError</code>
+<strong>before</strong> the model call if the estimator exceeds <code>token_limit</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">TokenBudgetCheckHook</span><span class="p">(</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">token_limit</span><span class="o">=</span><span class="mi">8_000</span><span class="p">,</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">estimator</span><span class="o">=</span><span class="n">tiktoken_estimator</span><span class="p">,</span>  <span class="c1"># default: len(str(prompt)) // 4</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="p">)</span>
+</code></pre></div>
+<p>Composes with <a href="../usage-tracking/"><code>UsageLimits</code></a> (post-flight, per
+session) and <a href="../governance/"><code>GovernancePlane.MaxBudgetLimit</code></a>
+(terminal, post-flight). Use this hook to catch the obvious "I just
+pasted a 50 K-token document" mistake before it costs anything.</p>
+<h2 id="writing-your-own-hook">Writing your own hook<a class="headerlink" href="#writing-your-own-hook" title="Permanent link">&para;</a></h2>
+<p>Hooks are plain classes. Only the <code>name</code> attribute is required;
+implement only the lifecycle methods you need.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">RequestSigningHook</span><span class="p">:</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;request_signing&quot;</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_key</span> <span class="o">=</span> <span class="n">key</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">before_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">:</span> <span class="n">HookContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>        <span class="n">ctx</span><span class="o">.</span><span class="n">extra</span><span class="p">[</span><span class="s2">&quot;signature&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hmac</span><span class="o">.</span><span class="n">new</span><span class="p">(</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="o">.</span><span class="n">encode</span><span class="p">(),</span> <span class="nb">str</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">prompt</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(),</span> <span class="s2">&quot;sha256&quot;</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>        <span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+</code></pre></div>
+<p><code>Hook</code> and <code>AsyncHook</code> are both <code>runtime_checkable</code> Protocols — pass
+your class instance directly into <code>hooks=</code> and the dispatcher figures
+out which methods are sync vs. async.</p>
+<h2 id="chain-ordering">Chain ordering<a class="headerlink" href="#chain-ordering" title="Permanent link">&para;</a></h2>
+<p>Hooks run in the order you supplied them. If hook B reads what hook A
+wrote, put A first:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">sess</span> <span class="o">=</span> <span class="n">AgentSession</span><span class="p">(</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="n">role</span><span class="o">=</span><span class="s2">&quot;writer&quot;</span><span class="p">,</span> <span class="n">phase</span><span class="o">=</span><span class="s2">&quot;draft&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">hooks</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>        <span class="n">RedactPIIHook</span><span class="p">(),</span>              <span class="c1"># 1. redact PII from prompt</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>        <span class="n">LogModelIOHook</span><span class="p">(),</span>             <span class="c1"># 2. log the redacted prompt</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>        <span class="n">TokenBudgetCheckHook</span><span class="p">(</span><span class="mi">8_000</span><span class="p">),</span>  <span class="c1"># 3. budget-check the redacted prompt</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="p">],</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="p">)</span>
+</code></pre></div>
+<p>The chain runs the same way for both sync and async sessions. There
+is no priority system — order is the only signal.</p>
+<h2 id="exception-semantics">Exception semantics<a class="headerlink" href="#exception-semantics" title="Permanent link">&para;</a></h2>
+<p>Hooks may raise. The orchestrator does <strong>not</strong> catch hook exceptions
+in the sync chain — they propagate through <code>run_turn</code> / <code>arun_turn</code>
+exactly like any other failure (and so participate in
+<code>classify_exception</code> + recovery).</p>
+<p>In particular, <code>TokenBudgetCheckHook</code> raises
+<code>HookBudgetExceededError</code>. The recovery loop sees it as a generic
+exception → <code>UNKNOWN</code> failure class; if you want a different
+recovery scenario (smaller context, switch provider, etc.) catch
+it in the caller before re-raising into the orchestrator.</p>
+<h2 id="composing-with-guardrails">Composing with guardrails<a class="headerlink" href="#composing-with-guardrails" title="Permanent link">&para;</a></h2>
+<ul>
+<li>A <strong><code>Guardrail</code></strong> is a yes/no check — it blocks the call when its
+  outcome is <code>allowed=False</code>.</li>
+<li>A <strong><code>Hook</code></strong> is a transformer — it mutates inputs/outputs and can
+  raise on policy violations.</li>
+</ul>
+<p>Both run around tool calls; the order is <strong><code>before_tool</code> hooks →
+pre-guardrails → tool fn → post-guardrails → <code>after_tool</code> hooks</strong>, so
+hook mutations are visible to guardrails.</p>
 <h2 id="anti-patterns">Anti-patterns<a class="headerlink" href="#anti-patterns" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Catching <code>GovernanceBreachError</code> and retrying.</strong> Don't. The point
-  of the plane is that the agent cannot bypass it. If you want
-  recoverable behavior, use <code>UsageLimits</code> instead.</li>
-<li><strong>Putting business logic in <code>GovernanceState.record_*</code>.</strong> The state
-  object is a counter; do not subclass it to fire side effects on
-  every tick. Add a custom <code>EventSink</code> for that.</li>
-<li><strong>One plane per turn.</strong> Construct the plane once and pass it to
-  <code>AgentSession</code>; do not create a new plane on each turn — counters
-  reset.</li>
-<li><strong>Mixing <code>"alert"</code> and <code>"terminate"</code> randomly across limits.</strong> Pick a
-  rollout phase per limit, document it, and don't half-migrate.</li>
+<li><strong>Hiding business logic in hooks.</strong> Hooks are about cross-cutting
+  concerns; the agent's actual reasoning belongs in the model call or
+  tool implementations.</li>
+<li><strong>Mutating <code>ctx.role</code> or <code>ctx.phase</code> mid-flight.</strong> The runtime resets
+  these from the session before the chain runs; treat them as
+  read-only.</li>
+<li><strong>Async I/O in a sync hook.</strong> Use <code>AsyncHook</code> and an async session;
+  blocking the event loop ruins everything streaming buys you.</li>
+<li><strong>Catching <code>HookBudgetExceededError</code> inside a hook chain.</strong> Let it
+  bubble up; the orchestrator is the only place that can decide
+  whether to recover.</li>
 </ul>
 <h2 id="sources">Sources<a class="headerlink" href="#sources" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Waxell — <em>AI Agent Circuit Breakers: The Reliability Pattern Production
-  Teams Are Missing</em> — <a href="https://dev.to/waxell/ai-agent-circuit-breakers-the-reliability-pattern-production-teams-are-missing-5bpg">https://dev.to/waxell/ai-agent-circuit-breakers-...</a></li>
-<li>DZone — <em>Engineering Hard-Stop Safety Into Autonomous Agent
-  Workflows</em> — <a href="https://dzone.com/articles/algorithmic-circuit-breakers-agent-safety">https://dzone.com/articles/algorithmic-circuit-breakers-agent-safety</a></li>
-<li>EU AI Act Articles 9, 12, 14, 15, 26 — <a href="https://artificialintelligenceact.eu/section/3-2/">artificialintelligenceact.eu</a></li>
+<li>OpenAI Agents SDK — <em>Lifecycle hooks</em>: <a href="https://openai.github.io/openai-agents-python/agents/">https://openai.github.io/openai-agents-python/agents/</a></li>
+<li>Pydantic AI — <em>Agent observability</em>: <a href="https://ai.pydantic.dev/observability/">https://ai.pydantic.dev/observability/</a></li>
+<li>Anthropic — <em>Building safer agents</em>: <a href="https://www.anthropic.com/engineering/building-effective-agents">https://www.anthropic.com/engineering/building-effective-agents</a></li>
 </ul>
 
 

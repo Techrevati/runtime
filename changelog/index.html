@@ -957,6 +957,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../patterns/streaming/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Streaming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../patterns/hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1305,6 +1361,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../api/hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/streaming/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Streaming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../api/sinks/" class="md-nav__link">
         
   
@@ -1482,6 +1594,45 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#unreleased-030-dev" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [Unreleased] — 0.3.0-dev
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[Unreleased] — 0.3.0-dev">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added-sprint-3-streaming-lifecycle-hooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added — Sprint 3 (streaming + lifecycle hooks)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added-sprint-2-governance-plane-async-guardrails" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added — Sprint 2 (governance plane + async guardrails)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#021-2026-05-20" class="md-nav__link">
@@ -1845,6 +1996,45 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#unreleased-030-dev" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [Unreleased] — 0.3.0-dev
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[Unreleased] — 0.3.0-dev">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added-sprint-3-streaming-lifecycle-hooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added — Sprint 3 (streaming + lifecycle hooks)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added-sprint-2-governance-plane-async-guardrails" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added — Sprint 2 (governance plane + async guardrails)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#021-2026-05-20" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2196,6 +2386,69 @@
 follows <a href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>; the project
 follows <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>, with the
 caveat that 0.x APIs are explicitly unstable.</p>
+<h2 id="unreleased-030-dev">[Unreleased] — 0.3.0-dev<a class="headerlink" href="#unreleased-030-dev" title="Permanent link">&para;</a></h2>
+<p>Rolling tip-of-main entry for the 0.3.0 milestone (EU AI Act compliance
+release). Items below ship under <code>main</code> and will roll up into the
+tagged <code>0.3.0</code> cut once Sprint 7 lands. <strong>Nothing here is on PyPI yet.</strong></p>
+<h3 id="added-sprint-3-streaming-lifecycle-hooks">Added — Sprint 3 (streaming + lifecycle hooks)<a class="headerlink" href="#added-sprint-3-streaming-lifecycle-hooks" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong><code>AsyncOrchestrationSession.arun_turn_stream</code></strong> — structured
+  <code>StreamEvent</code> generator that reemits caller-produced text chunks and
+  terminates with a <code>final</code> event carrying the resolved usage snapshot.
+  Participates in the full session bookkeeping (iteration cap,
+  governance plane, rate limiter, usage tracker) exactly like
+  <code>arun_turn</code>. Cancellation is consumer-driven: wrap with
+  <code>contextlib.aclosing</code> to get deterministic cleanup of the upstream
+  generator; <code>session._last_stream_cancelled</code> flips to <code>True</code> on the
+  cancelled path.</li>
+<li><strong><code>StreamEvent</code></strong> frozen dataclass + classmethod constructors
+  (<code>text</code>, <code>tool_call</code>, <code>tool_result</code>, <code>handoff</code>, <code>final</code>, <code>error</code>),
+  <code>to_dict()</code> / <code>to_json()</code> for wire serialization. <code>StreamEventType</code>
+  and <code>StreamFinalStatus</code> type aliases exported for consumer typing.</li>
+<li><strong><code>Hook</code> + <code>AsyncHook</code> Protocols</strong> — interceptor chain that <em>mutates</em>
+  data, in contrast to the observe-only <code>EventSink</code>. Methods are
+  optional via <code>hasattr</code> dispatch; implement only what you need.</li>
+<li><strong><code>HookContext</code></strong> — mutable dataclass shared across the hook chain.
+  Fields: <code>role</code>, <code>phase</code>, <code>model</code>, <code>prompt</code>, <code>tool</code>, <code>args</code>, <code>extra</code>.
+  Pass via <code>hook_ctx=</code> on <code>run_turn</code> / <code>arun_turn</code> / <code>run_tool</code> /
+  <code>arun_tool</code> / <code>arun_turn_stream</code>.</li>
+<li><strong><code>AgentSession(hooks=[...])</code></strong> — hook chain wired through every
+  sync + async session. Chain runs left-to-right; later hooks see
+  earlier mutations.</li>
+<li><strong>Built-in hooks:</strong> <code>RedactPIIHook</code> (best-effort PII scrubbing for
+  strings, dicts, OpenAI-style message lists; runs <code>before_model</code> and
+  <code>after_model</code>), <code>LogModelIOHook</code> (stdlib logger emits model input +
+  output with truncation), <code>TokenBudgetCheckHook</code> (pre-flight token
+  budget guard that raises <code>HookBudgetExceededError</code>).</li>
+<li><strong>Docs:</strong> <code>docs/patterns/streaming.md</code>, <code>docs/patterns/hooks.md</code>,
+  plus API reference stubs <code>docs/api/streaming.md</code>,
+  <code>docs/api/hooks.md</code>; mkdocs nav updated.</li>
+</ul>
+<h3 id="added-sprint-2-governance-plane-async-guardrails">Added — Sprint 2 (governance plane + async guardrails)<a class="headerlink" href="#added-sprint-2-governance-plane-async-guardrails" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong><code>GovernancePlane</code></strong> primitive — hard-stop limit enforcement
+  <em>outside</em> agent code, terminal on breach (does NOT route through
+  recovery). Built-in limits: <code>MaxIterationsLimit</code>, <code>MaxBudgetLimit</code>,
+  <code>MaxConsecutiveFailuresLimit</code>, <code>MaxToolCallsLimit</code>. Each carries a
+  <code>value</code>, <code>scope</code> (<code>session</code> for now), and <code>on_breach</code> mode
+  (<code>terminate</code> raises <code>GovernanceBreachError</code>; <code>alert</code> emits
+  <code>governance.alert</code> events and continues).</li>
+<li><strong><code>AgentSession(governance=...)</code></strong> wired through both sync and async
+  sessions. The plane ticks turn counter pre-turn, tool counter
+  pre-tool, and cost / success-streak post-turn.</li>
+<li><strong><code>AsyncGuardrail</code></strong> Protocol (<code>acheck_pre</code> / <code>acheck_post</code>) for
+  guardrails that need I/O. Mixed sync + async guardrail lists
+  supported on async sessions.</li>
+<li><strong><code>PatternGuardrail</code></strong> (regex deny-list, one compiled alternation
+  per instance) and <strong><code>PromptInjectionGuardrail</code></strong> (subclass with 11
+  canonical injection signatures: instruction override, role hijack,
+  delimiter abuse, base64 blob, system-prompt extraction).</li>
+<li><strong><code>governance.breach</code></strong> + <strong><code>governance.alert</code></strong> event names in
+  <code>AgentEventName</code> — emitted via <code>EventSink</code> before the breach
+  exception raises so audit logs catch them even when the exception
+  propagates past handlers.</li>
+<li><strong>Docs:</strong> <code>docs/patterns/governance.md</code> + <code>docs/api/governance.md</code>.</li>
+</ul>
 <h2 id="021-2026-05-20">[0.2.1] — 2026-05-20<a class="headerlink" href="#021-2026-05-20" title="Permanent link">&para;</a></h2>
 <p>Sharp-edges patch landed the same day as 0.2.0 to close silent footguns
 identified in the 0.3.0 migration audit. No new primitives; one

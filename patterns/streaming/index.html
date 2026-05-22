@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://Techrevati.github.io/runtime/patterns/policy/">
+        <link rel="canonical" href="https://Techrevati.github.io/runtime/patterns/streaming/">
       
       
-        <link rel="prev" href="../permissions/">
+        <link rel="prev" href="../governance/">
       
       
-        <link rel="next" href="../usage-tracking/">
+        <link rel="next" href="../hooks/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Policy Engine - techrevati-runtime</title>
+        <title>Streaming - techrevati-runtime</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#policy-engine" class="md-skip">
+        <a href="#streaming" class="md-skip">
           Skip to content
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Policy Engine
+              Streaming
             
           </span>
         </div>
@@ -882,37 +882,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Policy Engine
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../policy/" class="md-nav__link">
         
   
   
@@ -928,70 +901,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#usage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Usage
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#conditions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Conditions
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#actions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Actions
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#engine-semantics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Engine semantics
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1057,10 +966,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../streaming/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Streaming
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1076,6 +1012,136 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#when-to-use-this" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use this
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-not-to-use-this" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When NOT to use this
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quickstart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quickstart
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#event-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Event types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cancellation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cancellation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#errors-and-timeouts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors and timeouts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hooks-with-streaming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hooks with streaming
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#composing-with-usage-tracking-and-governance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Composing with usage tracking and governance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anti-patterns
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1679,10 +1745,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#usage" class="md-nav__link">
+  <a href="#when-to-use-this" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Usage
+        When to use this
       
     </span>
   </a>
@@ -1690,10 +1756,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#conditions" class="md-nav__link">
+  <a href="#when-not-to-use-this" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Conditions
+        When NOT to use this
       
     </span>
   </a>
@@ -1701,10 +1767,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#actions" class="md-nav__link">
+  <a href="#quickstart" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Actions
+        Quickstart
       
     </span>
   </a>
@@ -1712,10 +1778,76 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#engine-semantics" class="md-nav__link">
+  <a href="#event-types" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Engine semantics
+        Event types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cancellation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cancellation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#errors-and-timeouts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors and timeouts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hooks-with-streaming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hooks with streaming
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#composing-with-usage-tracking-and-governance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Composing with usage tracking and governance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anti-patterns
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sources
       
     </span>
   </a>
@@ -1742,104 +1874,193 @@
   
 
 
-<h1 id="policy-engine">Policy Engine<a class="headerlink" href="#policy-engine" title="Permanent link">&para;</a></h1>
-<p>Declarative rule evaluation over a <code>PhaseContext</code>. Composable conditions, named rules, sorted by priority. The engine returns a flat list of <code>PolicyActionData</code> — the caller dispatches actions.</p>
-<h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">techrevati.runtime</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">PolicyEngine</span><span class="p">,</span> <span class="n">PolicyRule</span><span class="p">,</span> <span class="n">PolicyAction</span><span class="p">,</span> <span class="n">PolicyActionData</span><span class="p">,</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">PhaseContext</span><span class="p">,</span> <span class="n">QualityLevel</span><span class="p">,</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p">)</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">techrevati.runtime.policy_engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">And</span><span class="p">,</span> <span class="n">PhaseCompleted</span><span class="p">,</span> <span class="n">QualityAt</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">rule</span> <span class="o">=</span> <span class="n">PolicyRule</span><span class="p">(</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;advance-on-quality&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">condition</span><span class="o">=</span><span class="n">And</span><span class="p">([</span><span class="n">PhaseCompleted</span><span class="p">(),</span> <span class="n">QualityAt</span><span class="p">(</span><span class="n">QualityLevel</span><span class="o">.</span><span class="n">STANDARD</span><span class="p">)]),</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">actions</span><span class="o">=</span><span class="p">[</span><span class="n">PolicyActionData</span><span class="p">(</span><span class="n">PolicyAction</span><span class="o">.</span><span class="n">ADVANCE_PHASE</span><span class="p">)],</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">priority</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="p">)</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="n">engine</span> <span class="o">=</span> <span class="n">PolicyEngine</span><span class="p">([</span><span class="n">rule</span><span class="p">])</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="n">ctx</span> <span class="o">=</span> <span class="n">PhaseContext</span><span class="p">(</span>
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="n">phase</span><span class="o">=</span><span class="s2">&quot;draft&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    <span class="n">quality_level</span><span class="o">=</span><span class="n">QualityLevel</span><span class="o">.</span><span class="n">STRICT</span><span class="p">,</span>
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="n">phase_completed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="n">completed_roles</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;writer&quot;</span><span class="p">},</span>
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    <span class="n">all_roles</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;writer&quot;</span><span class="p">},</span>
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="p">)</span>
-<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>
-<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="k">for</span> <span class="n">action</span> <span class="ow">in</span> <span class="n">engine</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">ctx</span><span class="p">):</span>
-<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>    <span class="n">dispatch</span><span class="p">(</span><span class="n">action</span><span class="p">)</span>
+<h1 id="streaming">Streaming<a class="headerlink" href="#streaming" title="Permanent link">&para;</a></h1>
+<p><code>AsyncOrchestrationSession.arun_turn_stream</code> reemits caller-produced
+text chunks as a structured <code>StreamEvent</code> sequence. Consumers iterate
+with <code>async for</code> and get one terminal <code>final</code> event after the upstream
+generator exhausts, carrying the resolved usage snapshot.</p>
+<p>This is the runtime's only streaming surface in 0.3.0. Sync sessions
+do <strong>not</strong> have a streaming variant — sync streams require thread
+coordination that conflicts with the rest of the synchronous code path
+and is rarely what callers actually want.</p>
+<h2 id="when-to-use-this">When to use this<a class="headerlink" href="#when-to-use-this" title="Permanent link">&para;</a></h2>
+<ul>
+<li>You have a provider client that exposes a token-by-token stream
+  (Anthropic SSE, OpenAI ChatCompletion streaming, etc.) and want to
+  surface deltas to a UI before the full response lands.</li>
+<li>You want to keep hook + governance + usage accounting wiring even
+  when the model call is streaming. <code>arun_turn_stream</code> ticks the
+  iteration cap, governance pre-turn, and rate-limiter pre-call hooks
+  identically to <code>arun_turn</code>.</li>
+</ul>
+<h2 id="when-not-to-use-this">When NOT to use this<a class="headerlink" href="#when-not-to-use-this" title="Permanent link">&para;</a></h2>
+<ul>
+<li>For non-streaming model calls. <code>arun_turn</code> is simpler and gives you
+  the same hook / governance / cancellation guarantees with one round
+  trip instead of an async generator.</li>
+<li>For per-chunk hook execution. Hooks fire <strong>once before</strong> and <strong>once
+  after</strong> the stream — never per chunk. Per-chunk hooks would invert
+  the cost model that makes streaming worthwhile.</li>
+<li>When the caller does not need partial output. If you discard text
+  deltas, the only thing the stream is buying you is allocator churn.</li>
+</ul>
+<h2 id="quickstart">Quickstart<a class="headerlink" href="#quickstart" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncIterator</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">techrevati.runtime</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentSession</span><span class="p">,</span> <span class="n">StreamEvent</span><span class="p">,</span> <span class="n">UsageSnapshot</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">chunks</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="c1"># Wraps your provider stream — yield text deltas as they arrive.</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="k">async</span> <span class="k">for</span> <span class="n">delta</span> <span class="ow">in</span> <span class="n">client</span><span class="o">.</span><span class="n">messages</span><span class="o">.</span><span class="n">stream</span><span class="p">(</span><span class="n">prompt</span><span class="p">):</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        <span class="k">yield</span> <span class="n">delta</span><span class="o">.</span><span class="n">text</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="n">session_factory</span> <span class="o">=</span> <span class="n">AgentSession</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="s2">&quot;writer&quot;</span><span class="p">,</span> <span class="n">phase</span><span class="o">=</span><span class="s2">&quot;draft&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="k">async</span> <span class="k">with</span> <span class="n">session_factory</span><span class="o">.</span><span class="n">asession</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="k">async</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">session</span><span class="o">.</span><span class="n">arun_turn_stream</span><span class="p">(</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>        <span class="n">chunks</span><span class="p">,</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        <span class="n">model</span><span class="o">=</span><span class="s2">&quot;claude-opus-4-7&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>        <span class="n">usage</span><span class="o">=</span><span class="n">UsageSnapshot</span><span class="p">(</span><span class="n">input_tokens</span><span class="o">=</span><span class="mi">1200</span><span class="p">,</span> <span class="n">output_tokens</span><span class="o">=</span><span class="mi">350</span><span class="p">),</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="p">):</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;text_delta&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>            <span class="nb">print</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">payload</span><span class="p">[</span><span class="s2">&quot;delta&quot;</span><span class="p">],</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>        <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;final&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">[</span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">payload</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
 </code></pre></div>
-<h2 id="conditions">Conditions<a class="headerlink" href="#conditions" title="Permanent link">&para;</a></h2>
+<h2 id="event-types">Event types<a class="headerlink" href="#event-types" title="Permanent link">&para;</a></h2>
+<p><code>StreamEvent.type</code> is one of:</p>
 <table>
 <thead>
 <tr>
-<th>Condition</th>
-<th>Matches when</th>
+<th>type</th>
+<th>payload keys</th>
+<th>when</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>QualityAt(level)</code></td>
-<td><code>ctx.quality_level &gt;= level</code></td>
+<td><code>text_delta</code></td>
+<td><code>delta</code> (str)</td>
+<td>every chunk reemitted from upstream</td>
 </tr>
 <tr>
-<td><code>PhaseCompleted()</code></td>
-<td><code>ctx.phase_completed</code></td>
+<td><code>tool_call</code></td>
+<td><code>tool</code> (str), <code>args</code> (dict)</td>
+<td>reserved; not auto-emitted in 0.3.0</td>
 </tr>
 <tr>
-<td><code>AgentFailed(role=None)</code></td>
-<td>Any role failed (or a specific one)</td>
+<td><code>tool_result</code></td>
+<td><code>tool</code> (str), <code>result</code> (Any)</td>
+<td>reserved; not auto-emitted in 0.3.0</td>
 </tr>
 <tr>
-<td><code>GateBelow(threshold)</code></td>
-<td><code>ctx.gate_score &lt; threshold</code></td>
+<td><code>handoff</code></td>
+<td><code>target_role</code> (str), <code>reason</code> (str)</td>
+<td>reserved; not auto-emitted in 0.3.0</td>
 </tr>
 <tr>
-<td><code>RetryExhausted(scenario=None)</code></td>
-<td>Recovery retries exhausted</td>
+<td><code>final</code></td>
+<td><code>status</code> (<code>completed</code>/<code>cancelled</code>/<code>failed</code>); optional <code>usage</code>, <code>detail</code></td>
+<td>always last event on success or failed paths</td>
 </tr>
 <tr>
-<td><code>TimedOut(seconds)</code></td>
-<td><code>ctx.elapsed_seconds &gt; seconds</code></td>
-</tr>
-<tr>
-<td><code>AllAgentsComplete()</code></td>
-<td><code>completed ∪ failed == all</code></td>
-</tr>
-<tr>
-<td><code>CostExceeded(usd)</code></td>
-<td><code>ctx.total_cost_usd &gt; usd</code></td>
-</tr>
-<tr>
-<td><code>And([...])</code></td>
-<td>All children match</td>
-</tr>
-<tr>
-<td><code>Or([...])</code></td>
-<td>Any child matches</td>
+<td><code>error</code></td>
+<td><code>error_type</code> (str), <code>message</code> (str)</td>
+<td>upstream raised mid-stream</td>
 </tr>
 </tbody>
 </table>
-<p>Subclass <code>PolicyCondition</code> and override <code>matches(ctx)</code> to add your own.</p>
-<h2 id="actions">Actions<a class="headerlink" href="#actions" title="Permanent link">&para;</a></h2>
-<p><code>PolicyAction</code> is an enum the caller maps to behavior:</p>
-<ul>
-<li><code>ADVANCE_PHASE</code>, <code>RETRY_AGENT</code>, <code>RETRY_PHASE</code>, <code>RECOVER_ONCE</code>, <code>ESCALATE</code>, <code>STORE_GATE_FEEDBACK</code>, <code>GENERATE_HANDOFF</code>, <code>NOTIFY</code>, <code>ABORT_PHASE</code></li>
-</ul>
-<p>Wrap in <code>PolicyActionData(action, params=dict)</code> to attach parameters.</p>
-<h2 id="engine-semantics">Engine semantics<a class="headerlink" href="#engine-semantics" title="Permanent link">&para;</a></h2>
-<ul>
-<li>Rules are sorted by <code>priority</code> (lower fires first).</li>
-<li><em>All</em> matching rules fire — there's no short-circuit on first match.</li>
-<li>The engine returns a flat list of action data; it does not dispatch.</li>
-</ul>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">PolicyEngine</span><span class="p">:</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rules</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">PolicyRule</span><span class="p">]):</span> <span class="o">...</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">PhaseContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">PolicyActionData</span><span class="p">]</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="nd">@property</span> <span class="n">rules</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">PolicyRule</span><span class="p">]</span>
+<p>Use the classmethod constructors (<code>StreamEvent.text</code>, <code>StreamEvent.final</code>,
+…) to build events in custom plumbing — they enforce the payload shape.</p>
+<h2 id="cancellation">Cancellation<a class="headerlink" href="#cancellation" title="Permanent link">&para;</a></h2>
+<p>If the consumer breaks out of the <code>async for</code> loop, <strong>wrap the
+generator with <code>contextlib.aclosing</code></strong> so cleanup runs deterministically:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">aclosing</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">async</span> <span class="k">with</span> <span class="n">aclosing</span><span class="p">(</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">session</span><span class="o">.</span><span class="n">arun_turn_stream</span><span class="p">(</span><span class="n">chunks</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;claude&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="p">)</span> <span class="k">as</span> <span class="n">stream</span><span class="p">:</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="k">async</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>        <span class="k">if</span> <span class="n">should_stop</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>            <span class="k">break</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="k">assert</span> <span class="n">session</span><span class="o">.</span><span class="n">_last_stream_cancelled</span> <span class="ow">is</span> <span class="kc">True</span>
 </code></pre></div>
-<p>Rules cannot be added after construction — pass the full list.</p>
+<p>Without <code>aclosing</code> (or an explicit <code>await stream.aclose()</code>), Python
+leaves the generator dangling until garbage collection — the upstream
+provider connection might not close on time and the
+<code>_last_stream_cancelled</code> flag may not flip in your test or audit hook.
+This is a Python-level idiom, not a runtime quirk, but the runtime
+relies on it for clean shutdown.</p>
+<p>On the cancelled path the generator does <strong>not</strong> yield a
+<code>final("cancelled")</code> event because the consumer is no longer listening.
+Check <code>session._last_stream_cancelled</code> instead.</p>
+<h2 id="errors-and-timeouts">Errors and timeouts<a class="headerlink" href="#errors-and-timeouts" title="Permanent link">&para;</a></h2>
+<p>If the upstream generator raises, the stream yields:</p>
+<ol>
+<li><code>StreamEvent.error(error_type=..., message=...)</code></li>
+<li><code>StreamEvent.final(status="failed", detail=...)</code></li>
+<li>then re-raises so the caller's <code>async for</code> propagates the exception.</li>
+</ol>
+<p>A <code>timeout=</code> keyword wraps the entire stream in <code>asyncio.timeout</code>.
+Timeout fires the same error+final sequence and raises
+<code>TurnTimeoutError</code> once the consumer pulls past the final event.</p>
+<h2 id="hooks-with-streaming">Hooks with streaming<a class="headerlink" href="#hooks-with-streaming" title="Permanent link">&para;</a></h2>
+<p><code>before_model</code> runs <strong>once before</strong> the stream starts; <code>after_model</code>
+runs <strong>once after</strong> upstream exhausts, with the joined text as its
+<code>result</code>. Hooks may mutate the joined text — the mutated value is what
+the <code>final</code> event's usage snapshot is computed against.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">TrimWhitespaceHook</span><span class="p">:</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;trim&quot;</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">before_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>        <span class="c1"># Caller closes over ctx.prompt; runtime does not pass it</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        <span class="c1"># through `chunks()` automatically.</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>        <span class="k">pass</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">after_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>        <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+</code></pre></div>
+<p>Per-chunk transforms (token filtering, live redaction, etc.) belong
+<strong>inside</strong> your <code>chunks</code> async generator — wrap the upstream there.
+The runtime stays out of the per-chunk hot path on purpose.</p>
+<h2 id="composing-with-usage-tracking-and-governance">Composing with usage tracking and governance<a class="headerlink" href="#composing-with-usage-tracking-and-governance" title="Permanent link">&para;</a></h2>
+<p><code>arun_turn_stream</code> participates fully in the session's bookkeeping:</p>
+<ul>
+<li>The iteration counter ticks once before the stream starts (same as
+  <code>arun_turn</code>), so a streaming turn counts toward <code>max_iterations</code>.</li>
+<li><code>GovernancePlane.record_turn_start()</code> fires before; <code>record_success</code>
+  or <code>record_failure</code> fires after. Cost is delta'd against
+  <code>tracker.total_cost()</code> post-stream.</li>
+<li><code>UsageLimits</code> and <code>UsageSink</code> are evaluated after the joined text is
+  computed (you control the snapshot via the <code>usage=</code> or
+  <code>estimate_usage=</code> kwargs).</li>
+<li><code>AsyncRateLimiter.acquire_pre_call()</code> and <code>acquire_usage()</code> run at
+  the matching points — exactly once each, not per chunk.</li>
+</ul>
+<h2 id="anti-patterns">Anti-patterns<a class="headerlink" href="#anti-patterns" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Yielding <code>StreamEvent</code> from your <code>chunks</code> generator.</strong> Yield raw
+  text. The runtime wraps each chunk into <code>StreamEvent.text(...)</code> for
+  you; if you yield events directly they will be coerced to strings or
+  produce confused <code>text_delta</code> payloads.</li>
+<li><strong>Forgetting <code>aclosing</code>.</strong> Without it, cancellation is non-deterministic.</li>
+<li><strong>Using a sync <code>for</code> loop in <code>chunks</code>.</strong> <code>chunks</code> must be an <code>async
+  def</code> generator. A sync iterator over a network stream blocks the event
+  loop and defeats the purpose of streaming.</li>
+<li><strong>Mixing streaming and non-streaming turns in the same session
+  without thinking about ordering.</strong> Both touch the same iteration
+  counter, governance plane, and usage tracker.</li>
+</ul>
+<h2 id="sources">Sources<a class="headerlink" href="#sources" title="Permanent link">&para;</a></h2>
+<ul>
+<li>OpenAI Agents SDK — <em>Streaming</em>: <a href="https://openai.github.io/openai-agents-python/streaming/">https://openai.github.io/openai-agents-python/streaming/</a></li>
+<li>Anthropic — <em>Streaming messages</em>: <a href="https://docs.anthropic.com/en/api/streaming">https://docs.anthropic.com/en/api/streaming</a></li>
+<li>PEP 525 — <em>Asynchronous Generators</em>: <a href="https://peps.python.org/pep-0525/">https://peps.python.org/pep-0525/</a></li>
+<li><code>contextlib.aclosing</code> — <a href="https://docs.python.org/3/library/contextlib.html#contextlib.aclosing">https://docs.python.org/3/library/contextlib.html#contextlib.aclosing</a></li>
+</ul>
 
 
 

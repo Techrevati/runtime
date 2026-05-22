@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://Techrevati.github.io/runtime/api/orchestrator/">
       
       
-        <link rel="prev" href="../../patterns/governance/">
+        <link rel="prev" href="../../patterns/hooks/">
       
       
         <link rel="next" href="../circuit_breaker/">
@@ -959,6 +959,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../patterns/streaming/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Streaming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../patterns/hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1179,6 +1235,17 @@
     <span class="md-ellipsis">
       
         arun_turn
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession.arun_turn_stream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        arun_turn_stream
       
     </span>
   </a>
@@ -1568,6 +1635,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../streaming/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Streaming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../sinks/" class="md-nav__link">
         
   
@@ -1823,6 +1946,17 @@
     <span class="md-ellipsis">
       
         arun_turn
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession.arun_turn_stream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        arun_turn_stream
       
     </span>
   </a>
@@ -2090,7 +2224,7 @@ print(session.summary())
   </span>
 
 <a href="#techrevati.runtime.orchestrator.OrchestrationSession" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">OrchestrationSession</span><span class="p">(</span><span class="n">worker</span><span class="p">,</span> <span class="n">tracker</span><span class="p">,</span> <span class="n">recovery</span><span class="p">,</span> <span class="n">registry</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">role</span><span class="p">,</span> <span class="n">project_id</span><span class="p">,</span> <span class="n">permissions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">policy_engine</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">quality_gate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">budget_usd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enforce_budget</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_iterations</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">guardrails</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">event_sink</span><span class="o">=</span><span class="n">NoopEventSink</span><span class="p">(),</span> <span class="n">usage_sink</span><span class="o">=</span><span class="n">NoopUsageSink</span><span class="p">(),</span> <span class="n">events</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">thread_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">saver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">provider_router</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">usage_limits</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">governance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">circuit_breaker</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rate_limiter</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">OrchestrationSession</span><span class="p">(</span><span class="n">worker</span><span class="p">,</span> <span class="n">tracker</span><span class="p">,</span> <span class="n">recovery</span><span class="p">,</span> <span class="n">registry</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">role</span><span class="p">,</span> <span class="n">project_id</span><span class="p">,</span> <span class="n">permissions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">policy_engine</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">quality_gate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">budget_usd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enforce_budget</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_iterations</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">guardrails</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">event_sink</span><span class="o">=</span><span class="n">NoopEventSink</span><span class="p">(),</span> <span class="n">usage_sink</span><span class="o">=</span><span class="n">NoopUsageSink</span><span class="p">(),</span> <span class="n">events</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">thread_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">saver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">provider_router</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">usage_limits</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">governance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">hooks</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">circuit_breaker</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rate_limiter</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2130,13 +2264,20 @@ print(session.summary())
 
 
 <a href="#techrevati.runtime.orchestrator.OrchestrationSession.run_tool" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">run_tool</span><span class="p">(</span><span class="n">tool_name</span><span class="p">,</span> <span class="n">fn</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">run_tool</span><span class="p">(</span><span class="n">tool_name</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">hook_ctx</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Execute a tool with permission + guardrail + governance checks around it.</p>
-<p>Order: permission → governance → pre-guardrails → fn() → post-guardrails.</p>
+        <p>Execute a tool with permission + guardrail + governance + hook checks.</p>
+<p>Order: permission → governance → before_tool hooks → pre-guardrails →
+fn() → post-guardrails → after_tool hooks.</p>
+<p><code>hook_ctx</code> is a mutable context shared with the hook chain. When
+omitted the runtime synthesizes a fresh <code>HookContext</code> so hooks still
+fire — but any mutation hooks attempt on <code>ctx.args</code> is lost because
+the caller's closure does not see it. Pass a context (and close over
+<code>ctx.args</code> inside <code>fn</code>) when you want hooks to redact or rewrite
+tool inputs.</p>
 
 
     </div>
@@ -2151,7 +2292,7 @@ print(session.summary())
 
 
 <a href="#techrevati.runtime.orchestrator.OrchestrationSession.run_turn" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">run_turn</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">usage</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">estimate_usage</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">idempotency_key</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">run_turn</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">usage</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">estimate_usage</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">idempotency_key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">hook_ctx</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2196,7 +2337,7 @@ written so a restart can replay through it.</p>
   </span>
 
 <a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">AsyncOrchestrationSession</span><span class="p">(</span><span class="n">worker</span><span class="p">,</span> <span class="n">tracker</span><span class="p">,</span> <span class="n">recovery</span><span class="p">,</span> <span class="n">registry</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">role</span><span class="p">,</span> <span class="n">project_id</span><span class="p">,</span> <span class="n">permissions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">policy_engine</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">quality_gate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">budget_usd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enforce_budget</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_iterations</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">guardrails</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">event_sink</span><span class="o">=</span><span class="n">NoopEventSink</span><span class="p">(),</span> <span class="n">usage_sink</span><span class="o">=</span><span class="n">NoopUsageSink</span><span class="p">(),</span> <span class="n">events</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">thread_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">saver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">provider_router</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">usage_limits</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">governance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">circuit_breaker</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">async_rate_limiter</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">AsyncOrchestrationSession</span><span class="p">(</span><span class="n">worker</span><span class="p">,</span> <span class="n">tracker</span><span class="p">,</span> <span class="n">recovery</span><span class="p">,</span> <span class="n">registry</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">role</span><span class="p">,</span> <span class="n">project_id</span><span class="p">,</span> <span class="n">permissions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">policy_engine</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">quality_gate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">budget_usd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enforce_budget</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_iterations</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">guardrails</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">event_sink</span><span class="o">=</span><span class="n">NoopEventSink</span><span class="p">(),</span> <span class="n">usage_sink</span><span class="o">=</span><span class="n">NoopUsageSink</span><span class="p">(),</span> <span class="n">events</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">thread_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">saver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">provider_router</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">usage_limits</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">governance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">hooks</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">circuit_breaker</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">async_rate_limiter</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2244,7 +2385,7 @@ pause are async.</p>
   </span>
 
 <a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession.arun_tool" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">arun_tool</span><span class="p">(</span><span class="n">tool_name</span><span class="p">,</span> <span class="n">coro_factory</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">arun_tool</span><span class="p">(</span><span class="n">tool_name</span><span class="p">,</span> <span class="n">coro_factory</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">hook_ctx</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2252,7 +2393,8 @@ pause are async.</p>
         <p>Async sibling of run_tool.</p>
 <p>Permission + governance are sync; guardrails are awaited when
 they implement <code>AsyncGuardrail</code> and called inline when they
-are sync <code>Guardrail</code> instances.</p>
+are sync <code>Guardrail</code> instances. Hooks are dispatched both
+sync and async — see <code>hooks.py</code>.</p>
 
 
     </div>
@@ -2271,7 +2413,7 @@ are sync <code>Guardrail</code> instances.</p>
   </span>
 
 <a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession.arun_turn" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">arun_turn</span><span class="p">(</span><span class="n">coro_factory</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">usage</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">estimate_usage</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">idempotency_key</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">arun_turn</span><span class="p">(</span><span class="n">coro_factory</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">usage</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">estimate_usage</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">idempotency_key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">hook_ctx</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2283,6 +2425,46 @@ internal timeout becomes <code>TurnTimeoutError</code>.</p>
 <p><code>idempotency_key</code> behaves the same as in <code>run_turn</code>: when the
 session has a saver + thread_id configured, a prior checkpoint
 with the same key short-circuits the call.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="techrevati.runtime.orchestrator.AsyncOrchestrationSession.arun_turn_stream" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">arun_turn_stream</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession.arun_turn_stream" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">arun_turn_stream</span><span class="p">(</span><span class="n">chunk_factory</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">usage</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">estimate_usage</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">hook_ctx</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Stream a model turn as a sequence of <code>StreamEvent</code> values.</p>
+<p><code>chunk_factory</code> returns an async iterator over text chunks
+(e.g. SSE deltas from a provider client). Each chunk is reemitted
+as <code>StreamEvent.text(delta)</code>. After upstream exhausts, the
+generator yields a terminal <code>StreamEvent.final("completed", usage=...)</code>
+carrying the resolved usage snapshot.</p>
+<p>Hook chain runs once before iteration begins (<code>before_model</code>)
+and once after the aggregated text is computed (<code>after_model</code>).
+Per-chunk hooks are intentionally out of scope — they would invert
+the cost model of streaming.</p>
+<p>Cancellation: if the consumer breaks out of the <code>async for</code> loop,
+the upstream iterator's <code>aclose()</code> is awaited and
+<code>session._last_stream_cancelled</code> flips to <code>True</code>. The generator
+does NOT emit a <code>final("cancelled")</code> event in that case because
+the consumer is no longer listening; check the flag instead.</p>
+<p>On upstream exception: <code>error</code> + <code>final("failed")</code> events are
+yielded and the exception is re-raised so callers see it.</p>
 
 
     </div>
@@ -2390,7 +2572,7 @@ without leaving the session machinery.</p>
   </span>
 
 <a href="#techrevati.runtime.orchestrator.AgentSession" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">AgentSession</span><span class="p">(</span><span class="n">role</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">project_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">registry</span><span class="o">=</span><span class="n">AgentRegistry</span><span class="p">(),</span> <span class="n">permissions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">circuit_breaker</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">async_circuit_breaker</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">policy_engine</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">quality_gate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">budget_usd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enforce_budget</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_iterations</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">guardrails</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">event_sink</span><span class="o">=</span><span class="n">NoopEventSink</span><span class="p">(),</span> <span class="n">usage_sink</span><span class="o">=</span><span class="n">NoopUsageSink</span><span class="p">(),</span> <span class="n">saver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rate_limiter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">async_rate_limiter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">provider_router</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">usage_limits</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">governance</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">AgentSession</span><span class="p">(</span><span class="n">role</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">project_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">registry</span><span class="o">=</span><span class="n">AgentRegistry</span><span class="p">(),</span> <span class="n">permissions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">circuit_breaker</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">async_circuit_breaker</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">policy_engine</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">quality_gate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">budget_usd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enforce_budget</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_iterations</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">guardrails</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">event_sink</span><span class="o">=</span><span class="n">NoopEventSink</span><span class="p">(),</span> <span class="n">usage_sink</span><span class="o">=</span><span class="n">NoopUsageSink</span><span class="p">(),</span> <span class="n">saver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rate_limiter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">async_rate_limiter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">provider_router</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">usage_limits</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">governance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">hooks</span><span class="o">=</span><span class="nb">list</span><span class="p">())</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
