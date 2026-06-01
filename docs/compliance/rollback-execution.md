@@ -21,7 +21,7 @@ leaving the pilot workflow in an unknown state.
 Latest rollback preflight snapshot collected on 2026-06-01 before the real
 pilot-environment rollback:
 
-- branch: `codex/production-rc-0.3.0`,
+- branch: `production-rc-0.3.0`,
 - base HEAD before staging: `1d57f9c33b6980321d21a20078f2a1ac9a7ed3da`,
 - current working-tree release diff: 85 files changed, 8,859 insertions,
   1,794 deletions,

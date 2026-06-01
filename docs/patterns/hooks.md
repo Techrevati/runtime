@@ -67,7 +67,7 @@ async with sess.asession() as session:
         return await acall_model(ctx.prompt)
 
     result, usage = await session.arun_turn(
-        call, model="claude-opus-4-7", hook_ctx=ctx,
+        call, model="your-model", hook_ctx=ctx,
     )
 ```
 

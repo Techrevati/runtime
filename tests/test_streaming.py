@@ -389,10 +389,10 @@ async def test_arun_turn_stream_before_model_hook_runs_once() -> None:
     sess = AgentSession(role="writer", phase="draft", hooks=[CountBefore()])
     async with sess.asession() as session:
         async for _ in session.arun_turn_stream(
-            lambda: _chunks("a", "b", "c"), model="claude"
+            lambda: _chunks("a", "b", "c"), model="your-model"
         ):
             pass
-    assert calls == ["claude"]
+    assert calls == ["your-model"]
 
 
 @pytest.mark.asyncio

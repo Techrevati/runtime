@@ -34,7 +34,7 @@ def _doc_text() -> str:
             "## Purpose",
             "## Publication Preflight Snapshot",
             "Latest private publication preflight snapshot collected",
-            "branch: `codex/production-rc-0.3.0`,",
+            "branch: `production-rc-0.3.0`,",
             "base HEAD before staging: `1d57f9c33b6980321d21a20078f2a1ac9a7ed3da`,",
             "current working-tree release diff: 85 files changed, "
             "8,859 insertions, 1,794 deletions,",
@@ -321,7 +321,7 @@ def test_private_rc_publication_accepts_matching_preflight_parity(
     monkeypatch.setattr(
         module,
         "_git_branch",
-        lambda root: ("codex/production-rc-0.3.0", []),
+        lambda root: ("production-rc-0.3.0", []),
     )
     monkeypatch.setattr(
         module,
@@ -353,7 +353,7 @@ def test_private_rc_publication_rejects_branch_preflight_drift(
 
     assert failures == [
         "private RC publication branch preflight drift: "
-        "documents codex/production-rc-0.3.0, current is main"
+        "documents production-rc-0.3.0, current is main"
     ]
 
 
@@ -370,7 +370,7 @@ def test_private_rc_publication_rejects_release_diff_preflight_drift(
     monkeypatch.setattr(
         module,
         "_git_branch",
-        lambda root: ("codex/production-rc-0.3.0", []),
+        lambda root: ("production-rc-0.3.0", []),
     )
     monkeypatch.setattr(
         module,
@@ -399,7 +399,7 @@ def test_private_rc_publication_rejects_untracked_preflight_drift(
     monkeypatch.setattr(
         module,
         "_git_branch",
-        lambda root: ("codex/production-rc-0.3.0", []),
+        lambda root: ("production-rc-0.3.0", []),
     )
     monkeypatch.setattr(
         module,

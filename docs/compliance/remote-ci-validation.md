@@ -20,7 +20,7 @@ ready and before the release tag is created.
 
 Latest preflight snapshot collected on 2026-06-01 before staging:
 
-- branch: `codex/production-rc-0.3.0`,
+- branch: `production-rc-0.3.0`,
 - base HEAD before staging: `1d57f9c33b6980321d21a20078f2a1ac9a7ed3da`,
 - current working-tree release diff: 85 files changed, 8,859 insertions,
   1,794 deletions,
@@ -124,7 +124,7 @@ Use this template for the remote CI validation record:
 |---|---|
 | Reviewer | Pending |
 | Commit SHA | Pending |
-| Branch | `codex/production-rc-0.3.0` |
+| Branch | `production-rc-0.3.0` |
 | Workflow name | Pending |
 | Run URL or identifier | Pending |
 | Result | Pending |

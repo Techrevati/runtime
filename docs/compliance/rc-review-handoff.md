@@ -85,7 +85,7 @@ The handoff must point to the latest current gate evidence in
 
 Current handoff snapshot collected on 2026-06-01:
 
-- branch: `codex/production-rc-0.3.0`,
+- branch: `production-rc-0.3.0`,
 - tracked diff: 85 files changed, 8,859 insertions, 1,794 deletions,
 - untracked release assets: 104 files, all currently matching the staging
   manifest categories,
@@ -141,7 +141,7 @@ Use this template for the reviewer handoff record:
 | Reviewer | Pending |
 | Review date | Pending |
 | Commit SHA | Pending |
-| Branch | `codex/production-rc-0.3.0` |
+| Branch | `production-rc-0.3.0` |
 | Full gate result | Pending |
 | Remote CI result | Pending |
 | Security review result | Pending |

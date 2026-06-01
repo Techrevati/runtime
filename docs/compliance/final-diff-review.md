@@ -54,7 +54,7 @@ allowed by the staging manifest before staging.
 
 Latest local/server pre-review evidence collected on 2026-06-01:
 
-- branch: `codex/production-rc-0.3.0`,
+- branch: `production-rc-0.3.0`,
 - tracked diff: 85 files changed, 8,859 insertions, 1,794 deletions,
 - untracked release assets: 104 files,
 - full production gate: 999 tests passed with 94.85 percent total coverage,

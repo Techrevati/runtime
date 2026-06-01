@@ -8,7 +8,7 @@ of a long unstructured diff.
 
 ## Current Branch And Target
 
-- Working branch: `codex/production-rc-0.3.0`.
+- Working branch: `production-rc-0.3.0`.
 - Current package version: `0.3.0rc1`.
 - Target release candidate: `0.3.0rc1`.
 - Target stable release: `0.3.0`.

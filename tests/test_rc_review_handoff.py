@@ -51,7 +51,7 @@ def _handoff_doc() -> str:
             "all verify-time guard results",
             "staging manifest guard",
             "Current handoff snapshot collected",
-            "branch: `codex/production-rc-0.3.0`,",
+            "branch: `production-rc-0.3.0`,",
             "tracked diff: 85 files changed, 8,859 insertions, 1,794 deletions,",
             "untracked release assets: 104 files",
             "## External Blockers",
@@ -184,7 +184,7 @@ def test_rc_review_handoff_accepts_matching_snapshot_parity(
     monkeypatch.setattr(
         module,
         "_git_branch",
-        lambda root: ("codex/production-rc-0.3.0", []),
+        lambda root: ("production-rc-0.3.0", []),
     )
     monkeypatch.setattr(
         module,
@@ -216,7 +216,7 @@ def test_rc_review_handoff_rejects_branch_snapshot_drift(
 
     assert failures == [
         "RC review handoff branch snapshot drift: "
-        "documents codex/production-rc-0.3.0, current is main"
+        "documents production-rc-0.3.0, current is main"
     ]
 
 
@@ -231,7 +231,7 @@ def test_rc_review_handoff_rejects_tracked_snapshot_drift(
     monkeypatch.setattr(
         module,
         "_git_branch",
-        lambda root: ("codex/production-rc-0.3.0", []),
+        lambda root: ("production-rc-0.3.0", []),
     )
     monkeypatch.setattr(
         module,
@@ -259,7 +259,7 @@ def test_rc_review_handoff_rejects_untracked_snapshot_drift(
     monkeypatch.setattr(
         module,
         "_git_branch",
-        lambda root: ("codex/production-rc-0.3.0", []),
+        lambda root: ("production-rc-0.3.0", []),
     )
     monkeypatch.setattr(
         module,

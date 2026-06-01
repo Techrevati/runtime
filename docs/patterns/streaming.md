@@ -49,7 +49,7 @@ session_factory = AgentSession(role="writer", phase="draft")
 async with session_factory.asession() as session:
     async for event in session.arun_turn_stream(
         chunks,
-        model="claude-opus-4-7",
+        model="your-model",
         usage=UsageSnapshot(input_tokens=1200, output_tokens=350),
     ):
         if event.type == "text_delta":
@@ -83,7 +83,7 @@ generator with `contextlib.aclosing`** so cleanup runs deterministically:
 from contextlib import aclosing
 
 async with aclosing(
-    session.arun_turn_stream(chunks, model="claude")
+    session.arun_turn_stream(chunks, model="your-model")
 ) as stream:
     async for event in stream:
         if should_stop(event):

@@ -236,7 +236,7 @@ reviewable.
 
 Actions:
 
-- Work on branch `codex/production-rc-0.3.0`.
+- Work on branch `production-rc-0.3.0`.
 - Capture a full `git status --short --branch` snapshot.
 - Capture `git diff --stat` and group changes by subsystem:
   branding, workflows, docs, runtime modules, tests, scripts, packaging.

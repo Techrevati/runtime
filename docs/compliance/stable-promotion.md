@@ -18,7 +18,7 @@ private publication, pilot, rollback, and reviewer evidence.
 
 Latest stable promotion preflight snapshot collected on 2026-06-01:
 
-- branch: `codex/production-rc-0.3.0`,
+- branch: `production-rc-0.3.0`,
 - base HEAD before staging: `1d57f9c33b6980321d21a20078f2a1ac9a7ed3da`,
 - current package version: `0.3.0rc1`,
 - target stable version: `0.3.0`,
