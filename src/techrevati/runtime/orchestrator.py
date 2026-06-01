@@ -53,6 +53,7 @@ from techrevati.runtime.circuit_breaker import (
     CircuitBreaker,
     CircuitOpenError,
 )
+from techrevati.runtime.compliance.audit_log import AuditLogSink
 from techrevati.runtime.governance import GovernanceBreachError, GovernancePlane
 from techrevati.runtime.guardrails import (
     AsyncGuardrail,
@@ -105,6 +106,8 @@ from techrevati.runtime.retry_policy import (
 from techrevati.runtime.routing import ProviderRouter
 from techrevati.runtime.sinks import (
     EventSink,
+    FanoutEventSink,
+    FanoutUsageSink,
     NoopEventSink,
     NoopUsageSink,
     UsageSink,
@@ -329,6 +332,7 @@ class AgentSession:
     usage_limits: UsageLimits | None = None
     governance: GovernancePlane | None = None
     hooks: list[HookLike] = field(default_factory=list)
+    audit_log: AuditLogSink | None = None
 
     def __post_init__(self) -> None:
         self.role = _validate_non_empty_str("role", self.role)
@@ -342,6 +346,22 @@ class AgentSession:
         if self.governance is None:
             return None
         return self.governance.for_session()
+
+    def _event_sink_for_session(self) -> EventSink:
+        """Fan the configured event sink out to the audit log when present.
+
+        The caller's own sink keeps receiving events unchanged; the tamper-
+        evident ``AuditLogSink`` (EU AI Act Article 12) is appended alongside.
+        """
+        if self.audit_log is None:
+            return self.event_sink
+        return FanoutEventSink([self.event_sink, self.audit_log])
+
+    def _usage_sink_for_session(self) -> UsageSink:
+        """Fan the configured usage sink out to the audit log when present."""
+        if self.audit_log is None:
+            return self.usage_sink
+        return FanoutUsageSink([self.usage_sink, self.audit_log])
 
     @contextmanager
     def session(
@@ -371,8 +391,8 @@ class AgentSession:
             enforce_budget=self.enforce_budget,
             max_iterations=self.max_iterations,
             guardrails=list(self.guardrails),
-            event_sink=self.event_sink,
-            usage_sink=self.usage_sink,
+            event_sink=self._event_sink_for_session(),
+            usage_sink=self._usage_sink_for_session(),
             phase=self.phase,
             role=self.role,
             project_id=self.project_id,
@@ -434,8 +454,8 @@ class AgentSession:
             enforce_budget=self.enforce_budget,
             max_iterations=self.max_iterations,
             guardrails=list(self.guardrails),
-            event_sink=self.event_sink,
-            usage_sink=self.usage_sink,
+            event_sink=self._event_sink_for_session(),
+            usage_sink=self._usage_sink_for_session(),
             phase=self.phase,
             role=self.role,
             project_id=self.project_id,
