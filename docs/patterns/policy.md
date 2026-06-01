@@ -46,7 +46,8 @@ for action in engine.evaluate(ctx):
 | `And([...])` | All children match |
 | `Or([...])` | Any child matches |
 
-Subclass `PolicyCondition` and override `matches(ctx)` to add your own.
+Subclass the abstract `PolicyCondition` base class and override `matches(ctx)` to
+add your own.
 
 ## Actions
 

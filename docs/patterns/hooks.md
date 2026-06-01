@@ -71,7 +71,7 @@ async with sess.asession() as session:
     )
 ```
 
-## The four lifecycle methods
+## The five lifecycle methods
 
 Hooks implement any subset of:
 
@@ -81,7 +81,7 @@ Hooks implement any subset of:
 | `after_model`     | after the model returns           | returns the new result     |
 | `before_tool`     | before `run_tool` / `arun_tool`   | `ctx.args` (in place)      |
 | `after_tool`      | after the tool returns            | returns the new result     |
-| `before_handoff`  | reserved (not yet wired)          | n/a                        |
+| `before_handoff`  | before `handoff_to` / `ahandoff_to` | `ctx.extra` handoff fields |
 
 Async sessions look up `abefore_model` / `aafter_model` first; if
 absent, they fall back to the sync method and call it inline. So a
@@ -89,6 +89,13 @@ hook that implements only `before_model` works in both sync and async
 sessions; a hook with only `abefore_model` works in async sessions
 only (the sync path silently skips it — matching the
 `AsyncGuardrail` behavior).
+
+For handoffs, `ctx.extra` contains `target_role`, `reason`, `context`,
+and read-only `project_id`. A `before_handoff` hook may raise to block
+the handoff, or mutate `target_role`, `reason`, and `context` before
+the target worker is registered. Use `ahandoff_to` when an async-only
+`abefore_handoff` hook must run; the inherited sync `handoff_to`
+method runs sync handoff hooks only.
 
 ## `HookContext`
 
@@ -108,7 +115,8 @@ class HookContext:
 ```
 
 Pass an instance via `hook_ctx=` on `run_turn` / `arun_turn` /
-`run_tool` / `arun_tool` / `arun_turn_stream`. **The caller's
+`run_tool` / `arun_tool` / `arun_turn_stream` / `handoff_to` /
+`ahandoff_to`. **The caller's
 `coro_factory` / `fn` must close over `ctx.prompt` (or `ctx.args`) to
 see the post-hook value** — the runtime does not pass the mutated
 prompt into your factory, since the factory shape is unconstrained.
@@ -121,8 +129,8 @@ have no observer.
 
 ### `RedactPIIHook`
 
-Best-effort PII scrubber for strings, dicts, and OpenAI-style message
-lists. Defaults to SSN, email, credit card, IPv4, and long API-key
+Best-effort PII scrubber for strings, dicts, and message dictionaries.
+Defaults to SSN, email, credit card, IPv4, and long API-key
 heuristics; pass `patterns=` to override.
 
 ```python
@@ -143,21 +151,23 @@ prepend a model-based scrubber.
 
 ### `LogModelIOHook`
 
-Logs model input + output via a stdlib logger. Useful for
-development, audit dumps, and reproducing model behavior offline.
+Logs model-call metadata via a stdlib logger. Prompt and result payloads are
+off by default so production deployments do not accidentally leak model inputs
+or outputs.
 
 ```python
 LogModelIOHook(
     level=logging.INFO,
-    include_prompt=True,
-    include_result=True,
+    include_prompt=False,
+    include_result=False,
     max_chars=4_000,  # truncates oversized payloads
 )
 ```
 
-Truncates above `max_chars` and suffixes `"…(truncated)"` so a runaway
-100 K-token blob does not flood your log pipeline. Set
-`include_prompt=False` to log only outputs, or vice versa.
+Set `include_prompt=True` or `include_result=True` only in a controlled debug
+or audit workflow after redaction and retention policy are in place. Payloads
+above `max_chars` are truncated and suffixed with `"…(truncated)"` so a runaway
+100 K-token blob does not flood your log pipeline.
 
 ### `TokenBudgetCheckHook`
 
@@ -208,7 +218,7 @@ sess = AgentSession(
     role="writer", phase="draft",
     hooks=[
         RedactPIIHook(),              # 1. redact PII from prompt
-        LogModelIOHook(),             # 2. log the redacted prompt
+        LogModelIOHook(),             # 2. log metadata only by default
         TokenBudgetCheckHook(8_000),  # 3. budget-check the redacted prompt
     ],
 )
@@ -255,8 +265,7 @@ hook mutations are visible to guardrails.
   bubble up; the orchestrator is the only place that can decide
   whether to recover.
 
-## Sources
+## See Also
 
-- OpenAI Agents SDK — *Lifecycle hooks*: <https://openai.github.io/openai-agents-python/agents/>
-- Pydantic AI — *Agent observability*: <https://ai.pydantic.dev/observability/>
-- Anthropic — *Building safer agents*: <https://www.anthropic.com/engineering/building-effective-agents>
+- `docs/patterns/guardrails.md`
+- `docs/api/hooks.md`

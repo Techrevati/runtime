@@ -1,33 +1,30 @@
 # Orchestrator
 
-`Orchestrator` and `OrchestrationSession` (sync) /
+Author: Techrevati doo
+
+`AgentSession` and `OrchestrationSession` (sync) /
 `AsyncOrchestrationSession` (async) wire the other primitives into a
 single execution loop. Use them when you want lifecycle tracking,
 retry classification, circuit-breaker protection, permission gating,
-guardrails, max-iterations cap, OTel sinks, and cost accounting in
+guardrails, max-iterations cap, telemetry sinks, and cost accounting in
 one place.
 
-> **Naming note (be careful here).** In the broader 2026 agent
-> literature (e.g. OpenAI Agents SDK), **"orchestrator-workers"** is
-> a *delegation* pattern where one LLM dynamically dispatches
-> subtasks to worker LLMs. Our `Orchestrator` is a **session
-> wrapper** for a single agent. You implement the delegation pattern
-> *on top* of our primitives by calling `session.handoff_to(...)`
-> between sessions. The `Orchestrator` class is being kept for
-> backward compatibility; `AgentSession` is the forward-looking
-> name, becoming canonical in 0.2.0.
+> **Naming note.** `AgentSession` is the canonical session factory.
+> `Orchestrator` is kept as a deprecated compatibility alias through
+> the 0.3.x line. Use `session.handoff_to(...)` or async
+> `session.ahandoff_to(...)` to connect multiple sessions.
 
 ## Quick example (sync)
 
 ```python
 from techrevati.runtime import (
-    Orchestrator, UsageSnapshot, CircuitBreaker,
+    AgentSession, UsageSnapshot, CircuitBreaker,
     register_pricing, ModelPricing,
 )
 
 register_pricing("model-a", ModelPricing(input_per_million=3.0, output_per_million=15.0))
 
-orch = Orchestrator(
+agent = AgentSession(
     role="writer",
     phase="draft",
     project_id=42,
@@ -37,7 +34,7 @@ orch = Orchestrator(
     max_iterations=25,
 )
 
-with orch.session() as session:
+with agent.session() as session:
     result, usage = session.run_turn(
         lambda: call_model(prompt),
         model="model-a",
@@ -51,12 +48,36 @@ print(session.summary())
 Entering the session transitions the worker through
 `INITIALIZING → RUNNING`. On clean exit, to `COMPLETED`. On exception,
 to `FAILED` with the error classified into an `AgentFailureClass`.
-On `asyncio.CancelledError`, to `CANCELLED`.
+On `asyncio.CancelledError`, to `CANCELLED` with
+`failure_class="cancelled"` on the terminal `agent.failed` audit event.
+The event stream emits `agent.started` when the session opens and
+automatically attaches `project_id` to events when configured.
+`pause_for_input(...)` emits `agent.blocked` while waiting and
+`agent.ready` after input arrives, without copying the prompt or
+response into event data.
+Budget, usage-limit, and runtime rate-limiter overruns are classified as
+`failure_class="rate_limit"` on terminal session failure. Budget and
+usage-limit overruns also emit an immediate rate-limit event with limit
+metadata before the terminal session failure when the exception escapes the
+context.
+Uncaught policy and safety stops use specific terminal classifications:
+`permission_denied`, `guardrail_violation`, and `governance_breach`.
+If `AgentSession.max_iterations` escapes the session context, its terminal
+`agent.failed` event is also classified as `governance_breach` so runaway-loop
+stops do not look like model or provider failures.
+Fallback `ValueError` and `TypeError` terminal failures are classified as
+`validation_error` after the retry classifier checks for more specific timeout,
+context-overflow, dependency, and provider signals.
+Provider/model prompt or content-policy rejections are classified as
+`prompt_rejection` before the validation fallback, with terminal event details
+kept metadata-only.
+Caller-driven cancellation is classified as `cancelled`, not `unknown`, so
+pilot failure-class distribution can separate intentional stops from defects.
 
 ## Quick example (async)
 
 ```python
-async with orch.asession() as session:
+async with agent.asession() as session:
     text, _ = await session.arun_turn(
         lambda: acall_model(prompt),
         model="model-a",
@@ -72,12 +93,21 @@ Same parameters; `coro_factory` instead of `fn`. See
 - **You want a single object to compose with**: the orchestrator
   threads worker lifecycle, breaker state, retry classification,
   permissions, guardrails, and cost accounting through one session.
+- **You need tool-call observability**: successful `run_tool` /
+  `arun_tool` calls emit `agent.tool_called` and
+  `agent.tool_completed` events without copying the tool result into
+  event data. Tool body exceptions emit `agent.failed` with
+  `failure_class="tool_error"` and only the tool name in event data.
+  Permission denials and guardrail blocks emit `agent.blocked` with
+  metadata-only payloads; if they escape the session context, the
+  terminal failure class remains `permission_denied` or
+  `guardrail_violation`.
 - **You're stitching multiple primitives manually**: stop, use
-  `Orchestrator` instead.
+  `AgentSession` instead.
 - **You need agent-level handoffs**: `session.handoff_to(target_role, ...)`
   finalizes the source worker and registers a new one under the same
-  project_id — the orchestrator-workers delegation pattern, built up
-  from our primitives.
+  project_id. Use `session.ahandoff_to(target_role, ...)` when async
+  handoff hooks must run.
 
 ## When *not* to use this
 
@@ -85,15 +115,15 @@ Same parameters; `coro_factory` instead of `fn`. See
   circuit breaker): import it directly. The orchestrator is a
   convenience layer, not a required entry point.
 - **You need true durable execution** (workflows that survive process
-  restart): the orchestrator is in-memory. Pair with Temporal / dbos.
-  A pluggable checkpointer is on the 0.2.0 roadmap.
+  restart): the orchestrator is in-memory. Use the checkpointing
+  primitives or an external coordinator for longer-lived workflows.
 - **You're orchestrating across machines**: this is a single-process
   primitive. Run one per machine and coordinate externally.
 
 ## Anti-patterns
 
-- **One orchestrator instance reused across unrelated agents.** Build
-  a new `Orchestrator(role=..., phase=..., ...)` per logical agent;
+- **One session factory reused across unrelated agents.** Build
+  a new `AgentSession(role=..., phase=..., ...)` per logical agent;
   pass the same `registry` and `event_sink` to keep observability
   joined.
 - **Swallowing `BudgetExceededError` instead of acting on it.** The

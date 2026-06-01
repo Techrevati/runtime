@@ -1,102 +1,140 @@
 # Security Policy
 
-## Reporting a vulnerability
+Author: Techrevati doo
 
-If you believe you have found a security issue in
-`techrevati-runtime`, **do not open a public issue**. Instead, email
-security@techrevati.com with:
+## Reporting a Vulnerability
+
+If you believe you have found a security issue in this package, report
+it through the private security contact configured for the package. Do not open
+a public issue for suspected vulnerabilities.
+
+Please include:
 
 - A description of the vulnerability.
 - Steps to reproduce.
-- Affected version(s) (output of `pip show techrevati-runtime`).
+- Affected version or commit.
 - Suggested fix or mitigation, if you have one.
 
-We aim to acknowledge within 3 business days and to publish a patched
-release within 14 days for High/Critical issues. Coordinated disclosure
-windows can be extended on request.
+The maintainers aim to acknowledge reports within 3 business days and publish a
+patched release within 14 days for High/Critical issues.
 
-## Threat model
+## Threat Model
 
-`techrevati-runtime` is a **library**, not a service. It runs in the
-same process as the caller and has access to whatever the caller has
-access to. The primitives below are deliberately *advisory*:
+This package is a library, not a service. It runs in the same process as
+the caller and has access to whatever the caller has access to. The primitives
+below are deliberately advisory.
 
 ### `PermissionEnforcer`
 
-`run_tool(tool_name, fn)` checks the configured permission policy
-before invoking `fn`. This is a **gate**, not a sandbox.
+`run_tool(tool_name, fn)` checks the configured permission policy before
+invoking `fn`. This is a gate, not a sandbox.
 
-- It does NOT contain a misbehaving `fn` once invoked.
-- It does NOT prevent the caller from invoking `fn` directly without
-  going through `run_tool`. (Callers are trusted.)
-- It does NOT inspect or filter `fn`'s arguments — those are
-  caller-controlled.
+- It does not contain a misbehaving `fn` once invoked.
+- It does not prevent the caller from invoking `fn` directly without going
+  through `run_tool`.
+- It does not inspect or filter `fn` arguments.
 
-Use OS-level sandboxing (containers, seccomp, gVisor) if you need
-real isolation.
+Use process or OS-level isolation when you need real sandboxing.
 
 ### `Guardrail`
 
-Guardrails check pre-call (role + tool name) and post-call (return
-value) context. Like permissions, they are advisory: they cannot
+Guardrails check pre-call and post-call context. Like permissions, they cannot
 prevent a caller from running the tool body directly.
 
 ### `Orchestrator(budget_usd=...)`
 
-Budget enforcement is `O(turns)` — the check happens after each
-recorded turn, not on per-token estimates. A single turn can exceed
-the budget by up to one turn's worth of cost. Use `max_iterations`
-in combination with per-turn `usage` ceilings if you need a tighter
-upper bound.
+Budget enforcement is turn-based. A single turn can exceed the budget by up to
+one turn of cost. Use `max_iterations` with per-turn usage ceilings when you
+need a tighter upper bound.
 
 ### `CircuitBreaker`
 
-The breaker is per-process. It does NOT coordinate across replicas;
-each instance counts its own failures. Pair with a shared rate
-limiter or external coordinator if you need fleet-wide breaker state.
+Circuit breaker state is per process. Each instance counts its own failures.
+Use a shared coordinator if you need fleet-wide breaker state.
 
-## Supported versions
+## Deployment Threat Model
+
+Treat the runtime as a privileged in-process dependency. It can reduce risk, but
+it cannot isolate a compromised model response, tool implementation, or caller.
+
+Primary assets:
+
+- Tool credentials, provider credentials, and registry credentials.
+- User prompts, tool inputs, tool outputs, traces, and persisted event records.
+- Usage and cost data.
+- Release artifacts and SBOM evidence.
+
+Trust boundaries:
+
+- Model output is untrusted.
+- Tool input derived from model output is untrusted until guardrails and
+  permissions approve it.
+- Tool implementations run with the caller process privileges.
+- Event sinks, usage sinks, and telemetry exporters may cross a storage or
+  network boundary controlled outside the runtime.
+
+Required pilot controls:
+
+- Store credentials outside the repository and inject them at runtime.
+- Prefer short-lived credentials for release and registry operations.
+- Keep `PermissionEnforcer`, guardrails, governance limits, and usage limits
+  enabled in pilot workflows.
+- Use durable event and usage sinks when audit evidence is required.
+- Redact or summarize sensitive inputs before sending them to logs, traces, or
+  diagnostics.
+- Run the repository secret leak guard before tagging a release candidate.
+- Test rollback before widening pilot traffic.
+
+The release-candidate security review checklist lives in
+`docs/compliance/security-review.md`. It must remain pending until reviewer
+sign-off is recorded for the reviewed commit.
+
+## Release Artifact Verification
+
+Every release should publish exactly the package artifacts plus CycloneDX SBOM
+files and the `SHA256SUMS` manifest generated by the release workflow. From a
+repository checkout, place the release files in `dist/` and verify the evidence
+set before installing it in a controlled environment:
+
+```bash
+python -m venv verify-venv
+verify-venv/bin/python -m pip install --upgrade pip
+verify-venv/bin/python -m pip install twine
+python scripts/check_release_evidence.py dist
+(cd dist && sha256sum -c SHA256SUMS)
+verify-venv/bin/python -m twine check dist/techrevati_runtime-*.whl dist/techrevati_runtime-*.tar.gz
+verify-venv/bin/python -m pip install --force-reinstall --no-index --no-deps --find-links dist techrevati-runtime
+verify-venv/bin/python -c "import importlib.metadata; import techrevati.runtime as r; assert r.__version__ == importlib.metadata.version('techrevati-runtime')"
+test -s dist/sbom.cyclonedx.json
+test -s dist/sbom.cyclonedx.xml
+test -s dist/SHA256SUMS
+```
+
+The release workflow force-reinstalls the freshly built wheel with
+`--force-reinstall --no-index --no-deps` before generating the SBOM, so an
+already installed package or dependency resolution cannot hide a broken or
+incomplete wheel. The release evidence verifier parses the SBOM JSON and XML
+files and rejects evidence unless both files are valid CycloneDX BOMs. It also
+opens the wheel and source archive metadata to verify that package name and
+version match the reviewed project metadata when run from the repository root.
+The SBOM and checksum manifest are attached to the release for downstream
+review; they are not uploaded as package artifacts.
+
+## Supported Versions
 
 | Version | Supported |
 |---|---|
-| 0.1.x | ✅ (current pre-release; security fixes on best-effort basis) |
-| 0.0.x | ⚠ Critical-only fixes until 2026-09-30 |
-| < 0.0.0 | Not applicable |
+| 0.3.x | Current development line |
+| 0.2.x | Security fixes |
+| 0.1.x | Best-effort fixes |
+| 0.0.x | Critical-only fixes until 2026-09-30 |
 
-Once 0.2.0 ships (stable beta), 0.1.x will be supported for 6 months.
+## Known Limitations
 
-## Known limitations
-
-These are documented behaviors, not vulnerabilities, but they affect
-how you should deploy:
-
-- Pricing data is caller-provided. The runtime cannot prevent
-  cost-inflation attacks where an attacker convinces the caller to
-  register lower-than-actual prices. Validate `pricing.json` sources.
-- `RingBufferEventSink` and `RingBufferUsageSink` drop oldest entries
-  on overflow. Plug a durable sink (OpenTelemetry, your message bus)
-  for compliance/audit trails.
-- The runtime trusts `UsageSnapshot` values its callers provide.
-  Token counts are not validated against the model's actual response.
-
-## Verifying release provenance
-
-Starting with 0.2.0, every wheel and sdist on PyPI carries a
-[PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/)
-attestation chained back to the `release.yml` workflow on
-`github.com/Techrevati/runtime`. A CycloneDX SBOM accompanies each
-GitHub Release as `sbom.cyclonedx.json` and `sbom.cyclonedx.xml`.
-
-To verify before installing:
-
-```bash
-# Attestation: proves what built the artifact and from which commit.
-gh attestation verify --owner Techrevati techrevati_runtime-X.Y.Z-py3-none-any.whl
-
-# SBOM: download from the GitHub Release page and inspect with any
-# CycloneDX-aware tool (e.g. cyclonedx-cli, anchore/grype).
-gh release download vX.Y.Z --pattern "sbom.cyclonedx.json"
-```
-
-If either verification fails, do not install the artifact and report
-the discrepancy to security@techrevati.com.
+- Pricing data is caller-provided. Validate pricing sources before loading
+  them.
+- `RingBufferEventSink` and `RingBufferUsageSink` drop oldest entries on
+  overflow. Use durable sinks for compliance or audit trails.
+- The runtime trusts `UsageSnapshot` values provided by callers.
+- The runtime does not sandbox tool bodies or model-generated arguments. Use
+  process, network, and OS-level isolation for destructive or high-risk tools.

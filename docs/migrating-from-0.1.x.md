@@ -2,7 +2,7 @@
 
 0.2.0 is additive in most places, with two intentional changes you'll
 need to react to. Existing 0.1.x calls keep working unless you depend
-on the OTel sink's wire format or on `Orchestrator` being the canonical
+on the telemetry sink's wire format or on `Orchestrator` being the canonical
 class name.
 
 ## Required action items
@@ -10,11 +10,12 @@ class name.
 ### 1. Prefer `AgentSession` over `Orchestrator`
 
 The canonical class name is now `AgentSession`. `Orchestrator` is still
-exported and constructs the same class — it's a bare alias — but it
-will be removed in 0.3.0. Update imports at your convenience:
+exported as a deprecated compatibility subclass and constructs the same
+kind of session, but it will be removed no earlier than 0.4.0. Update
+imports at your convenience:
 
 ```python
-# Old (still works in 0.2.x; gone in 0.3.0):
+# Old (still works through 0.3.x):
 from techrevati.runtime import Orchestrator
 orch = Orchestrator(role="writer", phase="draft")
 
@@ -23,13 +24,14 @@ from techrevati.runtime import AgentSession
 agent = AgentSession(role="writer", phase="draft")
 ```
 
-The constructor signature is identical. `isinstance(x, Orchestrator)`
-and `isinstance(x, AgentSession)` are interchangeable in 0.2.x because
-they point at the same class object.
+The constructor signature is identical. `Orchestrator(...)` returns an
+`AgentSession` subclass instance, so `isinstance(x, AgentSession)`
+remains true. Prefer `AgentSession` for new code so upgrades do not
+emit deprecation warnings.
 
-### 2. OTel sink wire format: one-shot → nested
+### 2. Telemetry sink wire format: one-shot -> nested
 
-`OpenTelemetrySink` in 0.1.x emitted one independent span per
+The telemetry sink in 0.1.x emitted one independent span per
 `AgentEvent`. In 0.2.0 it opens a long-lived parent span on
 `AGENT_STARTED` / `PHASE_STARTED` and ends it on
 `AGENT_COMPLETED` / `AGENT_FAILED` / `PHASE_COMPLETED`. Every other
@@ -44,9 +46,11 @@ Practical implications:
   (`create_agent` for AGENT_STARTED, `invoke_workflow` for
   PHASE_STARTED). Filters keyed on operation name may need to be
   broadened.
-- Failure events copy `error.type` and a `Status(StatusCode.ERROR, …)`
-  onto the parent before ending it, so a single span carries the
-  whole turn's outcome.
+- Failure events copy the terminal failure class onto the parent before
+  ending it, so a single span carries the whole turn's outcome. Operational
+  failures also set `error.type` and `Status(StatusCode.ERROR, …)`.
+  Caller-driven cancellation remains typed as `cancelled` but is not marked as
+  an OTel error.
 
 If a downstream consumer was relying on every event being its own
 root, switch to filtering by `gen_ai.agent.name` instead.

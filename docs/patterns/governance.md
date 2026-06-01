@@ -10,8 +10,9 @@ failure classifier or the recovery loop.
 This is the technical primitive auditors expect for EU AI Act
 deployments — Article 14 (human oversight via stopping conditions),
 Article 15 (robustness / fail-safes), and Article 26 (deployer
-monitoring + reporting). The full article-by-article compliance mapping
-ships in 0.3.0 Sprint 6 (`docs/compliance/`).
+monitoring + reporting). See the technical control crosswalk in
+[Compliance Mapping](../compliance/index.md) for how runtime primitives
+support audit evidence.
 
 ## When to use this
 
@@ -77,13 +78,25 @@ The orchestrator ticks the plane's counters at three points:
   `record_cost(cost_delta)`, and `enforce()`. The budget and
   consecutive-failures caps fire here.
 
+`0.3.0rc1` supports only `scope="session"`. Thread-level and
+project-level governance need shared cross-session state, so those
+scopes fail closed until they are implemented end-to-end.
+
+When a `GovernancePlane` is passed to `AgentSession`, the plane is used
+as immutable limit configuration. Each `session()` / `asession()` call
+receives a fresh `GovernanceState`, so counters do not leak between
+separate sessions opened from the same factory.
+
 ## The four built-in limits
 
 ### `MaxIterationsLimit`
 
 Caps total turns in the session. Distinct from
 `AgentSession.max_iterations` — that one raises a recoverable
-`MaxIterationsExceededError`; this one is terminal.
+`MaxIterationsExceededError` that caller code can catch inside the session.
+If that exception escapes the session context, the terminal `agent.failed`
+event still uses `failure_class="governance_breach"` because it is a
+runaway-loop control-plane stop.
 
 ```python
 MaxIterationsLimit(value=25, on_breach="terminate")
@@ -133,7 +146,8 @@ Two new `AgentEventName` values surface in 0.3.0:
 
 - `governance.breach` — emitted **before** `GovernanceBreachError`
   raises so downstream sinks see the breach in the audit log even when
-  the exception propagates past them.
+  the exception propagates past them. The breach event and the terminal
+  `agent.failed` event use `failure_class="governance_breach"`.
 - `governance.alert` — emitted once per evaluation per breached
   alert-mode limit.
 
@@ -165,7 +179,7 @@ session dies.
 
 | Knob | Reasonable range | Notes |
 |---|---|---|
-| `MaxIterationsLimit.value` | 10–50 for production loops | Same default as OpenAI Agents SDK. |
+| `MaxIterationsLimit.value` | 10-50 for production loops | Same default as `AgentSession`. |
 | `MaxBudgetLimit.value` | per-customer / per-session limit | Pair with `UsageLimits.cost_usd_max` at 80%. |
 | `MaxConsecutiveFailuresLimit.value` | 2–5 | Below 2 is twitchy; above 5 hides real reliability bugs. |
 | `MaxToolCallsLimit.value` | 5×–10× expected | Useful as an alert before flipping to terminate. |
@@ -180,8 +194,8 @@ session dies.
   object is a counter; do not subclass it to fire side effects on
   every tick. Add a custom `EventSink` for that.
 - **One plane per turn.** Construct the plane once and pass it to
-  `AgentSession`; do not create a new plane on each turn — counters
-  reset.
+  `AgentSession`; do not create a new plane on each turn inside an
+  active session.
 - **Mixing `"alert"` and `"terminate"` randomly across limits.** Pick a
   rollout phase per limit, document it, and don't half-migrate.
 

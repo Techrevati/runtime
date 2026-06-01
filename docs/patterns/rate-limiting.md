@@ -9,7 +9,7 @@ match the way LLM providers actually enforce limits.
 
 ```python
 from techrevati.runtime import (
-    Orchestrator, RateLimiter, TokenBucket, UsageSnapshot,
+    AgentSession, RateLimiter, TokenBucket, UsageSnapshot,
 )
 
 limiter = RateLimiter({
@@ -18,9 +18,9 @@ limiter = RateLimiter({
     "output_tpm": TokenBucket("output_tpm", capacity=60_000,  refill_per_second=1_000.0),
 })
 
-orch = Orchestrator(role="writer", phase="draft", rate_limiter=limiter)
+agent = AgentSession(role="writer", phase="draft", rate_limiter=limiter)
 
-with orch.session() as session:
+with agent.session() as session:
     text, usage = session.run_turn(
         lambda: call_model(prompt),
         usage=UsageSnapshot(input_tokens=4_000, output_tokens=900),
@@ -30,7 +30,9 @@ with orch.session() as session:
 The session spends 1 token from `"rpm"` before calling the model and
 4 000 / 900 from `"input_tpm"` / `"output_tpm"` after the snapshot is
 known. Empty buckets block until refill (or raise
-`RateLimitExceededError` when an explicit `timeout` is set).
+`RateLimitExceededError` when an explicit `timeout` is set). If that exception
+escapes an `AgentSession`, the terminal `agent.failed` event uses
+`failure_class="rate_limit"`.
 
 ## When to use
 
@@ -82,4 +84,4 @@ use one shape.
 
 - [Routing](../patterns/routing.md) — failover provider selection.
 - [Retry policy](../patterns/retry.md) — `RateLimitExceededError`
-  maps to `FailureScenario.LLM_ERROR`.
+  terminal events use `failure_class="rate_limit"`.

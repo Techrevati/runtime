@@ -26,6 +26,13 @@ if tracker.is_over_budget(budget_usd=10.0):
     raise RuntimeError("budget exceeded")
 ```
 
+When `UsageLimits` are configured on an `AgentSession`, token, tool-call,
+and cost-limit overruns raise `UsageLimitExceededError` and emit an
+`agent.failed` event with `failure_class="rate_limit"` plus limit metadata.
+`budget_usd` overruns use the same `rate_limit` failure class; with
+`enforce_budget=True`, the terminal session failure is classified the same
+way when `BudgetExceededError` escapes the context manager.
+
 ## Pricing file format
 
 ```json

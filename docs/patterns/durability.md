@@ -10,13 +10,13 @@ multi-turn loops.
 
 ```python
 from techrevati.runtime import (
-    Orchestrator, SqliteSaver, UsageSnapshot,
+    AgentSession, SqliteSaver, UsageSnapshot,
 )
 
 saver = SqliteSaver("checkpoints.db")
-orch = Orchestrator(role="writer", phase="draft", saver=saver)
+agent = AgentSession(role="writer", phase="draft", saver=saver)
 
-with orch.session(thread_id="user-42:essay") as session:
+with agent.session(thread_id="user-42:essay") as session:
     draft, usage = session.run_turn(
         lambda: call_model(outline_prompt),
         model="model-a",
@@ -32,7 +32,7 @@ with orch.session(thread_id="user-42:essay") as session:
 
 On a clean run, two checkpoints land in `checkpoints.db`. If the
 process crashes between the two turns and a future invocation opens a
-fresh `Orchestrator` against the same `thread_id`, the first
+fresh `AgentSession` against the same `thread_id`, the first
 `run_turn` returns the cached result for `"draft:turn-1"` without
 calling the model again, and execution continues with turn 2.
 
@@ -50,7 +50,7 @@ calling the model again, and execution continues with turn 2.
 - Results aren't JSON-serializable and you can't coerce them. The saver
   logs a warning and skips the checkpoint, so the call still works but
   the durability guarantee is lost.
-- You need Temporal-style step replay (run a half-finished turn against
+- You need step-level replay (run a half-finished turn against
   a recorded history). This module checkpoints between turns, not inside
   one. Wrap a durable engine behind a custom `CheckpointSaver` impl if
   you need that semantic.
@@ -61,10 +61,12 @@ calling the model again, and execution continues with turn 2.
   for tests and dev loops.
 - `SqliteSaver(path)` — stdlib `sqlite3` only, no new runtime
   dependency, WAL mode for concurrent readers. Pass `":memory:"` for a
-  fully in-memory database scoped to one connection.
+  fully in-memory database scoped to one connection. The saver records
+  its supported schema version in `techrevati_runtime_metadata` and
+  refuses to open a database marked with an unsupported version.
 
 Both implement the same `CheckpointSaver` protocol, so a session can
-swap between them by changing the `saver=` argument on `Orchestrator`.
+swap between them by changing the `saver=` argument on `AgentSession`.
 
 ## Anti-patterns
 
@@ -86,6 +88,7 @@ swap between them by changing the `saver=` argument on `Orchestrator`.
 | `SqliteSaver` `path` | required | `:memory:` for tests; a real file for restart durability. |
 | `list(..., limit=N)` | 10 | Raise it if you have very long threads and need to reach further back. |
 | `_restore_idempotent_turn` scan depth | 100 | Internal cap on how far back an idempotency lookup walks. If your threads exceed 100 turns and you need replay older than that, cache the lookup outside the runtime. |
+| SQLite schema version | 1 | Managed by the runtime; create a fresh database or migrate explicitly if a future version changes the schema. |
 
 ## See also
 

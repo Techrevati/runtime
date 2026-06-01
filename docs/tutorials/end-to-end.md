@@ -1,13 +1,15 @@
-# End-to-End Tutorial — a tiny agent in 30 lines
+# End-to-End Tutorial
+
+Author: Techrevati doo
 
 This tutorial wires every primitive together into a single working
-agent loop: pricing → orchestrator → permissions → circuit breaker →
-policy → guardrail → tool gating → budget enforcement → handoff →
+agent loop: pricing, orchestrator, permissions, circuit breaker,
+policy, guardrail, tool gating, budget enforcement, handoff, and
 session summary. By the end you'll know which primitive does what,
 and where to plug your real model and tool implementations.
 
-The complete file lives at [`examples/tiny_agent.py`](https://github.com/Techrevati/runtime/blob/main/examples/tiny_agent.py) — clone the
-repo and run it with `python -m examples.tiny_agent`.
+The complete file lives at `examples/tiny_agent.py`. Run it with
+`python -m examples.tiny_agent`.
 
 ## 1. Register pricing
 
@@ -27,15 +29,15 @@ register_pricing(
 Without this step, `record_turn` logs a one-time warning per model and
 all costs come out as `$0.00`.
 
-## 2. Compose the orchestrator
+## 2. Compose the session factory
 
-The orchestrator is the factory. Each session you open inherits the
+`AgentSession` is the factory. Each session you open inherits the
 breakers, permissions, policy, guardrails, sinks, and budget you wire
 in here.
 
 ```python
 from techrevati.runtime import (
-    CircuitBreaker, Orchestrator, PermissionEnforcer, PermissionMode,
+    AgentSession, CircuitBreaker, PermissionEnforcer, PermissionMode,
     PermissionPolicy, RingBufferEventSink, RolePermissionConfig,
 )
 
@@ -50,7 +52,7 @@ permissions = PermissionEnforcer(PermissionPolicy(
 
 events = RingBufferEventSink()
 
-orch = Orchestrator(
+agent = AgentSession(
     role="writer",
     phase="draft",
     project_id=42,
@@ -82,7 +84,7 @@ from techrevati.runtime import UsageSnapshot
 def call_model() -> str:
     return "draft text"  # replace with your SDK call
 
-with orch.session() as session:
+with agent.session() as session:
     text, usage = session.run_turn(
         call_model,
         model="your-model",
@@ -93,7 +95,8 @@ with orch.session() as session:
 
 If `call_model()` raises, the runtime classifies the exception into a
 `FailureScenario`, attempts recovery, records a `recovery_attempted`
-event, then re-raises so the caller decides what to do next.
+event plus a typed recovery outcome event, then re-raises so the caller
+decides what to do next.
 
 ## 4. Call a tool with gating
 
@@ -104,12 +107,17 @@ guardrail before the tool's body executes.
 def lookup_term() -> str:
     return "RAG"  # any read-only operation works here
 
-with orch.session() as session:
+with agent.session() as session:
     fact = session.run_tool("lookup_term", lookup_term)
 ```
 
+Successful tool calls emit `agent.tool_called` and
+`agent.tool_completed` events with the tool name in event data. The
+tool result itself is not copied into the event payload.
+
 Trying `session.run_tool("write_db", ...)` from a writer role raises
-`PermissionDeniedError` — the body is never called.
+`PermissionDeniedError` and emits `agent.blocked` — the body is never
+called.
 
 ## 5. Hand off to another agent
 
@@ -118,13 +126,13 @@ finalizes; a new worker is registered for the target role under the
 same project_id.
 
 ```python
-with orch.session() as writer_session:
+with agent.session() as writer_session:
     handoff = writer_session.handoff_to(
         "editor", reason="needs review", context={"draft": text},
     )
 
-editor_orch = Orchestrator(role="editor", phase="draft", project_id=42, registry=orch.registry)
-with editor_orch.session() as editor_session:
+editor_agent = AgentSession(role="editor", phase="draft", project_id=42, registry=agent.registry)
+with editor_agent.session() as editor_session:
     review_text, _ = editor_session.run_turn(
         lambda: "polished",
         model="your-model",
@@ -133,7 +141,7 @@ with editor_orch.session() as editor_session:
 ```
 
 Reusing the same `registry` makes the editor session visible to
-`orch.registry.list_active()` so observability tools can see both
+`agent.registry.list_active()` so observability tools can see both
 agents on the same project.
 
 ## 6. Evaluate policy and gate
@@ -155,7 +163,7 @@ advance = PolicyRule(
     actions=[PolicyActionData(PolicyAction.ADVANCE_PHASE)],
     priority=10,
 )
-orch_with_policy = Orchestrator(
+agent_with_policy = AgentSession(
     role="writer",
     phase="draft",
     policy_engine=PolicyEngine([advance]),
@@ -172,8 +180,8 @@ conditions work without bookkeeping in the caller.
 
 ```python
 import json
-print(json.dumps(orch.event_sink.events[-3:], indent=2, default=str))
-print(orch.tracker.format_cost())  # e.g. "$0.0156"
+print(json.dumps(agent.event_sink.events[-3:], indent=2, default=str))
+print(editor_session.tracker.format_cost())  # e.g. "$0.0156"
 ```
 
 `session.summary()` returns a JSON-serializable snapshot of the
@@ -181,9 +189,9 @@ worker, usage, per-model cost, recovery events, and lifecycle events.
 
 ## What you skipped
 
-- **Async path** — replace `with orch.session()` with `async with orch.asession()`, `run_turn` → `arun_turn`, `run_tool` → `arun_tool`. Same parameters.
-- **OpenTelemetry** — `pip install 'techrevati-runtime[otel]'` and wire `OpenTelemetrySink` as the `event_sink`. See the [OTel API reference](../api/otel.md).
-- **Guardrails** — pass `Orchestrator(guardrails=[...])` to gate tool inputs and outputs.
+- **Async path** — replace `with agent.session()` with `async with agent.asession()`, `run_turn` → `arun_turn`, `run_tool` → `arun_tool`. Same parameters.
+- **Telemetry** — install the `otel` extra and wire a telemetry sink as the `event_sink`. See the [telemetry API reference](../api/otel.md).
+- **Guardrails** — pass `AgentSession(guardrails=[...])` to gate tool inputs and outputs.
 
 ## Anti-patterns
 
