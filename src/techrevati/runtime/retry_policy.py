@@ -583,7 +583,10 @@ def backoff_delay(
         return half + random.uniform(0.0, half)
     if mode == "decorrelated":
         anchor = prev_delay if prev_delay > 0 else base
-        return min(cap, random.uniform(base, anchor * 3.0))
+        # Clamp the upper bound to at least ``base`` so a tiny ``prev_delay``
+        # (where ``anchor * 3 < base``) cannot invert the range and yield a
+        # delay below ``base``, which the documented lower bound forbids.
+        return min(cap, random.uniform(base, max(base, anchor * 3.0)))
     raise ValueError(f"unknown jitter mode: {mode!r}")
 
 

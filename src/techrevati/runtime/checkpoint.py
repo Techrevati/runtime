@@ -269,13 +269,18 @@ class InMemorySaver:
         with self._lock:
             entries = list(self._threads.get(thread_id, ()))
         if before is not None:
-            cutoff_idx: int | None = None
-            for idx, cp in enumerate(entries):
-                if cp.id == before:
-                    cutoff_idx = idx
-                    break
-            entries = entries[:cutoff_idx] if cutoff_idx is not None else []
-        return [_copy_checkpoint(cp) for cp in list(reversed(entries))[:limit]]
+            cursor = next((cp for cp in entries if cp.id == before), None)
+            if cursor is None:
+                return []
+            # Keyset filter on the SAME total order SqliteSaver uses
+            # ``(created_at, id)`` so the two savers stay interchangeable even
+            # when checkpoints share a ``created_at`` (insertion order would
+            # diverge from sqlite's id tiebreaker otherwise).
+            cutoff = (cursor.created_at, cursor.id)
+            entries = [cp for cp in entries if (cp.created_at, cp.id) < cutoff]
+        # Newest first: (created_at DESC, id DESC), matching SqliteSaver.
+        ordered = sorted(entries, key=lambda cp: (cp.created_at, cp.id), reverse=True)
+        return [_copy_checkpoint(cp) for cp in ordered[:limit]]
 
     def delete(self, thread_id: str) -> None:
         thread_id = _validate_non_empty_str("thread_id", thread_id)

@@ -1474,10 +1474,14 @@ class AsyncOrchestrationSession(_SessionBase):
                             yield StreamEvent.text(chunk)
             except TimeoutError as exc:
                 timeout_error = TurnTimeoutError(timeout or 0.0)
-                yield StreamEvent.error("timeout", f"stream exceeded {timeout}s")
-                yield StreamEvent.final("failed", detail="timeout")
+                # Record the failure outcome BEFORE yielding the terminal
+                # event: an idiomatic consumer that breaks the async-for on
+                # seeing ``final`` would otherwise throw GeneratorExit at that
+                # yield and skip the recovery/governance recording entirely.
                 await _arecord_recovery_event(self, timeout_error)
                 self._record_governance_turn_outcome(success=False)
+                yield StreamEvent.error("timeout", f"stream exceeded {timeout}s")
+                yield StreamEvent.final("failed", detail="timeout")
                 raise timeout_error from exc
             except GeneratorExit:
                 # Consumer broke the async-for loop. Flag + finally cleanup
@@ -1500,10 +1504,13 @@ class AsyncOrchestrationSession(_SessionBase):
                 raise
             except Exception as exc:
                 safe_detail = _safe_exception_detail(exc)
-                yield StreamEvent.error(type(exc).__name__, safe_detail)
-                yield StreamEvent.final("failed", detail=safe_detail)
+                # Record before the terminal yield (see TimeoutError branch):
+                # a consumer that stops iterating at ``final`` must not be able
+                # to skip the recovery/governance recording.
                 await _arecord_recovery_event(self, exc)
                 self._record_governance_turn_outcome(success=False)
+                yield StreamEvent.error(type(exc).__name__, safe_detail)
+                yield StreamEvent.final("failed", detail=safe_detail)
                 raise
 
             full_text = "".join(aggregated)

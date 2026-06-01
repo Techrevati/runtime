@@ -160,6 +160,39 @@ def test_sqlite_list_before_handles_equal_timestamps(tmp_path: Path) -> None:
         saver.close()
 
 
+def test_inmem_and_sqlite_agree_on_equal_timestamp_ordering(tmp_path: Path) -> None:
+    # Regression: with equal created_at, InMemorySaver ordered by insertion
+    # order while SqliteSaver ordered by id (DESC) — the two reference savers
+    # returned different orders for the same inputs, breaking interchangeability.
+    ids = ["aaaa", "cccc", "bbbb"]  # insertion order != id-desc order
+    inmem = InMemorySaver()
+    sql = SqliteSaver(tmp_path / "agree.db")
+    try:
+        with (
+            patch("techrevati.runtime.checkpoint._now_iso") as now,
+            patch("techrevati.runtime.checkpoint._new_id") as new_id,
+        ):
+            now.return_value = "2026-05-30T00:00:00+00:00"
+            new_id.side_effect = ids + ids
+            for i in range(len(ids)):
+                inmem.put("t", {"i": i})
+            for i in range(len(ids)):
+                sql.put("t", {"i": i})
+
+        assert (
+            [cp.id for cp in inmem.list("t")]
+            == [cp.id for cp in sql.list("t")]
+            == ["cccc", "bbbb", "aaaa"]
+        )
+        assert (
+            [cp.id for cp in inmem.list("t", before="cccc")]
+            == [cp.id for cp in sql.list("t", before="cccc")]
+            == ["bbbb", "aaaa"]
+        )
+    finally:
+        sql.close()
+
+
 def test_delete_removes_thread(saver: CheckpointSaver) -> None:
     saver.put("t1", {"i": 0})
     saver.put("t1", {"i": 1})

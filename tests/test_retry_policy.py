@@ -242,6 +242,14 @@ def test_backoff_delay_decorrelated_bounded():
         assert d <= 60.0  # cap
 
 
+def test_backoff_delay_decorrelated_never_below_base():
+    """Regression: a tiny prev_delay (prev*3 < base) must not invert the range
+    and produce a delay below ``base``."""
+    for _ in range(200):
+        d = backoff_delay(1, base=2.0, jitter="decorrelated", prev_delay=0.1)
+        assert d >= 2.0
+
+
 def test_backoff_delay_cap_applies():
     """Cap clamps the exponential before randomization."""
     # 2 ** 20 = 1048576; cap=10 should clamp.

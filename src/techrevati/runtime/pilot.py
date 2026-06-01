@@ -12,6 +12,7 @@ candidate pilots:
 from __future__ import annotations
 
 import math
+import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -69,6 +70,40 @@ def _validate_name_sequence(
         normalized.append(value)
     if not normalized and not allow_empty:
         raise ValueError(f"{field_name} must not be empty")
+    return tuple(normalized)
+
+
+def _validate_pattern_sequence(
+    field_name: str,
+    values: Sequence[str],
+) -> tuple[str, ...]:
+    """Validate a sequence of regular-expression patterns.
+
+    Unlike :func:`_validate_name_sequence`, patterns are NOT ``.strip()``-ed
+    (leading/trailing whitespace can be significant in a regex) and are
+    deduplicated case-sensitively (``Secret`` and ``secret`` are distinct
+    signatures). Each pattern must compile, so a malformed regex fails here
+    with a clear message instead of deep inside guardrail construction.
+    """
+    if isinstance(values, (str, bytes)):
+        raise TypeError(f"{field_name} must be a sequence of strings")
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        if not isinstance(value, str):
+            raise TypeError(f"{field_name} must contain only strings")
+        if not value:
+            raise ValueError(f"{field_name} must not contain empty patterns")
+        if value in seen:
+            raise ValueError(f"{field_name} must not contain duplicate values")
+        try:
+            re.compile(value)
+        except re.error as exc:
+            raise ValueError(
+                f"{field_name} contains an invalid regular expression: {value!r}"
+            ) from exc
+        seen.add(value)
+        normalized.append(value)
     return tuple(normalized)
 
 
@@ -158,15 +193,13 @@ def build_pilot_profile(
         "max_consecutive_failures", max_consecutive_failures
     )
     budget_usd = _validate_positive_float("budget_usd", budget_usd)
-    extra_patterns = _validate_name_sequence(
+    extra_patterns = _validate_pattern_sequence(
         "extra_prompt_injection_patterns",
         extra_prompt_injection_patterns,
-        allow_empty=True,
     )
-    deny_patterns = _validate_name_sequence(
+    deny_patterns = _validate_pattern_sequence(
         "tool_deny_patterns",
         tool_deny_patterns,
-        allow_empty=True,
     )
 
     requirements = dict.fromkeys(allowed, permission_mode)

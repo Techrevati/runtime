@@ -101,6 +101,29 @@ def test_pilot_profile_can_add_pre_tool_deny_patterns() -> None:
         run_pre_checks(list(profile.guardrails), role="writer", tool="delete_record")
 
 
+def test_pilot_profile_accepts_case_distinct_patterns() -> None:
+    # Regression: regex patterns were run through the tool-name validator, which
+    # deduplicated case-insensitively and rejected these as "duplicate".
+    profile = build_pilot_profile(
+        role="writer",
+        allowed_tools=("lookup",),
+        budget_usd=1.0,
+        extra_prompt_injection_patterns=("Secret", "secret"),
+    )
+
+    assert len(profile.guardrails) >= 1
+
+
+def test_pilot_profile_rejects_invalid_regex_pattern() -> None:
+    with pytest.raises(ValueError, match="invalid regular expression"):
+        build_pilot_profile(
+            role="writer",
+            allowed_tools=("lookup",),
+            budget_usd=1.0,
+            extra_prompt_injection_patterns=("[unterminated",),
+        )
+
+
 def test_pilot_profile_governance_breach_terminates() -> None:
     profile = build_pilot_profile(
         role="writer",

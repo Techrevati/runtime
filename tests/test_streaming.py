@@ -344,6 +344,33 @@ async def test_arun_turn_stream_upstream_exception_yields_error_and_final() -> N
 
 
 @pytest.mark.asyncio
+async def test_arun_turn_stream_records_failure_when_consumer_breaks_on_final() -> None:
+    """Regression: recovery/governance recording must survive a consumer that
+    stops iterating the moment it sees the terminal ``final`` event. The old
+    code recorded *after* yielding ``final``, so breaking there threw
+    GeneratorExit at that yield and silently dropped the failure record."""
+
+    async def failing() -> AsyncIterator[str]:
+        yield "first"
+        raise RuntimeError("connection string with sensitive details")
+
+    sess = AgentSession(role="writer", phase="draft")
+    async with sess.asession() as session:
+        received: list[StreamEvent] = []
+        async with aclosing(session.arun_turn_stream(failing, model="m")) as agen:
+            async for ev in agen:
+                received.append(ev)
+                if ev.type == "final":
+                    break  # break first → the generator's re-raise never runs
+
+    assert received[-1].payload["status"] == "failed"
+    # Failure outcome was recorded despite breaking on `final`, and this is a
+    # failure path — not the consumer-cancellation path.
+    assert len(session.recovery.events) >= 1
+    assert session._last_stream_cancelled is False
+
+
+@pytest.mark.asyncio
 async def test_arun_turn_stream_timeout_raises_turn_timeout_error() -> None:
     async def slow() -> AsyncIterator[str]:
         yield "first"

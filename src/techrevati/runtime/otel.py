@@ -300,6 +300,9 @@ class OpenTelemetrySink:
         # tool body failures, usage-limit warnings caught by the caller,
         # budget warnings, etc. Session-level terminal failures are emitted
         # without structured data by ``AgentSession.session`` / ``asession``.
+        # NB: this empty-data convention is deliberate and tested
+        # (test_non_terminal_failed_event_with_data_does_not_close_parent) —
+        # a failed event carrying data is a warning child, not a session end.
         return event.event.value == AgentEventName.AGENT_FAILED.value and not event.data
 
     @staticmethod
