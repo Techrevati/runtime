@@ -187,7 +187,7 @@ def _documented_untracked_count(text: str) -> int | None:
 def _git_diff_stats(root: Path) -> tuple[DiffStats | None, list[str]]:
     try:
         result = subprocess.run(
-            ["git", "diff", "--shortstat"],
+            ["git", "diff", "main...HEAD", "--shortstat"],
             cwd=root,
             check=True,
             capture_output=True,

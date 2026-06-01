@@ -46,22 +46,26 @@ review reason before staging.
 
 ## Current Untracked Asset Snapshot
 
-Latest pre-staging snapshot collected on 2026-06-01:
+Latest pre-staging snapshot collected on 2026-06-01. The release candidate is
+now committed on `production-rc-0.3.0`, so there are no remaining untracked
+release assets — every asset that previously sat untracked (the categories
+below) is part of the committed branch history. The live untracked set is
+therefore empty and the counts are zero:
 
 | Category | Count | Status |
 |---|---:|---|
-| `docs/api/*.md` | 6 | Allowed |
-| `docs/compliance/*.md` | 18 | Allowed |
-| `docs/patterns/pilot-profile.md` | 1 | Allowed |
-| `docs/styles/*.css` | 1 | Allowed |
-| `docs_theme/*.html` | 2 | Allowed |
-| `scripts/check_*.py` | 37 | Allowed |
-| `scripts/release_preflight.py` | 1 | Allowed |
-| `scripts/install_toolchain.py` | 1 | Allowed |
-| `scripts/mkdocs_hooks/*.py` | 1 | Allowed |
-| `src/techrevati/runtime/pilot.py` | 1 | Allowed |
-| `tests/test_*.py` release guard/test files | 35 | Allowed |
-| Total | 104 | Pending reviewer confirmation |
+| `docs/api/*.md` | 0 | Allowed (committed) |
+| `docs/compliance/*.md` | 0 | Allowed (committed) |
+| `docs/patterns/pilot-profile.md` | 0 | Allowed (committed) |
+| `docs/styles/*.css` | 0 | Allowed (committed) |
+| `docs_theme/*.html` | 0 | Allowed (committed) |
+| `scripts/check_*.py` | 0 | Allowed (committed) |
+| `scripts/release_preflight.py` | 0 | Allowed (committed) |
+| `scripts/install_toolchain.py` | 0 | Allowed (committed) |
+| `scripts/mkdocs_hooks/*.py` | 0 | Allowed (committed) |
+| `src/techrevati/runtime/pilot.py` | 0 | Allowed (committed) |
+| `tests/test_*.py` release guard/test files | 0 | Allowed (committed) |
+| Total | 0 | All release assets committed |
 
 No generated/cache category is approved for staging. If `git status
 --short --untracked-files=all` changes, regenerate this snapshot before

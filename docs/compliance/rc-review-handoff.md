@@ -86,11 +86,12 @@ The handoff must point to the latest current gate evidence in
 Current handoff snapshot collected on 2026-06-01:
 
 - branch: `production-rc-0.3.0`,
-- tracked diff: 85 files changed, 8,859 insertions, 1,794 deletions,
-- untracked release assets: 104 files, all currently matching the staging
-  manifest categories,
-- latest local/server full production gate: 999 tests passed with 94.85 percent
-  total coverage,
+- tracked diff: 190 files changed, 28606 insertions, 1807 deletions (committed
+  branch delta `main...HEAD`; the release candidate is no longer an uncommitted
+  working tree),
+- untracked release assets: 0 files, all release assets are committed,
+- latest local/server full production gate: 1,050 tests passed with 94.74
+  percent total coverage,
 - local/server documentation, public branding, source hygiene, security
   pattern, release, package, workflow, and distribution guards: passed,
 - remote CI result: pending,
