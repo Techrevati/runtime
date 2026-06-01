@@ -19,7 +19,6 @@ labels: enhancement
 **Alternatives considered**
 <!-- What would you do today as a workaround? Why doesn't it scale? -->
 
-**Industry priors**
-<!-- Has another agent SDK (OpenAI Agents SDK, LangGraph, etc.)
-     shipped something similar? Link it. We prefer landing
-     primitives that match industry conventions. -->
+**Prior art**
+<!-- Has another runtime shipped something similar? Link it if useful.
+     Prefer primitives that match established conventions. -->
