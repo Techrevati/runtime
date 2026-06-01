@@ -1,15 +1,15 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling==1.29.0"]
 build-backend = "hatchling.build"
 
 [project]
 name = "techrevati-runtime"
-version = "0.3.0.dev1"
+version = "0.3.0rc1"
 description = "Async-aware runtime primitives for multi-step LLM agent loops."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
-authors = [{ name = "TechRevati doo" }]
+authors = [{ name = "Techrevati doo" }]
 keywords = ["agents", "orchestration", "retry", "circuit-breaker", "cost-tracking", "runtime"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -36,21 +36,33 @@ dev = [
     "ruff==0.14.5",
     # Optional integrations need to be importable so we can type-check
     # and test the optional modules under mypy --strict.
-    "opentelemetry-api>=1.27",
-    "opentelemetry-sdk>=1.27",
-    "opentelemetry-semantic-conventions>=0.48b0",
+    "opentelemetry-api==1.42.0",
+    "opentelemetry-sdk==1.42.0",
+    "opentelemetry-semantic-conventions==0.63b0",
 ]
-docs = ["mkdocs-material>=9.5", "mkdocstrings[python]>=0.25"]
+build = [
+    "build==1.5.0",
+    "twine==6.2.0",
+]
+docs = [
+    "mkdocs==1.6.1",
+    "mkdocstrings[python]==1.0.4",
+    "mkdocstrings-python==2.0.3",
+    "ruff==0.14.5",
+]
+release = [
+    "build==1.5.0",
+    "cyclonedx-bom==7.3.0",
+    "twine==6.2.0",
+]
+audit = [
+    "pip-audit==2.10.0",
+]
 otel = [
-    "opentelemetry-api>=1.27",
-    "opentelemetry-sdk>=1.27",
-    "opentelemetry-semantic-conventions>=0.48b0",
+    "opentelemetry-api>=1.27,<2",
+    "opentelemetry-sdk>=1.27,<2",
+    "opentelemetry-semantic-conventions>=0.48b0,<1",
 ]
-
-[project.urls]
-Homepage = "https://github.com/Techrevati/runtime"
-Documentation = "https://Techrevati.github.io/runtime"
-Changelog = "https://github.com/Techrevati/runtime/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/techrevati"]
