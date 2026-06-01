@@ -8,23 +8,79 @@ The orchestrator emits two streams while running:
 - Per-turn usage (model + ``UsageSnapshot`` + cost). These go to a
   ``UsageSink``.
 
-Both protocols are tiny and synchronous. Default implementations
-buffer in memory with a bounded ring so long-running sessions can't
-balloon. Cross-process / cross-host observability (OpenTelemetry,
-Datadog, your own pipeline) ships as a separate sink that wraps these
-protocols — see ``techrevati.runtime.otel``.
+Both protocols are tiny and synchronous. Default implementations buffer in
+memory with a bounded ring so long-running sessions can't balloon. Durable and
+cross-process observability can be added through separate sink implementations.
 """
 
 from __future__ import annotations
 
+import logging
+import math
+import threading
 from collections import deque
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from techrevati.runtime.agent_events import AgentEvent
 from techrevati.runtime.usage_tracking import UsageSnapshot
 
 DEFAULT_RING_CAPACITY = 1000
+logger = logging.getLogger(__name__)
+
+
+def _validate_capacity(value: int) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError("capacity must be an integer")
+    if value <= 0:
+        raise ValueError("capacity must be positive")
+    return value
+
+
+def _validate_event(event: AgentEvent) -> AgentEvent:
+    if not isinstance(event, AgentEvent):
+        raise TypeError("event must be an AgentEvent")
+    return event
+
+
+def _copy_event(event: AgentEvent) -> AgentEvent:
+    return AgentEvent.from_dict(event.to_dict())
+
+
+def _validate_model(model: str) -> str:
+    if not isinstance(model, str):
+        raise TypeError("model must be a string")
+    if not model.strip():
+        raise ValueError("model must not be empty")
+    return model.strip()
+
+
+def _validate_usage(usage: UsageSnapshot) -> UsageSnapshot:
+    if not isinstance(usage, UsageSnapshot):
+        raise TypeError("usage must be a UsageSnapshot")
+    return usage
+
+
+def _copy_usage(usage: UsageSnapshot) -> UsageSnapshot:
+    return UsageSnapshot.from_dict(usage.to_dict())
+
+
+def _validate_cost_usd(cost_usd: float) -> float:
+    if isinstance(cost_usd, bool) or not isinstance(cost_usd, (int, float)):
+        raise TypeError("cost_usd must be a number")
+    cost = float(cost_usd)
+    if not math.isfinite(cost):
+        raise ValueError("cost_usd must be finite")
+    if cost < 0:
+        raise ValueError("cost_usd must be non-negative")
+    return cost
+
+
+def _validate_bool(field_name: str, value: bool) -> bool:
+    if not isinstance(value, bool):
+        raise TypeError(f"{field_name} must be a bool")
+    return value
 
 
 @runtime_checkable
@@ -41,20 +97,123 @@ class UsageSink(Protocol):
     def record(self, model: str, usage: UsageSnapshot, cost_usd: float) -> None: ...
 
 
+def _validate_event_sinks(sinks: Iterable[EventSink]) -> tuple[EventSink, ...]:
+    try:
+        entries = tuple(sinks)
+    except TypeError as exc:
+        raise TypeError("sinks must be an iterable of EventSink") from exc
+    if not entries:
+        raise ValueError("sinks must contain at least one EventSink")
+    for sink in entries:
+        if not isinstance(sink, EventSink):
+            raise TypeError("all sinks must implement EventSink")
+    return entries
+
+
+def _validate_usage_sinks(sinks: Iterable[UsageSink]) -> tuple[UsageSink, ...]:
+    try:
+        entries = tuple(sinks)
+    except TypeError as exc:
+        raise TypeError("sinks must be an iterable of UsageSink") from exc
+    if not entries:
+        raise ValueError("sinks must contain at least one UsageSink")
+    for sink in entries:
+        if not isinstance(sink, UsageSink):
+            raise TypeError("all sinks must implement UsageSink")
+    return entries
+
+
+def _log_fanout_failure(*, sink_kind: str, sink: object, exc: Exception) -> None:
+    logger.error(
+        "%s fanout sink raised; continuing fanout",
+        sink_kind,
+        extra={
+            "sink_type": type(sink).__name__,
+            "error_type": type(exc).__name__,
+        },
+    )
+
+
 @dataclass
 class NoopEventSink:
-    """Discard every event. The default when no sink is configured."""
+    """Validate and discard every event.
+
+    This keeps no-op behavior observability-free while still enforcing the
+    same protocol boundary as concrete sinks.
+    """
 
     def emit(self, event: AgentEvent) -> None:
+        _validate_event(event)
         return None
 
 
 @dataclass
 class NoopUsageSink:
-    """Discard every usage record. The default when no sink is configured."""
+    """Validate and discard every usage record."""
 
     def record(self, model: str, usage: UsageSnapshot, cost_usd: float) -> None:
+        _validate_model(model)
+        _validate_usage(usage)
+        _validate_cost_usd(cost_usd)
         return None
+
+
+@dataclass
+class FanoutEventSink:
+    """Forward each event to multiple event sinks.
+
+    The fan-out attempts every configured sink even when one fails. By default
+    it re-raises the first sink exception after fan-out so ``AgentSession`` can
+    record its normal local diagnostic event while still keeping the session
+    alive.
+    """
+
+    sinks: Iterable[EventSink]
+    suppress_errors: bool = False
+
+    def __post_init__(self) -> None:
+        self.sinks = _validate_event_sinks(self.sinks)
+        self.suppress_errors = _validate_bool("suppress_errors", self.suppress_errors)
+
+    def emit(self, event: AgentEvent) -> None:
+        event = _validate_event(event)
+        first_error: Exception | None = None
+        for sink in self.sinks:
+            try:
+                sink.emit(_copy_event(event))
+            except Exception as exc:  # noqa: BLE001 - fan-out boundary
+                if first_error is None:
+                    first_error = exc
+                _log_fanout_failure(sink_kind="event", sink=sink, exc=exc)
+        if first_error is not None and not self.suppress_errors:
+            raise first_error
+
+
+@dataclass
+class FanoutUsageSink:
+    """Forward each usage record to multiple usage sinks."""
+
+    sinks: Iterable[UsageSink]
+    suppress_errors: bool = False
+
+    def __post_init__(self) -> None:
+        self.sinks = _validate_usage_sinks(self.sinks)
+        self.suppress_errors = _validate_bool("suppress_errors", self.suppress_errors)
+
+    def record(self, model: str, usage: UsageSnapshot, cost_usd: float) -> None:
+        model = _validate_model(model)
+        usage = _validate_usage(usage)
+        cost_usd = _validate_cost_usd(cost_usd)
+        first_error: Exception | None = None
+        for sink in self.sinks:
+            try:
+                sink.record(model, _copy_usage(usage), cost_usd)
+            except Exception as exc:  # noqa: BLE001 - fan-out boundary
+                if first_error is None:
+                    first_error = exc
+                _log_fanout_failure(sink_kind="usage", sink=sink, exc=exc)
+        if first_error is not None and not self.suppress_errors:
+            raise first_error
 
 
 @dataclass
@@ -63,24 +222,30 @@ class RingBufferEventSink:
 
     Useful for tests, debug consoles, and short-lived processes. The
     buffer drops oldest entries silently once ``capacity`` is reached;
-    if you need durability, plug in an OTel sink or write a custom one.
+    if you need durability, plug in a persistent sink or write a custom one.
     """
 
     capacity: int = DEFAULT_RING_CAPACITY
     _events: deque[AgentEvent] = field(init=False, repr=False)
+    _lock: Any = field(default_factory=threading.Lock, init=False, repr=False)
 
     def __post_init__(self) -> None:
+        self.capacity = _validate_capacity(self.capacity)
         self._events = deque(maxlen=self.capacity)
 
     def emit(self, event: AgentEvent) -> None:
-        self._events.append(event)
+        event = _validate_event(event)
+        with self._lock:
+            self._events.append(_copy_event(event))
 
     @property
     def events(self) -> list[AgentEvent]:
-        return list(self._events)
+        with self._lock:
+            return [_copy_event(event) for event in self._events]
 
     def clear(self) -> None:
-        self._events.clear()
+        with self._lock:
+            self._events.clear()
 
 
 @dataclass
@@ -89,24 +254,37 @@ class RingBufferUsageSink:
 
     capacity: int = DEFAULT_RING_CAPACITY
     _records: deque[tuple[str, UsageSnapshot, float]] = field(init=False, repr=False)
+    _lock: Any = field(default_factory=threading.Lock, init=False, repr=False)
 
     def __post_init__(self) -> None:
+        self.capacity = _validate_capacity(self.capacity)
         self._records = deque(maxlen=self.capacity)
 
     def record(self, model: str, usage: UsageSnapshot, cost_usd: float) -> None:
-        self._records.append((model, usage, cost_usd))
+        model = _validate_model(model)
+        usage = _validate_usage(usage)
+        cost_usd = _validate_cost_usd(cost_usd)
+        with self._lock:
+            self._records.append((model, _copy_usage(usage), cost_usd))
 
     @property
     def records(self) -> list[tuple[str, UsageSnapshot, float]]:
-        return list(self._records)
+        with self._lock:
+            return [
+                (model, _copy_usage(usage), cost_usd)
+                for model, usage, cost_usd in self._records
+            ]
 
     def clear(self) -> None:
-        self._records.clear()
+        with self._lock:
+            self._records.clear()
 
 
 __all__ = [
     "DEFAULT_RING_CAPACITY",
     "EventSink",
+    "FanoutEventSink",
+    "FanoutUsageSink",
     "NoopEventSink",
     "NoopUsageSink",
     "RingBufferEventSink",

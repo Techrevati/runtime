@@ -3,9 +3,9 @@
 Run with: ``python -m examples.tiny_agent``
 
 This file mocks the model call and a tool — replace the two functions
-marked ``# REPLACE`` with your real OpenAI / custom SDK calls.
+marked ``# REPLACE`` with your real model client calls.
 Everything else (lifecycle, cost tracking, retry, breaker,
-permission gating, policy, handoff, OTel) is real production code.
+permission gating, policy, handoff, telemetry) is real production code.
 """
 
 from __future__ import annotations
@@ -14,9 +14,9 @@ import json
 import logging
 
 from techrevati.runtime import (
+    AgentSession,
     CircuitBreaker,
     ModelPricing,
-    Orchestrator,
     PermissionEnforcer,
     PermissionMode,
     PermissionPolicy,
@@ -71,7 +71,7 @@ def main() -> None:
     )
 
     events = RingBufferEventSink()
-    orch = Orchestrator(
+    agent = AgentSession(
         role="writer",
         phase="draft",
         project_id=42,
@@ -83,7 +83,7 @@ def main() -> None:
         max_iterations=5,
     )
 
-    with orch.session() as session:
+    with agent.session() as session:
         # 1. Call the model.
         text, _usage = session.run_turn(
             lambda: call_model("write me an intro paragraph"),
@@ -104,17 +104,17 @@ def main() -> None:
         print(f"handoff to {handoff.target_role}: {handoff.reason}")
 
     # 4. Editor picks up the handoff. Same registry so observability stays joined.
-    editor_orch = Orchestrator(
+    editor_agent = AgentSession(
         role="editor",
         phase="draft",
         project_id=42,
-        registry=orch.registry,
+        registry=agent.registry,
         permissions=permissions,
         event_sink=events,
         budget_usd=0.50,
         enforce_budget=True,
     )
-    with editor_orch.session() as editor_session:
+    with editor_agent.session() as editor_session:
         review, _ = editor_session.run_turn(
             lambda: call_model(f"polish: {text}"),
             model="your-model",

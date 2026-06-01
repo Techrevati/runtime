@@ -16,8 +16,8 @@ deployments this is the technical primitive auditors expect to see.
 Each limit is a small frozen dataclass with three pieces of data:
 
 - ``value`` — the ceiling.
-- ``scope`` — currently only ``"session"`` is enforced; ``"thread"`` and
-  ``"project"`` are reserved for future cross-session enforcement.
+- ``scope`` — ``"session"``. Cross-session ``"thread"`` / ``"project"``
+  scopes are intentionally rejected until they are implemented end-to-end.
 - ``on_breach`` — ``"terminate"`` raises ``GovernanceBreachError``;
   ``"alert"`` emits a ``governance.alert`` event and continues. Use
   ``"alert"`` during rollout to measure breach rates before flipping to
@@ -40,11 +40,60 @@ Composition into a session:
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import Literal, cast
 
-LimitScope = Literal["session", "thread", "project"]
+LimitScope = Literal["session"]
 BreachAction = Literal["terminate", "alert"]
+_VALID_LIMIT_SCOPES = frozenset(("session",))
+_VALID_BREACH_ACTIONS = frozenset(("terminate", "alert"))
+
+
+def _validate_non_empty_str(name: str, value: object) -> str:
+    if not isinstance(value, str):
+        raise TypeError(f"{name} must be a string")
+    if not value.strip():
+        raise ValueError(f"{name} must not be empty")
+    return value.strip()
+
+
+def _validate_finite_amount(name: str, value: float) -> float:
+    if isinstance(value, bool):
+        raise ValueError(f"{name} must be a finite number")
+    try:
+        amount = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must be a finite number") from exc
+    if not math.isfinite(amount):
+        raise ValueError(f"{name} must be finite")
+    if amount < 0:
+        raise ValueError(f"{name} must be >= 0")
+    return amount
+
+
+def _validate_non_negative_int(name: str, value: int) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"{name} must be a non-negative integer")
+    if value < 0:
+        raise ValueError(f"{name} must be >= 0")
+    return value
+
+
+def _validate_scope(scope: str) -> LimitScope:
+    scope = _validate_non_empty_str("scope", scope)
+    if scope not in _VALID_LIMIT_SCOPES:
+        raise ValueError(
+            "scope must be 'session'; thread/project scopes are not supported yet"
+        )
+    return cast(LimitScope, scope)
+
+
+def _validate_breach_action(action: str) -> BreachAction:
+    action = _validate_non_empty_str("on_breach", action)
+    if action not in _VALID_BREACH_ACTIONS:
+        raise ValueError("on_breach must be one of: terminate, alert")
+    return cast(BreachAction, action)
 
 
 class GovernanceBreachError(Exception):
@@ -65,6 +114,12 @@ class GovernanceBreachError(Exception):
         ceiling: float,
         scope: LimitScope,
     ) -> None:
+        limit_name = _validate_non_empty_str("limit_name", limit_name)
+        observed = _validate_finite_amount("observed", observed)
+        ceiling = _validate_finite_amount("ceiling", ceiling)
+        scope = _validate_scope(scope)
+        if observed <= ceiling:
+            raise ValueError("observed must exceed ceiling for a governance breach")
         self.limit_name = limit_name
         self.observed = observed
         self.ceiling = ceiling
@@ -89,6 +144,14 @@ class GovernanceState:
     consecutive_failures: int = 0
     cost_usd: float = 0.0
 
+    def __post_init__(self) -> None:
+        self.turns = _validate_non_negative_int("turns", self.turns)
+        self.tool_calls = _validate_non_negative_int("tool_calls", self.tool_calls)
+        self.consecutive_failures = _validate_non_negative_int(
+            "consecutive_failures", self.consecutive_failures
+        )
+        self.cost_usd = _validate_finite_amount("cost_usd", self.cost_usd)
+
     def record_turn_start(self) -> None:
         self.turns += 1
 
@@ -102,7 +165,7 @@ class GovernanceState:
         self.consecutive_failures = 0
 
     def record_cost(self, cost_usd: float) -> None:
-        self.cost_usd += cost_usd
+        self.cost_usd += _validate_finite_amount("cost_usd", cost_usd)
 
 
 @dataclass(frozen=True)
@@ -113,6 +176,20 @@ class _LimitBase:
     scope: LimitScope = "session"
     on_breach: BreachAction = "terminate"
 
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "value", _validate_finite_amount("value", self.value))
+        object.__setattr__(self, "scope", _validate_scope(self.scope))
+        object.__setattr__(
+            self,
+            "on_breach",
+            _validate_breach_action(self.on_breach),
+        )
+        object.__setattr__(
+            self,
+            "name",
+            _validate_non_empty_str("name", getattr(self, "name", "")),
+        )
+
 
 @dataclass(frozen=True)
 class MaxIterationsLimit(_LimitBase):
@@ -120,7 +197,8 @@ class MaxIterationsLimit(_LimitBase):
 
     Difference from ``AgentSession.max_iterations``: the latter raises a
     domain ``MaxIterationsExceededError`` *which can* be caught and
-    handled inside agent code. ``MaxIterationsLimit`` with
+    handled inside agent code. If it escapes the session context, the terminal
+    failure class is still ``governance_breach``. ``MaxIterationsLimit`` with
     ``on_breach="terminate"`` raises ``GovernanceBreachError`` which is
     terminal and skips the recovery loop.
     """
@@ -182,6 +260,25 @@ class LimitOutcome:
     scope: LimitScope
     on_breach: BreachAction
 
+    def __post_init__(self) -> None:
+        if not isinstance(self.breached, bool):
+            raise TypeError("breached must be a bool")
+        limit_name = _validate_non_empty_str("limit_name", self.limit_name)
+        observed = _validate_finite_amount("observed", self.observed)
+        ceiling = _validate_finite_amount("ceiling", self.ceiling)
+        expected = observed > ceiling
+        if self.breached != expected:
+            raise ValueError("breached must match observed and ceiling")
+        object.__setattr__(self, "limit_name", limit_name)
+        object.__setattr__(self, "observed", observed)
+        object.__setattr__(self, "ceiling", ceiling)
+        object.__setattr__(self, "scope", _validate_scope(self.scope))
+        object.__setattr__(
+            self,
+            "on_breach",
+            _validate_breach_action(self.on_breach),
+        )
+
 
 def _evaluate_one(limit: Limit, state: GovernanceState) -> LimitOutcome:
     if isinstance(limit, MaxIterationsLimit):
@@ -214,6 +311,27 @@ class GovernancePlane:
 
     limits: tuple[Limit, ...]
     state: GovernanceState = field(default_factory=GovernanceState)
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.state, GovernanceState):
+            raise ValueError("state must be a GovernanceState")
+        limits = tuple(self.limits)
+        for limit in limits:
+            if not isinstance(
+                limit,
+                (
+                    MaxIterationsLimit,
+                    MaxBudgetLimit,
+                    MaxConsecutiveFailuresLimit,
+                    MaxToolCallsLimit,
+                ),
+            ):
+                raise ValueError("limits must contain governance limit objects")
+        self.limits = limits
+
+    def for_session(self) -> GovernancePlane:
+        """Return the same limits with a fresh per-session state."""
+        return GovernancePlane(limits=self.limits)
 
     def evaluate(self) -> list[LimitOutcome]:
         """Evaluate every limit. Returns outcomes (breached or not).

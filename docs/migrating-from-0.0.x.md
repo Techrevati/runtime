@@ -139,32 +139,21 @@ async with orch.asession() as session:
 
 You can keep using the sync path — they're equal-status siblings.
 
-### `AgentSession` alias for `Orchestrator`
+### `AgentSession` canonical name
 
-`AgentSession = Orchestrator` is exported. 0.2.0 will promote
-`AgentSession` to the canonical name and keep `Orchestrator` as a
-deprecation alias. Adopt the new name in new code; existing code keeps
-working.
+Modern releases use `AgentSession` as the canonical session factory.
+`Orchestrator` remains a deprecated compatibility subclass through the
+0.3.x line; new code should use `AgentSession`. Existing 0.0.x code can
+still migrate by replacing constructor calls when convenient.
 
-### Sinks and OpenTelemetry
+### Sinks and Telemetry
 
 `Orchestrator(event_sink=..., usage_sink=...)` accepts any
 `EventSink` / `UsageSink` implementation. Install
-`techrevati-runtime[otel]` and wire `OpenTelemetrySink` if you want
-your APM dashboard to surface the runtime alongside OpenAI Agents
-SDK traces:
+`techrevati-runtime[otel]` and wire a telemetry sink if you want your
+telemetry backend to surface runtime activity.
 
-```python
-from techrevati.runtime.otel import OpenTelemetrySink, OpenTelemetryUsageSink
-
-orch = Orchestrator(
-    role="writer", phase="draft",
-    event_sink=OpenTelemetrySink(agent_id="writer-001"),
-    usage_sink=OpenTelemetryUsageSink(),
-)
-```
-
-Spans follow the [OpenTelemetry GenAI agent spans semantic conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-agent-spans/).
+Spans follow semantic-convention attribute names.
 
 ## Not changing in 0.1.0
 
@@ -176,14 +165,15 @@ Spans follow the [OpenTelemetry GenAI agent spans semantic conventions](https://
 - Behavior of `register_pricing` and `load_pricing_from_file`.
 - The deny-first ordering of `PermissionEnforcer`.
 
-## Coming in 0.2.0 (forward-looking)
+## Historical 0.2.0 changes
 
-- `Orchestrator` → `AgentSession` rename promoted to canonical (with
+- `Orchestrator` to `AgentSession` rename promoted to canonical (with
   `DeprecationWarning` on the old name).
 - `CheckpointSaver` Protocol + `SqliteSaver` reference implementation
   for pluggable persistence.
 - `TokenBucket` rate-limiter primitive.
-- Sigstore signing on release artifacts.
+- Release workflow verification, package artifact checks, and SBOM
+  generation.
 
-If you build against any of these in 0.1.0 today, expect their final
-shape to land in 0.2.0.
+These shipped after 0.1.0 and are listed here only to preserve migration
+history.

@@ -7,6 +7,7 @@ import asyncio
 import pytest
 
 from techrevati.runtime import (
+    AgentFailureClass,
     AgentSession,
     AgentStatus,
     AsyncCircuitBreaker,
@@ -52,6 +53,8 @@ async def test_asession_happy_path_completes_worker():
 
     assert session.worker.status == AgentStatus.COMPLETED
     assert session.tracker.total_cost() > 0
+    assert session.events[0].event.value == "agent.started"
+    assert session.events[0].project_id == 1
 
 
 @pytest.mark.asyncio
@@ -59,13 +62,53 @@ async def test_asession_failure_path_marks_failed():
     orch = AgentSession(role="writer", phase="draft")
 
     async def boom():
-        raise RuntimeError("boom")
+        raise RuntimeError("connection string with sensitive details")
 
-    with pytest.raises(RuntimeError, match="boom"):
+    with pytest.raises(RuntimeError, match="sensitive details"):
         async with orch.asession() as session:
             await session.arun_turn(boom)
 
     assert session.worker.status == AgentStatus.FAILED
+    assert any(e.event.value == "agent.recovery.succeeded" for e in session.events)
+    terminal = session.events[-1]
+    assert terminal.failure_class == AgentFailureClass.LLM_ERROR
+    assert terminal.detail == "RuntimeError raised"
+    assert "sensitive" not in str(terminal.to_dict())
+    assert "sensitive" not in str(session.worker.to_dict())
+
+
+@pytest.mark.asyncio
+async def test_asession_validation_error_marks_terminal_failure_class():
+    orch = AgentSession(role="writer", phase="draft")
+
+    async def boom():
+        raise TypeError("invalid payload")
+
+    with pytest.raises(TypeError, match="invalid payload"):
+        async with orch.asession() as session:
+            await session.arun_turn(boom)
+
+    terminal = session.events[-1]
+    assert terminal.failure_class == AgentFailureClass.VALIDATION_ERROR
+    assert terminal.detail == "TypeError raised"
+    assert "invalid payload" not in str(terminal.to_dict())
+
+
+@pytest.mark.asyncio
+async def test_asession_prompt_rejection_marks_terminal_failure_class():
+    orch = AgentSession(role="writer", phase="draft")
+
+    async def boom():
+        raise RuntimeError("content filter blocked the prompt")
+
+    with pytest.raises(RuntimeError, match="content filter"):
+        async with orch.asession() as session:
+            await session.arun_turn(boom)
+
+    terminal = session.events[-1]
+    assert terminal.failure_class == AgentFailureClass.PROMPT_REJECTION
+    assert terminal.detail == "RuntimeError raised"
+    assert "content filter" not in str(terminal.to_dict())
 
 
 # -- arun_turn with async circuit breaker --
@@ -109,6 +152,19 @@ async def test_arun_turn_timeout_raises_turn_timeout_error():
             await session.arun_turn(slow, timeout=0.05)
 
     assert exc_info.value.timeout_seconds == 0.05
+    assert any(event.scenario == "llm_timeout" for event in session.recovery.events)
+    assert any(
+        event.event.value == "agent.recovery.attempted"
+        and event.detail == "llm_timeout: recovered"
+        for event in session.events
+    )
+    assert any(
+        event.event.value == "agent.recovery.succeeded"
+        and event.data is not None
+        and event.data["scenario"] == "llm_timeout"
+        and event.data["outcome"] == "recovered"
+        for event in session.events
+    )
 
 
 @pytest.mark.asyncio
@@ -144,6 +200,11 @@ async def test_arun_tool_blocks_when_denied():
     with pytest.raises(PermissionDeniedError):
         async with orch.asession() as session:
             await session.arun_tool("write_db", attempt)
+    blocked = [e for e in session.events if e.event.value == "agent.blocked"]
+    assert blocked[0].data == {"tool": "write_db", "kind": "permission"}
+    failures = [e for e in session.events if e.event.value == "agent.failed"]
+    assert failures[-1].failure_class == AgentFailureClass.PERMISSION_DENIED
+    assert not any(e.event.value == "agent.tool_called" for e in session.events)
 
 
 @pytest.mark.asyncio
@@ -163,6 +224,34 @@ async def test_arun_tool_passes_when_allowed():
 
     async with orch.asession() as session:
         assert await session.arun_tool("write_db", writer) == "wrote"
+    tool_events = [
+        event for event in session.events if event.data == {"tool": "write_db"}
+    ]
+    assert [event.event.value for event in tool_events] == [
+        "agent.tool_called",
+        "agent.tool_completed",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_arun_tool_execution_error_emits_tool_failure_event_when_caught():
+    orch = AgentSession(role="writer", phase="draft")
+
+    async def fail_tool() -> str:
+        raise RuntimeError("connection string with sensitive details")
+
+    async with orch.asession() as session:
+        with pytest.raises(RuntimeError):
+            await session.arun_tool("lookup", fail_tool)
+
+    failures = [e for e in session.events if e.event.value == "agent.failed"]
+    assert failures[0].failure_class is not None
+    assert failures[0].failure_class.value == "tool_error"
+    assert failures[0].detail == "tool execution failed: lookup"
+    assert failures[0].data == {"tool": "lookup"}
+    assert "sensitive" not in str(failures[0].to_dict())
+    assert any(e.event.value == "agent.tool_called" for e in session.events)
+    assert not any(e.event.value == "agent.tool_completed" for e in session.events)
 
 
 # -- Cancellation → CANCELLED (item 2.4) --
@@ -187,6 +276,13 @@ async def test_cancelled_error_marks_worker_cancelled():
         await task
 
     assert run.session.worker.status == AgentStatus.CANCELLED  # type: ignore[attr-defined]
+    failures = [
+        event
+        for event in run.session.events  # type: ignore[attr-defined]
+        if event.event.value == "agent.failed"
+    ]
+    assert failures[-1].failure_class == AgentFailureClass.CANCELLED
+    assert failures[-1].detail == "async session cancelled"
 
 
 # -- Budget enforcement (parity with sync) --
@@ -211,6 +307,10 @@ async def test_arun_turn_respects_enforce_budget():
                 model="test-model",
                 usage=UsageSnapshot(input_tokens=1_000_000),
             )
+    failures = [e for e in session.events if e.event.value == "agent.failed"]
+    assert failures
+    assert all(e.failure_class is not None for e in failures)
+    assert [e.failure_class.value for e in failures] == ["rate_limit", "rate_limit"]
 
 
 # -- pause_for_input (item 2.8) --
@@ -238,6 +338,16 @@ async def test_pause_for_input_resumes_with_provided_value():
     result = await task
     assert result == "approved"
     assert flow.session.worker.status == AgentStatus.COMPLETED  # type: ignore[attr-defined]
+    events = flow.session.events  # type: ignore[attr-defined]
+    blocked = [event for event in events if event.event.value == "agent.blocked"]
+    ready = [event for event in events if event.event.value == "agent.ready"]
+    assert blocked[0].detail == "waiting for input"
+    assert blocked[0].data == {"kind": "human_input"}
+    assert ready[0].detail == "input received"
+    assert ready[0].data == {"kind": "human_input"}
+    public_payload = " ".join(str(event.to_dict()) for event in blocked + ready)
+    assert "approve?" not in public_payload
+    assert "approved" not in public_payload
 
 
 @pytest.mark.asyncio

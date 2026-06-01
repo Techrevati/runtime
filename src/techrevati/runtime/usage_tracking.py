@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import threading
 from dataclasses import dataclass, field
 from importlib import resources
@@ -17,6 +18,8 @@ from typing import Any, Literal
 
 logger = logging.getLogger("techrevati.runtime.usage_tracking")
 logger.addHandler(logging.NullHandler())
+
+_CONFLICT_ACTIONS = frozenset({"overwrite", "error", "keep"})
 
 
 class UsageBoundExceededError(Exception):
@@ -36,6 +39,10 @@ class BudgetExceededError(UsageBoundExceededError):
     """
 
     def __init__(self, budget_usd: float, current_cost_usd: float) -> None:
+        budget_usd = _validate_finite_amount("budget_usd", budget_usd, allow_zero=True)
+        current_cost_usd = _validate_finite_amount(
+            "current_cost_usd", current_cost_usd, allow_zero=True
+        )
         self.budget_usd = budget_usd
         self.current_cost_usd = current_cost_usd
         super().__init__(
@@ -53,13 +60,85 @@ class UsageLimitExceededError(UsageBoundExceededError):
     """
 
     def __init__(self, limit_name: str, observed: int, ceiling: int) -> None:
-        self.limit_name = limit_name
-        self.observed = observed
-        self.ceiling = ceiling
+        if not isinstance(limit_name, str) or not limit_name.strip():
+            raise ValueError("limit_name must be a non-empty string")
+        self.limit_name = limit_name.strip()
+        self.observed = _validate_non_negative_int("observed", observed)
+        self.ceiling = _validate_non_negative_int("ceiling", ceiling)
         super().__init__(
-            f"usage limit exceeded on '{limit_name}': "
-            f"observed {observed} > ceiling {ceiling}"
+            f"usage limit exceeded on '{self.limit_name}': "
+            f"observed {self.observed} > ceiling {self.ceiling}"
         )
+
+
+def _validate_finite_amount(name: str, value: float, *, allow_zero: bool) -> float:
+    if isinstance(value, bool):
+        raise ValueError(f"{name} must be a finite number")
+    try:
+        amount = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must be a finite number") from exc
+    if not math.isfinite(amount):
+        raise ValueError(f"{name} must be finite")
+    if allow_zero:
+        if amount < 0:
+            raise ValueError(f"{name} must be >= 0")
+    elif amount <= 0:
+        raise ValueError(f"{name} must be > 0")
+    return amount
+
+
+def _validate_non_negative_int(name: str, value: int) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"{name} must be a non-negative integer")
+    if value < 0:
+        raise ValueError(f"{name} must be >= 0")
+    return value
+
+
+def _validate_optional_non_negative_int(name: str, value: int | None) -> int | None:
+    if value is None:
+        return None
+    return _validate_non_negative_int(name, value)
+
+
+def _validate_model_name(model: str) -> str:
+    if not isinstance(model, str) or not model.strip():
+        raise ValueError("model must be a non-empty string")
+    return model.strip()
+
+
+def _normalize_optional_model_name(model: str) -> str:
+    if not isinstance(model, str):
+        raise ValueError("model must be a string")
+    stripped = model.strip()
+    if not stripped and model:
+        raise ValueError("model must be a non-empty string or empty sentinel")
+    return stripped
+
+
+def _validate_conflict_action(
+    value: object,
+) -> Literal["overwrite", "error", "keep"]:
+    if not isinstance(value, str) or value not in _CONFLICT_ACTIONS:
+        raise ValueError("on_conflict must be one of: overwrite, error, keep")
+    if value == "overwrite":
+        return "overwrite"
+    if value == "error":
+        return "error"
+    return "keep"
+
+
+def _validate_pricing(pricing: ModelPricing) -> ModelPricing:
+    if not isinstance(pricing, ModelPricing):
+        raise TypeError("pricing must be a ModelPricing instance")
+    return pricing
+
+
+def _validate_usage_snapshot(usage: UsageSnapshot) -> UsageSnapshot:
+    if not isinstance(usage, UsageSnapshot):
+        raise TypeError("usage must be a UsageSnapshot instance")
+    return usage
 
 
 @dataclass(frozen=True)
@@ -71,9 +150,8 @@ class UsageLimits:
     against cumulative usage after each turn and raises
     ``UsageLimitExceededError`` on the first overrun.
 
-    Mirrors Pydantic AI's ``UsageLimits`` shape so callers porting
-    between the two get a familiar surface; the names match exactly
-    on purpose.
+    Field names are intentionally explicit so callers can map them to external
+    usage schemas without extra adapters.
     """
 
     request_tokens_max: int | None = None
@@ -81,6 +159,29 @@ class UsageLimits:
     total_tokens_max: int | None = None
     tool_calls_max: int | None = None
     cost_usd_max: float | None = None
+
+    def __post_init__(self) -> None:
+        for field_name in (
+            "request_tokens_max",
+            "response_tokens_max",
+            "total_tokens_max",
+            "tool_calls_max",
+        ):
+            object.__setattr__(
+                self,
+                field_name,
+                _validate_optional_non_negative_int(
+                    field_name, getattr(self, field_name)
+                ),
+            )
+        if self.cost_usd_max is not None:
+            object.__setattr__(
+                self,
+                "cost_usd_max",
+                _validate_finite_amount(
+                    "cost_usd_max", self.cost_usd_max, allow_zero=True
+                ),
+            )
 
 
 @dataclass(frozen=True)
@@ -101,6 +202,23 @@ class ModelPricing:
     cache_read_per_million: float = 0.0
     cache_write_5min_per_million: float = 0.0
     cache_write_1h_per_million: float = 0.0
+
+    def __post_init__(self) -> None:
+        for field_name in (
+            "input_per_million",
+            "output_per_million",
+            "cache_write_per_million",
+            "cache_read_per_million",
+            "cache_write_5min_per_million",
+            "cache_write_1h_per_million",
+        ):
+            object.__setattr__(
+                self,
+                field_name,
+                _validate_finite_amount(
+                    field_name, getattr(self, field_name), allow_zero=True
+                ),
+            )
 
     def write_rate_for_ttl(self, ttl: str | None) -> float:
         """Return the per-million write rate for the given TTL hint.
@@ -125,18 +243,44 @@ def _load_default_pricing() -> dict[str, ModelPricing]:
         .joinpath("data", "pricing.json")
         .read_text(encoding="utf-8")
     )
-    data = json.loads(raw)
-    return {
-        name.lower(): ModelPricing(
-            input_per_million=spec["input_per_million"],
-            output_per_million=spec["output_per_million"],
-            cache_write_per_million=spec.get("cache_write_per_million", 0.0),
-            cache_read_per_million=spec.get("cache_read_per_million", 0.0),
-            cache_write_5min_per_million=spec.get("cache_write_5min_per_million", 0.0),
-            cache_write_1h_per_million=spec.get("cache_write_1h_per_million", 0.0),
-        )
-        for name, spec in data["models"].items()
-    }
+    return _pricing_table_from_payload(json.loads(raw))
+
+
+def _pricing_from_spec(model: str, spec: object) -> tuple[str, ModelPricing]:
+    model_lower = _validate_model_name(model).lower()
+    if not isinstance(spec, dict):
+        raise TypeError(f"pricing spec for model {model!r} must be a JSON object")
+    missing_fields = [
+        field_name
+        for field_name in ("input_per_million", "output_per_million")
+        if field_name not in spec
+    ]
+    if missing_fields:
+        missing = ", ".join(missing_fields)
+        raise ValueError(f"pricing spec for model {model!r} missing: {missing}")
+    return model_lower, ModelPricing(
+        input_per_million=spec["input_per_million"],
+        output_per_million=spec["output_per_million"],
+        cache_write_per_million=spec.get("cache_write_per_million", 0.0),
+        cache_read_per_million=spec.get("cache_read_per_million", 0.0),
+        cache_write_5min_per_million=spec.get("cache_write_5min_per_million", 0.0),
+        cache_write_1h_per_million=spec.get("cache_write_1h_per_million", 0.0),
+    )
+
+
+def _pricing_table_from_payload(data: object) -> dict[str, ModelPricing]:
+    if not isinstance(data, dict):
+        raise TypeError("pricing file must contain a JSON object")
+    models = data.get("models")
+    if not isinstance(models, dict):
+        raise TypeError("pricing file 'models' must be a JSON object")
+    loaded: dict[str, ModelPricing] = {}
+    for name, spec in models.items():
+        if not isinstance(name, str):
+            raise TypeError("pricing model names must be strings")
+        model_lower, pricing = _pricing_from_spec(name, spec)
+        loaded[model_lower] = pricing
+    return loaded
 
 
 # Mutable global registry. Use register_pricing() to update.
@@ -154,7 +298,9 @@ def has_pricing(model: str) -> bool:
     the resolution behavior of cost calculations. Returns False if the
     lookup falls back to the zero-cost default.
     """
-    model_lower = model.lower()
+    if not isinstance(model, str) or not model.strip():
+        return False
+    model_lower = model.strip().lower()
     if model_lower in PRICING_TABLE:
         return True
     return any(model_lower.startswith(key) for key in PRICING_TABLE)
@@ -193,12 +339,14 @@ def register_pricing(
     - ``"keep"`` — leave the existing entry; the new pricing is dropped
       silently. Useful for "register defaults if not present" patterns.
     """
-    model_lower = model.lower()
+    model_lower = _validate_model_name(model).lower()
+    pricing = _validate_pricing(pricing)
+    conflict_action = _validate_conflict_action(on_conflict)
     with _pricing_lock:
         if model_lower in PRICING_TABLE:
-            if on_conflict == "error":
+            if conflict_action == "error":
                 raise PricingAlreadyRegisteredError(model)
-            if on_conflict == "keep":
+            if conflict_action == "keep":
                 return
         PRICING_TABLE[model_lower] = pricing
 
@@ -209,33 +357,28 @@ def load_pricing_from_file(path: str | Path) -> None:
     Same schema as the bundled data/pricing.json. Existing entries
     are overwritten on conflict.
     """
-    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    loaded = _pricing_table_from_payload(
+        json.loads(Path(path).read_text(encoding="utf-8"))
+    )
     with _pricing_lock:
-        for name, spec in data["models"].items():
-            PRICING_TABLE[name.lower()] = ModelPricing(
-                input_per_million=spec["input_per_million"],
-                output_per_million=spec["output_per_million"],
-                cache_write_per_million=spec.get("cache_write_per_million", 0.0),
-                cache_read_per_million=spec.get("cache_read_per_million", 0.0),
-                cache_write_5min_per_million=spec.get(
-                    "cache_write_5min_per_million", 0.0
-                ),
-                cache_write_1h_per_million=spec.get("cache_write_1h_per_million", 0.0),
-            )
+        PRICING_TABLE.update(loaded)
 
 
-def _resolve_pricing(model: str) -> ModelPricing:
+def resolve_pricing(model: str) -> ModelPricing:
     """Resolve pricing for a model. Falls back to zero (local/unknown).
 
-    Tries exact match first, then longest prefix match so dated variants
-    like 'model-a-20260514' map to 'model-a'.
+    Public utility. Tries exact match first, then longest prefix match so
+    dated variants like 'model-a-20260514' map to 'model-a'. Unknown models
+    return ``ModelPricing(0.0, 0.0)`` (zero-fallback — this never raises).
 
     Read path is guarded against concurrent ``register_pricing`` /
     ``load_pricing_from_file`` mutations: we snapshot the table under
     ``_pricing_lock`` and iterate the local copy, avoiding the
     ``RuntimeError: dictionary changed size during iteration`` window.
     """
-    model_lower = model.lower()
+    model_lower = _normalize_optional_model_name(model).lower()
+    if not model_lower:
+        return ModelPricing(0.0, 0.0)
     with _pricing_lock:
         if model_lower in PRICING_TABLE:
             return PRICING_TABLE[model_lower]
@@ -245,6 +388,10 @@ def _resolve_pricing(model: str) -> ModelPricing:
         if model_lower.startswith(key) and (best is None or len(key) > best[0]):
             best = (len(key), pricing)
     return best[1] if best else ModelPricing(0.0, 0.0)
+
+
+# Backwards-compatible internal alias (was the private name through 0.2.x).
+_resolve_pricing = resolve_pricing
 
 
 @dataclass(frozen=True)
@@ -264,6 +411,26 @@ class UsageSnapshot:
     cache_ttl: str | None = None
     tool_calls: int = 0
 
+    def __post_init__(self) -> None:
+        for field_name in (
+            "input_tokens",
+            "output_tokens",
+            "cache_write_tokens",
+            "cache_read_tokens",
+            "tool_calls",
+        ):
+            object.__setattr__(
+                self,
+                field_name,
+                _validate_non_negative_int(field_name, getattr(self, field_name)),
+            )
+        if self.cache_ttl is not None:
+            if not isinstance(self.cache_ttl, str):
+                raise ValueError("cache_ttl must be a string or None")
+            if not self.cache_ttl.strip():
+                raise ValueError("cache_ttl must not be empty")
+            object.__setattr__(self, "cache_ttl", self.cache_ttl.strip())
+
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {
             "input_tokens": self.input_tokens,
@@ -278,6 +445,8 @@ class UsageSnapshot:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> UsageSnapshot:
+        if not isinstance(data, dict):
+            raise TypeError("usage snapshot data must be a dictionary")
         return cls(
             input_tokens=data.get("input_tokens", 0),
             output_tokens=data.get("output_tokens", 0),
@@ -295,6 +464,10 @@ class UsageSnapshot:
         return cls.from_dict(json.loads(s))
 
 
+def _copy_usage_snapshot(usage: UsageSnapshot) -> UsageSnapshot:
+    return UsageSnapshot.from_dict(usage.to_dict())
+
+
 @dataclass
 class UsageTracker:
     """Cumulative usage tracking with cost estimation."""
@@ -304,9 +477,24 @@ class UsageTracker:
         default_factory=threading.Lock, init=False, repr=False
     )
 
-    def record_turn(self, model: str, usage: UsageSnapshot) -> None:
+    def __post_init__(self) -> None:
+        self.turns = [
+            (
+                _normalize_optional_model_name(model),
+                _copy_usage_snapshot(_validate_usage_snapshot(usage)),
+            )
+            for model, usage in self.turns
+        ]
+
+    def _snapshot_turns(self) -> list[tuple[str, UsageSnapshot]]:
         with self._lock:
-            self.turns.append((model, usage))
+            return [(model, _copy_usage_snapshot(usage)) for model, usage in self.turns]
+
+    def record_turn(self, model: str, usage: UsageSnapshot) -> None:
+        model = _normalize_optional_model_name(model)
+        usage = _validate_usage_snapshot(usage)
+        with self._lock:
+            self.turns.append((model, _copy_usage_snapshot(usage)))
         if model and not has_pricing(model):
             with _pricing_lock:
                 already_warned = model.lower() in _warned_unpriced_models
@@ -321,13 +509,15 @@ class UsageTracker:
 
     @property
     def total_input_tokens(self) -> int:
-        return sum(u.input_tokens for _, u in self.turns)
+        return sum(u.input_tokens for _, u in self._snapshot_turns())
 
     @property
     def total_output_tokens(self) -> int:
-        return sum(u.output_tokens for _, u in self.turns)
+        return sum(u.output_tokens for _, u in self._snapshot_turns())
 
     def cost_for_turn(self, model: str, usage: UsageSnapshot) -> float:
+        model = _normalize_optional_model_name(model)
+        usage = _validate_usage_snapshot(usage)
         p = _resolve_pricing(model)
         write_rate = p.write_rate_for_ttl(usage.cache_ttl)
         return (
@@ -338,32 +528,44 @@ class UsageTracker:
         )
 
     def total_cost(self) -> float:
-        return sum(self.cost_for_turn(model, usage) for model, usage in self.turns)
+        return sum(
+            self.cost_for_turn(model, usage) for model, usage in self._snapshot_turns()
+        )
 
-    def format_cost(self) -> str:
-        cost = self.total_cost()
+    @staticmethod
+    def _format_cost_value(cost: float) -> str:
+        cost = _validate_finite_amount("cost", cost, allow_zero=True)
         if cost < 0.01:
             return f"${cost:.4f}"
         return f"${cost:.2f}"
 
+    def format_cost(self) -> str:
+        return self._format_cost_value(self.total_cost())
+
     def budget_remaining(self, budget_usd: float) -> float:
+        budget_usd = _validate_finite_amount("budget_usd", budget_usd, allow_zero=True)
         return budget_usd - self.total_cost()
 
     def is_over_budget(self, budget_usd: float) -> bool:
+        budget_usd = _validate_finite_amount("budget_usd", budget_usd, allow_zero=True)
         return self.total_cost() > budget_usd
 
     def summary(self) -> dict[str, Any]:
+        turns = self._snapshot_turns()
+        total_input_tokens = sum(u.input_tokens for _, u in turns)
+        total_output_tokens = sum(u.output_tokens for _, u in turns)
+        total_cost_usd = sum(self.cost_for_turn(model, usage) for model, usage in turns)
         return {
-            "turns": len(self.turns),
-            "total_input_tokens": self.total_input_tokens,
-            "total_output_tokens": self.total_output_tokens,
-            "total_cost_usd": round(self.total_cost(), 4),
-            "formatted_cost": self.format_cost(),
+            "turns": len(turns),
+            "total_input_tokens": total_input_tokens,
+            "total_output_tokens": total_output_tokens,
+            "total_cost_usd": round(total_cost_usd, 4),
+            "formatted_cost": self._format_cost_value(total_cost_usd),
         }
 
     def per_model_summary(self) -> dict[str, float]:
         result: dict[str, float] = {}
-        for model, usage in self.turns:
+        for model, usage in self._snapshot_turns():
             result[model] = result.get(model, 0.0) + self.cost_for_turn(model, usage)
         return result
 
@@ -371,7 +573,7 @@ class UsageTracker:
 
     @property
     def total_tool_calls(self) -> int:
-        return sum(u.tool_calls for _, u in self.turns)
+        return sum(u.tool_calls for _, u in self._snapshot_turns())
 
     def check_limits(self, limits: UsageLimits) -> None:
         """Raise ``UsageLimitExceededError`` on the first cap overrun.
@@ -383,39 +585,45 @@ class UsageTracker:
         ``budget_usd`` (on the session) and ``cost_usd_max`` are
         configured, ``UsageLimits`` wins because it's the newer API.
         """
+        if not isinstance(limits, UsageLimits):
+            raise TypeError("limits must be a UsageLimits instance")
+        turns = self._snapshot_turns()
+        total_input_tokens = sum(u.input_tokens for _, u in turns)
+        total_output_tokens = sum(u.output_tokens for _, u in turns)
+        total_tool_calls = sum(u.tool_calls for _, u in turns)
         if (
             limits.request_tokens_max is not None
-            and self.total_input_tokens > limits.request_tokens_max
+            and total_input_tokens > limits.request_tokens_max
         ):
             raise UsageLimitExceededError(
                 "request_tokens",
-                self.total_input_tokens,
+                total_input_tokens,
                 limits.request_tokens_max,
             )
         if (
             limits.response_tokens_max is not None
-            and self.total_output_tokens > limits.response_tokens_max
+            and total_output_tokens > limits.response_tokens_max
         ):
             raise UsageLimitExceededError(
                 "response_tokens",
-                self.total_output_tokens,
+                total_output_tokens,
                 limits.response_tokens_max,
             )
         if limits.total_tokens_max is not None:
-            total = self.total_input_tokens + self.total_output_tokens
+            total = total_input_tokens + total_output_tokens
             if total > limits.total_tokens_max:
                 raise UsageLimitExceededError(
                     "total_tokens", total, limits.total_tokens_max
                 )
         if (
             limits.tool_calls_max is not None
-            and self.total_tool_calls > limits.tool_calls_max
+            and total_tool_calls > limits.tool_calls_max
         ):
             raise UsageLimitExceededError(
-                "tool_calls", self.total_tool_calls, limits.tool_calls_max
+                "tool_calls", total_tool_calls, limits.tool_calls_max
             )
         if limits.cost_usd_max is not None:
-            cost = self.total_cost()
+            cost = sum(self.cost_for_turn(model, usage) for model, usage in turns)
             if cost > limits.cost_usd_max:
                 raise UsageLimitExceededError(
                     "cost_usd",

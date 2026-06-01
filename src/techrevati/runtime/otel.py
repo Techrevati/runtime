@@ -1,40 +1,46 @@
 """
-OpenTelemetry integration — GenAI semantic-conventions-aligned sink.
+Telemetry integration for runtime events and usage.
 
 This module is import-safe only if the ``[otel]`` extra is installed.
 At import time it tries to load ``opentelemetry`` packages; if they
 are missing, a clear ``ImportError`` is raised so callers learn what
 to install instead of getting an obscure ``AttributeError`` later.
 
-The sink emits **OpenTelemetry GenAI semantic conventions** attributes
-(https://opentelemetry.io/docs/specs/semconv/gen-ai/) so any GenAI-aware
-APM ingest (the same one consuming OpenAI Agents SDK telemetry)
-will surface our runtime as a first-class agent.
+The sink emits semantic-convention attributes so telemetry backends can surface
+runtime sessions as first-class agent activity.
 
-What gets emitted in 0.2.0 (v2 — agent-level nesting):
+What gets emitted:
 - ``AGENT_STARTED`` / ``PHASE_STARTED`` open a long-lived parent span
   and stash it on the sink keyed by ``(role, phase)``.
-- All other events emit one-shot spans **as children** of the matching
-  open parent (if any) via OTel context propagation, so a typical
-  session produces a `invoke_agent` root with `execute_tool` /
-  recovery siblings nested under it.
+- ``AGENT_TOOL_CALLED`` opens a tool span as a child of the active
+  agent span. ``AGENT_TOOL_COMPLETED`` or a tool-scoped
+  ``AGENT_FAILED`` event closes that tool span.
+- Non-terminal failure events with structured data (for example a
+  catchable usage-limit overrun or tool failure) are emitted as child
+  spans and do not close the agent parent.
 - ``AGENT_COMPLETED`` / ``AGENT_FAILED`` / ``PHASE_COMPLETED`` end the
-  parent span, copying the terminal event's attributes onto it (incl.
-  ``error.type`` and a ``Status(StatusCode.ERROR, ...)`` on failure).
-
-Full tool-call-level nesting (``invoke_agent`` > ``invoke_agent`` per
-turn > ``execute_tool`` per tool) is still a 0.3.0 item; today every
-non-parent event is a leaf under the agent span.
+  parent span, copying the terminal event's attributes onto it. Failure classes
+  map to ``error.type`` and ``Status(StatusCode.ERROR, ...)`` except
+  caller-driven cancellations, which remain typed but are not marked as errors.
 """
 
 from __future__ import annotations
 
 import atexit
+import logging
+import math
 import weakref
+from contextlib import suppress
 from dataclasses import dataclass, field
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _pkg_version
 from typing import TYPE_CHECKING, Any
 
-from techrevati.runtime.agent_events import AgentEvent, AgentEventName
+from techrevati.runtime.agent_events import (
+    AgentEvent,
+    AgentEventName,
+    AgentFailureClass,
+)
 from techrevati.runtime.usage_tracking import UsageSnapshot
 
 try:
@@ -54,12 +60,85 @@ if TYPE_CHECKING:  # pragma: no cover - type-only
     from opentelemetry.trace import Span, Tracer
 
 
-# Provider name surfaced on every span/metric. Override per-instance
-# if you wrap a specific upstream (e.g. provider_name="openai").
+# Provider name surfaced on every span/metric. Override per instance when
+# wrapping a specific upstream.
 DEFAULT_PROVIDER_NAME = "techrevati"
+_DISTRIBUTION_NAME = "techrevati-runtime"
+_INSTRUMENTATION_SCOPE_NAME = "techrevati.runtime"
+logger = logging.getLogger(__name__)
 
-# Mapping from our AgentEventName to OTel GenAI operation name.
-# Per https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-agent-spans/
+
+def _validate_non_empty_str(field_name: str, value: str) -> str:
+    if not isinstance(value, str):
+        raise TypeError(f"{field_name} must be a string")
+    if not value.strip():
+        raise ValueError(f"{field_name} must not be empty")
+    return value
+
+
+def _validate_optional_non_empty_str(field_name: str, value: str | None) -> str | None:
+    if value is None:
+        return None
+    return _validate_non_empty_str(field_name, value)
+
+
+def _validate_bool(field_name: str, value: bool) -> bool:
+    if not isinstance(value, bool):
+        raise TypeError(f"{field_name} must be a bool")
+    return value
+
+
+def _validate_event(event: AgentEvent) -> AgentEvent:
+    if not isinstance(event, AgentEvent):
+        raise TypeError("event must be an AgentEvent")
+    return event
+
+
+def _is_error_failure_class(failure_class: AgentFailureClass) -> bool:
+    return failure_class != AgentFailureClass.CANCELLED
+
+
+def _validate_usage(usage: UsageSnapshot) -> UsageSnapshot:
+    if not isinstance(usage, UsageSnapshot):
+        raise TypeError("usage must be a UsageSnapshot")
+    return usage
+
+
+def _validate_cost_usd(cost_usd: float) -> float:
+    if isinstance(cost_usd, bool) or not isinstance(cost_usd, (int, float)):
+        raise TypeError("cost_usd must be a number")
+    cost = float(cost_usd)
+    if not math.isfinite(cost):
+        raise ValueError("cost_usd must be finite")
+    if cost < 0:
+        raise ValueError("cost_usd must be non-negative")
+    return cost
+
+
+def _is_safe_attribute_value(value: Any) -> bool:
+    if isinstance(value, bool | str | int):
+        return True
+    return isinstance(value, float) and math.isfinite(value)
+
+
+def _instrumentation_version() -> str:
+    """Return the installed package version for OTel instrumentation scope."""
+    try:
+        return _pkg_version(_DISTRIBUTION_NAME)
+    except PackageNotFoundError:
+        return "0.0.0+local"
+
+
+def _log_cleanup_failure(*, phase: str, exc: Exception) -> None:
+    """Report cleanup failures without exposing raw exception messages."""
+    with suppress(Exception):
+        logger.error(
+            "OpenTelemetry cleanup failed",
+            extra={"phase": phase, "error_type": type(exc).__name__},
+        )
+
+
+# Mapping from our AgentEventName to semantic operation names.
 _OPERATION_NAME_MAP: dict[str, str] = {
     AgentEventName.AGENT_STARTED.value: "create_agent",
     AgentEventName.AGENT_READY.value: "create_agent",
@@ -82,7 +161,7 @@ _OPERATION_NAME_MAP: dict[str, str] = {
 def _require_otel() -> None:
     if not _OTEL_AVAILABLE:
         raise ImportError(
-            "OpenTelemetry sink requires the [otel] extra. "
+            "Telemetry sink requires the [otel] extra. "
             "Install with: pip install 'techrevati-runtime[otel]'"
         ) from _OTEL_IMPORT_ERROR
 
@@ -97,14 +176,16 @@ _PARENT_OPEN_EVENTS = frozenset(
 _PARENT_CLOSE_EVENTS = frozenset(
     {
         AgentEventName.AGENT_COMPLETED.value,
-        AgentEventName.AGENT_FAILED.value,
         AgentEventName.PHASE_COMPLETED.value,
     }
 )
 
+_TOOL_OPEN_EVENT = AgentEventName.AGENT_TOOL_CALLED.value
+_TOOL_CLOSE_EVENT = AgentEventName.AGENT_TOOL_COMPLETED.value
 
-# Process-wide registry of live OpenTelemetrySink instances. Used by the
-# atexit hook below to flush orphan parent spans on abrupt termination.
+
+# Process-wide registry of live sink instances. Used by the atexit hook below
+# to flush orphan parent spans on abrupt termination.
 # WeakSet so that sinks the user has dropped don't pin themselves in
 # memory until interpreter shutdown.
 _LIVE_SINKS: weakref.WeakSet[OpenTelemetrySink] = weakref.WeakSet()
@@ -123,8 +204,8 @@ def _flush_orphan_parent_spans_at_exit() -> None:
     for sink in list(_LIVE_SINKS):
         try:
             sink._close_orphan_parent_spans()
-        except Exception:  # noqa: BLE001 - atexit must never raise
-            pass
+        except Exception as exc:  # noqa: BLE001 - atexit must never raise
+            _log_cleanup_failure(phase="atexit_flush", exc=exc)
 
 
 atexit.register(_flush_orphan_parent_spans_at_exit)
@@ -132,10 +213,9 @@ atexit.register(_flush_orphan_parent_spans_at_exit)
 
 @dataclass(eq=False)
 class OpenTelemetrySink:
-    """EventSink that mirrors AgentEvents into nested OTel spans.
+    """EventSink that mirrors AgentEvents into nested telemetry spans.
 
-    Span names follow GenAI operation naming
-    (https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-agent-spans/).
+    Span names follow semantic operation naming.
     ``AGENT_STARTED`` / ``PHASE_STARTED`` open a long-lived parent span
     keyed by ``(role, phase)``; subsequent events emit as children of
     that parent until ``AGENT_COMPLETED`` / ``AGENT_FAILED`` /
@@ -148,14 +228,30 @@ class OpenTelemetrySink:
     tracer: Tracer | None = None
     provider_name: str = DEFAULT_PROVIDER_NAME
     agent_id: str | None = None
+    include_event_detail: bool = False
     _active_spans: dict[tuple[str, str], Span] = field(
+        default_factory=dict, init=False, repr=False
+    )
+    # A LIFO stack of spans per (role, phase, tool) key so concurrent calls to
+    # the *same* tool each get their own span instead of the second call
+    # force-closing the first as interrupted.
+    _active_tool_spans: dict[tuple[str, str, str], list[Span]] = field(
         default_factory=dict, init=False, repr=False
     )
 
     def __post_init__(self) -> None:
         _require_otel()
+        self.provider_name = _validate_non_empty_str(
+            "provider_name", self.provider_name
+        )
+        self.agent_id = _validate_optional_non_empty_str("agent_id", self.agent_id)
+        self.include_event_detail = _validate_bool(
+            "include_event_detail", self.include_event_detail
+        )
         if self.tracer is None:
-            self.tracer = trace.get_tracer("techrevati.runtime", "0.2.1")
+            self.tracer = trace.get_tracer(
+                _INSTRUMENTATION_SCOPE_NAME, _instrumentation_version()
+            )
         _LIVE_SINKS.add(self)
 
     def _close_orphan_parent_spans(self) -> None:
@@ -165,23 +261,78 @@ class OpenTelemetrySink:
         call multiple times — second invocation finds an empty dict.
         Never raises.
         """
-        while self._active_spans:
-            _key, parent = self._active_spans.popitem()
-            try:
-                parent.set_attribute("error.type", "abrupt_termination")
-                parent.set_status(
-                    Status(
-                        StatusCode.ERROR,
-                        "process exited before AGENT_COMPLETED / PHASE_COMPLETED",
-                    )
+        while self._active_tool_spans:
+            _tool_key, tool_spans = self._active_tool_spans.popitem()
+            for tool_span in tool_spans:
+                self._end_span_with_error(
+                    tool_span,
+                    detail="process exited before agent.tool_completed",
+                    error_type="abrupt_termination",
                 )
-                parent.end()
-            except Exception:  # noqa: BLE001 - last-chance cleanup
-                pass
+        while self._active_spans:
+            _parent_key, parent = self._active_spans.popitem()
+            self._end_span_with_error(
+                parent,
+                detail="process exited before AGENT_COMPLETED / PHASE_COMPLETED",
+                error_type="abrupt_termination",
+            )
 
     @staticmethod
     def _span_key(event: AgentEvent) -> tuple[str, str]:
         return (event.role or "", event.phase or "")
+
+    @staticmethod
+    def _tool_name(event: AgentEvent) -> str | None:
+        tool = (event.data or {}).get("tool")
+        if isinstance(tool, str) and tool:
+            return tool
+        return None
+
+    @staticmethod
+    def _tool_key(event: AgentEvent) -> tuple[str, str, str] | None:
+        tool = OpenTelemetrySink._tool_name(event)
+        if tool is None:
+            return None
+        role, phase = OpenTelemetrySink._span_key(event)
+        return (role, phase, tool)
+
+    @staticmethod
+    def _is_terminal_parent_close(event: AgentEvent) -> bool:
+        if event.event.value in _PARENT_CLOSE_EVENTS:
+            return True
+        # ``agent.failed`` also represents non-terminal scoped failures:
+        # tool body failures, usage-limit warnings caught by the caller,
+        # budget warnings, etc. Session-level terminal failures are emitted
+        # without structured data by ``AgentSession.session`` / ``asession``.
+        # NB: this empty-data convention is deliberate and tested
+        # (test_non_terminal_failed_event_with_data_does_not_close_parent) —
+        # a failed event carrying data is a warning child, not a session end.
+        return event.event.value == AgentEventName.AGENT_FAILED.value and not event.data
+
+    @staticmethod
+    def _operation_name(event: AgentEvent) -> str:
+        if (
+            event.event.value == AgentEventName.AGENT_FAILED.value
+            and OpenTelemetrySink._tool_name(event) is not None
+        ):
+            return "execute_tool"
+        return _OPERATION_NAME_MAP.get(event.event.value, "invoke_agent")
+
+    @staticmethod
+    def _span_name(event: AgentEvent, op: str) -> str:
+        tool = OpenTelemetrySink._tool_name(event)
+        if op == "execute_tool" and tool is not None:
+            return f"{op} {tool}"
+        return f"{op} {event.role}" if event.role else op
+
+    @staticmethod
+    def _end_span_with_error(span: Span, *, detail: str, error_type: str) -> None:
+        try:
+            span.set_attribute("error.type", error_type)
+            span.set_status(Status(StatusCode.ERROR, detail))
+            span.end()
+        except Exception as exc:  # noqa: BLE001 - last-chance cleanup
+            _log_cleanup_failure(phase="span_error_close", exc=exc)
 
     def _populate(self, span: Span, event: AgentEvent, op: str) -> None:
         span.set_attribute("gen_ai.operation.name", op)
@@ -192,18 +343,92 @@ class OpenTelemetrySink:
             span.set_attribute("gen_ai.agent.id", self.agent_id)
         if event.phase:
             span.set_attribute("techrevati.phase", event.phase)
-        if event.detail:
+        if self.include_event_detail and event.detail:
             span.set_attribute("techrevati.detail", event.detail)
         if event.failure_class:
-            span.set_attribute("error.type", event.failure_class.value)
+            span.set_attribute("techrevati.failure_class", event.failure_class.value)
+            if _is_error_failure_class(event.failure_class):
+                span.set_attribute("error.type", event.failure_class.value)
+                status_detail = (
+                    event.detail
+                    if self.include_event_detail and event.detail
+                    else event.failure_class.value
+                )
+                span.set_status(Status(StatusCode.ERROR, status_detail))
         for key, value in (event.data or {}).items():
-            if isinstance(value, (str, int, float, bool)):
+            if _is_safe_attribute_value(value):
                 span.set_attribute(f"techrevati.data.{key}", value)
 
+    def _close_active_tool_spans_for_key(
+        self, key: tuple[str, str], *, detail: str
+    ) -> None:
+        for tool_key in list(self._active_tool_spans):
+            if tool_key[:2] != key:
+                continue
+            for tool_span in self._active_tool_spans.pop(tool_key):
+                self._end_span_with_error(
+                    tool_span,
+                    detail=detail,
+                    error_type="tool_span_interrupted",
+                )
+
+    def _open_tool_span(
+        self,
+        event: AgentEvent,
+        *,
+        op: str,
+        span_name: str,
+    ) -> bool:
+        assert self.tracer is not None
+        tool_key = self._tool_key(event)
+        if tool_key is None:
+            return False
+
+        # Each tool call is a child of the agent/phase parent (sibling to any
+        # other in-flight call of the same tool), pushed onto the per-key stack.
+        parent = self._active_spans.get(tool_key[:2])
+        if parent is None:
+            tool_span = self.tracer.start_span(span_name)
+        else:
+            ctx = trace.set_span_in_context(parent)
+            tool_span = self.tracer.start_span(span_name, context=ctx)
+        self._populate(tool_span, event, op)
+        self._active_tool_spans.setdefault(tool_key, []).append(tool_span)
+        return True
+
+    def _close_tool_span(
+        self,
+        event: AgentEvent,
+        *,
+        op: str,
+    ) -> bool:
+        tool_key = self._tool_key(event)
+        if tool_key is None:
+            return False
+        stack = self._active_tool_spans.get(tool_key)
+        if not stack:
+            return False
+        # Close the most recently opened call for this tool (LIFO). Identical
+        # concurrent calls are interchangeable, so LIFO pairing is correct for
+        # span lifecycle and count.
+        tool_span = stack.pop()
+        if not stack:
+            del self._active_tool_spans[tool_key]
+        self._populate(tool_span, event, op)
+        tool_span.end()
+        return True
+
+    def _leaf_parent(self, event: AgentEvent) -> Span | None:
+        tool_key = self._tool_key(event)
+        if tool_key is not None and self._active_tool_spans.get(tool_key):
+            return self._active_tool_spans[tool_key][-1]
+        return self._active_spans.get(self._span_key(event))
+
     def emit(self, event: AgentEvent) -> None:
+        event = _validate_event(event)
         assert self.tracer is not None  # set in __post_init__
-        op = _OPERATION_NAME_MAP.get(event.event.value, "invoke_agent")
-        span_name = f"{op} {event.role}" if event.role else op
+        op = self._operation_name(event)
+        span_name = self._span_name(event, op)
         key = self._span_key(event)
 
         if event.event.value in _PARENT_OPEN_EVENTS:
@@ -211,30 +436,52 @@ class OpenTelemetrySink:
             # already open for this key (orchestrator restart, caller
             # bug), end it first so we don't leak.
             if key in self._active_spans:
+                self._close_active_tool_spans_for_key(
+                    key, detail="parent span restarted before tool completed"
+                )
                 self._active_spans.pop(key).end()
             new_parent = self.tracer.start_span(span_name)
             self._populate(new_parent, event, op)
             self._active_spans[key] = new_parent
             return
 
-        if event.event.value in _PARENT_CLOSE_EVENTS:
+        if event.event.value == _TOOL_OPEN_EVENT and self._open_tool_span(
+            event,
+            op=op,
+            span_name=span_name,
+        ):
+            return
+
+        if event.event.value == _TOOL_CLOSE_EVENT and self._close_tool_span(
+            event,
+            op=op,
+        ):
+            return
+
+        if (
+            event.event.value == AgentEventName.AGENT_FAILED.value
+            and self._tool_name(event) is not None
+            and self._close_tool_span(event, op=op)
+        ):
+            return
+
+        if self._is_terminal_parent_close(event):
             if key in self._active_spans:
+                self._close_active_tool_spans_for_key(
+                    key, detail="parent span closed before tool completed"
+                )
                 parent = self._active_spans.pop(key)
                 # Copy terminal-event attributes onto the parent so the
                 # final span carries the failure_class / detail; then end.
                 self._populate(parent, event, op)
-                if event.failure_class is not None:
-                    parent.set_status(
-                        Status(StatusCode.ERROR, event.detail or "failed")
-                    )
                 parent.end()
                 return
             # No matching open parent — fall through to a one-shot
             # leaf so the event still surfaces in traces.
 
-        # Leaf event. Emit as a child of the active parent if there is
-        # one; otherwise let OTel create a root.
-        active = self._active_spans.get(key)
+        # Leaf event. Emit as a child of the active tool span when the event is
+        # tool-scoped, otherwise as a child of the active agent/phase parent.
+        active = self._leaf_parent(event)
         if active is not None:
             ctx = trace.set_span_in_context(active)
             with self.tracer.start_as_current_span(span_name, context=ctx) as span:
@@ -262,8 +509,13 @@ class OpenTelemetryUsageSink:
 
     def __post_init__(self) -> None:
         _require_otel()
+        self.provider_name = _validate_non_empty_str(
+            "provider_name", self.provider_name
+        )
         if self.meter is None:
-            self.meter = metrics.get_meter("techrevati.runtime", "0.1.0")
+            self.meter = metrics.get_meter(
+                _INSTRUMENTATION_SCOPE_NAME, _instrumentation_version()
+            )
         self._token_histogram = self.meter.create_histogram(
             name="gen_ai.client.token.usage",
             unit="{token}",
@@ -276,6 +528,9 @@ class OpenTelemetryUsageSink:
         )
 
     def record(self, model: str, usage: UsageSnapshot, cost_usd: float) -> None:
+        model = _validate_non_empty_str("model", model)
+        usage = _validate_usage(usage)
+        cost_usd = _validate_cost_usd(cost_usd)
         assert self._token_histogram is not None
         assert self._cost_counter is not None
         attrs_input: dict[str, Any] = {

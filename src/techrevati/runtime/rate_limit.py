@@ -24,6 +24,7 @@ Zero new runtime dependencies — stdlib only.
 from __future__ import annotations
 
 import asyncio
+import math
 import threading
 import time
 from collections.abc import Callable
@@ -43,17 +44,60 @@ class RateLimitExceededError(Exception):
 
     Carries the bucket name and the cost the caller tried to spend so
     the error message tells the caller which dimension blocked (input
-    TPM vs RPM) and how big the request was. ``classify_exception``
-    maps this onto ``FailureScenario.LLM_ERROR`` (the rate-limit
-    bucket) so existing recovery recipes pick it up unchanged.
+    TPM vs RPM) and how big the request was. When the error escapes an
+    ``AgentSession``, the terminal event uses the public ``rate_limit``
+    failure class.
     """
 
     def __init__(self, bucket_name: str, tokens: float) -> None:
+        bucket_name = _validate_bucket_name("bucket_name", bucket_name)
+        tokens = _validate_amount("tokens", tokens, allow_zero=True)
         self.bucket_name = bucket_name
         self.tokens = tokens
         super().__init__(
             f"rate limit exceeded on '{bucket_name}': requested {tokens:g} tokens"
         )
+
+
+def _validate_bucket_name(field_name: str, value: str) -> str:
+    if not isinstance(value, str):
+        raise TypeError(f"{field_name} must be a string")
+    if not value.strip():
+        raise ValueError(f"{field_name} must not be empty")
+    return value.strip()
+
+
+def _validate_amount(name: str, value: float, *, allow_zero: bool) -> float:
+    if isinstance(value, bool):
+        raise TypeError(f"{name} must be a finite number")
+    try:
+        amount = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must be a finite number") from exc
+    if not math.isfinite(amount):
+        raise ValueError(f"{name} must be finite")
+    if allow_zero:
+        if amount < 0:
+            raise ValueError(f"{name} must be >= 0")
+    elif amount <= 0:
+        raise ValueError(f"{name} must be > 0")
+    return amount
+
+
+def _validate_timeout(timeout: float | None) -> float | None:
+    if timeout is None:
+        return None
+    return _validate_amount("timeout", timeout, allow_zero=True)
+
+
+def _validate_clock(clock: Callable[[], float]) -> Callable[[], float]:
+    if not callable(clock):
+        raise TypeError("clock must be callable")
+    return clock
+
+
+def _clock_now(clock: Callable[[], float]) -> float:
+    return _validate_amount("clock", clock(), allow_zero=True)
 
 
 @dataclass
@@ -91,15 +135,17 @@ class TokenBucket:
     )
 
     def __post_init__(self) -> None:
-        if self.capacity <= 0:
-            raise ValueError("capacity must be > 0")
-        if self.refill_per_second <= 0:
-            raise ValueError("refill_per_second must be > 0")
-        self._tokens = float(self.capacity)
-        self._last_refill = self.clock()
+        self.name = _validate_bucket_name("name", self.name)
+        self.capacity = _validate_amount("capacity", self.capacity, allow_zero=False)
+        self.refill_per_second = _validate_amount(
+            "refill_per_second", self.refill_per_second, allow_zero=False
+        )
+        self.clock = _validate_clock(self.clock)
+        self._tokens = self.capacity
+        self._last_refill = _clock_now(self.clock)
 
     def _refill(self) -> None:
-        now = self.clock()
+        now = _clock_now(self.clock)
         elapsed = max(0.0, now - self._last_refill)
         if elapsed > 0:
             self._tokens = min(
@@ -116,7 +162,8 @@ class TokenBucket:
 
     def try_acquire(self, tokens: float = 1.0) -> bool:
         """Spend ``tokens`` if available; return whether the spend succeeded."""
-        if tokens <= 0:
+        tokens = _validate_amount("tokens", tokens, allow_zero=True)
+        if tokens == 0:
             return True
         with self._lock:
             self._refill()
@@ -131,7 +178,9 @@ class TokenBucket:
         ``timeout`` is the maximum wall-clock time we will sleep
         waiting for refill; ``None`` waits indefinitely.
         """
-        if tokens <= 0:
+        tokens = _validate_amount("tokens", tokens, allow_zero=True)
+        timeout = _validate_timeout(timeout)
+        if tokens == 0:
             return
         if tokens > self.capacity:
             # Caller is asking for more than the bucket can ever hold.
@@ -175,15 +224,17 @@ class AsyncTokenBucket:
     _lock: asyncio.Lock = field(default_factory=asyncio.Lock, init=False, repr=False)
 
     def __post_init__(self) -> None:
-        if self.capacity <= 0:
-            raise ValueError("capacity must be > 0")
-        if self.refill_per_second <= 0:
-            raise ValueError("refill_per_second must be > 0")
-        self._tokens = float(self.capacity)
-        self._last_refill = self.clock()
+        self.name = _validate_bucket_name("name", self.name)
+        self.capacity = _validate_amount("capacity", self.capacity, allow_zero=False)
+        self.refill_per_second = _validate_amount(
+            "refill_per_second", self.refill_per_second, allow_zero=False
+        )
+        self.clock = _validate_clock(self.clock)
+        self._tokens = self.capacity
+        self._last_refill = _clock_now(self.clock)
 
     def _refill(self) -> None:
-        now = self.clock()
+        now = _clock_now(self.clock)
         elapsed = max(0.0, now - self._last_refill)
         if elapsed > 0:
             self._tokens = min(
@@ -197,7 +248,8 @@ class AsyncTokenBucket:
             return self._tokens
 
     async def try_acquire(self, tokens: float = 1.0) -> bool:
-        if tokens <= 0:
+        tokens = _validate_amount("tokens", tokens, allow_zero=True)
+        if tokens == 0:
             return True
         async with self._lock:
             self._refill()
@@ -209,7 +261,9 @@ class AsyncTokenBucket:
     async def acquire(
         self, tokens: float = 1.0, *, timeout: float | None = None
     ) -> None:
-        if tokens <= 0:
+        tokens = _validate_amount("tokens", tokens, allow_zero=True)
+        timeout = _validate_timeout(timeout)
+        if tokens == 0:
             return
         if tokens > self.capacity:
             raise RateLimitExceededError(self.name, tokens)
@@ -246,13 +300,26 @@ class RateLimiter:
 
     buckets: dict[str, TokenBucket] = field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        if not isinstance(self.buckets, dict):
+            raise TypeError("buckets must be a dictionary")
+        copied: dict[str, TokenBucket] = {}
+        for name, bucket in self.buckets.items():
+            bucket_name = _validate_bucket_name("bucket name", name)
+            if not isinstance(bucket, TokenBucket):
+                raise TypeError("buckets must contain TokenBucket instances")
+            copied[bucket_name] = bucket
+        self.buckets = copied
+
     def get(self, name: str) -> TokenBucket | None:
-        return self.buckets.get(name)
+        return self.buckets.get(_validate_bucket_name("name", name))
 
     def acquire_pre_call(
         self, *, request_cost: float = 1.0, timeout: float | None = None
     ) -> None:
         """Block on RPM bucket (``buckets["rpm"]``) if configured."""
+        request_cost = _validate_amount("request_cost", request_cost, allow_zero=True)
+        timeout = _validate_timeout(timeout)
         rpm = self.buckets.get("rpm")
         if rpm is not None:
             rpm.acquire(request_cost, timeout=timeout)
@@ -265,12 +332,17 @@ class RateLimiter:
         timeout: float | None = None,
     ) -> None:
         """Block on input/output TPM buckets after a turn completes."""
+        input_amount = _validate_amount("input_tokens", input_tokens, allow_zero=True)
+        output_amount = _validate_amount(
+            "output_tokens", output_tokens, allow_zero=True
+        )
+        timeout = _validate_timeout(timeout)
         in_b = self.buckets.get("input_tpm")
-        if in_b is not None and input_tokens > 0:
-            in_b.acquire(float(input_tokens), timeout=timeout)
+        if in_b is not None and input_amount > 0:
+            in_b.acquire(input_amount, timeout=timeout)
         out_b = self.buckets.get("output_tpm")
-        if out_b is not None and output_tokens > 0:
-            out_b.acquire(float(output_tokens), timeout=timeout)
+        if out_b is not None and output_amount > 0:
+            out_b.acquire(output_amount, timeout=timeout)
 
 
 @dataclass
@@ -279,12 +351,25 @@ class AsyncRateLimiter:
 
     buckets: dict[str, AsyncTokenBucket] = field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        if not isinstance(self.buckets, dict):
+            raise TypeError("buckets must be a dictionary")
+        copied: dict[str, AsyncTokenBucket] = {}
+        for name, bucket in self.buckets.items():
+            bucket_name = _validate_bucket_name("bucket name", name)
+            if not isinstance(bucket, AsyncTokenBucket):
+                raise TypeError("buckets must contain AsyncTokenBucket instances")
+            copied[bucket_name] = bucket
+        self.buckets = copied
+
     def get(self, name: str) -> AsyncTokenBucket | None:
-        return self.buckets.get(name)
+        return self.buckets.get(_validate_bucket_name("name", name))
 
     async def acquire_pre_call(
         self, *, request_cost: float = 1.0, timeout: float | None = None
     ) -> None:
+        request_cost = _validate_amount("request_cost", request_cost, allow_zero=True)
+        timeout = _validate_timeout(timeout)
         rpm = self.buckets.get("rpm")
         if rpm is not None:
             await rpm.acquire(request_cost, timeout=timeout)
@@ -296,12 +381,17 @@ class AsyncRateLimiter:
         output_tokens: int,
         timeout: float | None = None,
     ) -> None:
+        input_amount = _validate_amount("input_tokens", input_tokens, allow_zero=True)
+        output_amount = _validate_amount(
+            "output_tokens", output_tokens, allow_zero=True
+        )
+        timeout = _validate_timeout(timeout)
         in_b = self.buckets.get("input_tpm")
-        if in_b is not None and input_tokens > 0:
-            await in_b.acquire(float(input_tokens), timeout=timeout)
+        if in_b is not None and input_amount > 0:
+            await in_b.acquire(input_amount, timeout=timeout)
         out_b = self.buckets.get("output_tpm")
-        if out_b is not None and output_tokens > 0:
-            await out_b.acquire(float(output_tokens), timeout=timeout)
+        if out_b is not None and output_amount > 0:
+            await out_b.acquire(output_amount, timeout=timeout)
 
 
 # Keep AsyncRateLimiter discoverable through the package without

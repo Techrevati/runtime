@@ -6,7 +6,9 @@ import pytest
 
 from techrevati.runtime import (
     AgentSession,
+    GuardrailOutcome,
     GuardrailViolatedError,
+    GuardrailViolation,
     PatternGuardrail,
     PromptInjectionGuardrail,
 )
@@ -17,6 +19,42 @@ from techrevati.runtime import (
 def test_pattern_guardrail_requires_at_least_one_pattern():
     with pytest.raises(ValueError):
         PatternGuardrail([])
+
+
+def test_pattern_guardrail_rejects_invalid_configuration():
+    with pytest.raises(ValueError, match="deny patterns"):
+        PatternGuardrail([""])
+    with pytest.raises(ValueError, match="stages"):
+        PatternGuardrail([r"secret"], stages=())
+    with pytest.raises(ValueError, match="stage"):
+        PatternGuardrail([r"secret"], stages=("during",))  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="name"):
+        PatternGuardrail([r"secret"], name="   ")
+
+
+def test_guardrail_outcome_and_violation_validate_shape():
+    with pytest.raises(ValueError, match="allowed"):
+        GuardrailOutcome(allowed=1)  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="reason"):
+        GuardrailOutcome(allowed=False, reason=object())  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="outcome"):
+        GuardrailViolation(
+            outcome=object(),  # type: ignore[arg-type]
+            guardrail="g",
+            stage="pre",
+        )
+    with pytest.raises(ValueError, match="guardrail"):
+        GuardrailViolation(
+            outcome=GuardrailOutcome(allowed=False, reason="blocked"),
+            guardrail="",
+            stage="pre",
+        )
+    with pytest.raises(ValueError, match="stage"):
+        GuardrailViolation(
+            outcome=GuardrailOutcome(allowed=False, reason="blocked"),
+            guardrail="g",
+            stage="during",  # type: ignore[arg-type]
+        )
 
 
 def test_pattern_guardrail_blocks_on_match_in_pre_stage():

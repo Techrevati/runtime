@@ -143,6 +143,77 @@ def test_governance_state_starts_at_zero():
     assert state.cost_usd == 0.0
 
 
+@pytest.mark.parametrize(
+    ("kwargs", "field_name"),
+    [
+        ({"turns": -1}, "turns"),
+        ({"tool_calls": -1}, "tool_calls"),
+        ({"consecutive_failures": -1}, "consecutive_failures"),
+        ({"cost_usd": -0.01}, "cost_usd"),
+        ({"cost_usd": float("nan")}, "cost_usd"),
+    ],
+)
+def test_governance_state_rejects_invalid_initial_values(kwargs, field_name):
+    with pytest.raises(ValueError, match=field_name):
+        GovernanceState(**kwargs)
+
+
+@pytest.mark.parametrize("cost", [-0.01, float("nan"), float("inf")])
+def test_governance_state_rejects_invalid_cost_delta(cost):
+    state = GovernanceState()
+
+    with pytest.raises(ValueError, match="cost_usd"):
+        state.record_cost(cost)
+
+    assert state.cost_usd == 0.0
+
+
+@pytest.mark.parametrize(
+    "factory",
+    [
+        lambda: MaxIterationsLimit(value=-1),
+        lambda: MaxIterationsLimit(value=float("nan")),
+        lambda: MaxBudgetLimit(value=float("inf")),
+        lambda: MaxToolCallsLimit(value=True),  # type: ignore[arg-type]
+    ],
+)
+def test_governance_limits_reject_invalid_values(factory):
+    with pytest.raises(ValueError, match="value"):
+        factory()
+
+
+def test_governance_limits_reject_invalid_scope_and_breach_action():
+    with pytest.raises(ValueError, match="scope"):
+        MaxIterationsLimit(value=1, scope="tenant")  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="not supported"):
+        MaxIterationsLimit(value=1, scope="thread")  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="not supported"):
+        MaxIterationsLimit(value=1, scope="project")  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="on_breach"):
+        MaxIterationsLimit(value=1, on_breach="page")  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="name"):
+        MaxIterationsLimit(value=1, name=" ")
+
+
+def test_governance_plane_normalizes_limit_sequence_and_rejects_invalid_items():
+    limits = [MaxIterationsLimit(value=1)]
+    plane = GovernancePlane(limits=limits)  # type: ignore[arg-type]
+    limits.append(MaxBudgetLimit(value=1))
+
+    assert plane.limits == (MaxIterationsLimit(value=1),)
+
+    with pytest.raises(ValueError, match="governance limit"):
+        GovernancePlane(limits=(object(),))  # type: ignore[arg-type]
+
+
+def test_governance_plane_requires_governance_state():
+    with pytest.raises(ValueError, match="GovernanceState"):
+        GovernancePlane(
+            limits=(MaxIterationsLimit(value=1),),
+            state=object(),  # type: ignore[arg-type]
+        )
+
+
 def test_limit_outcome_is_serializable_dataclass():
     """Outcomes must be inspectable for audit logging."""
     plane = GovernancePlane(limits=(MaxIterationsLimit(value=5),))
@@ -150,3 +221,57 @@ def test_limit_outcome_is_serializable_dataclass():
     outcomes = plane.evaluate()
     assert isinstance(outcomes[0], LimitOutcome)
     assert outcomes[0].limit_name == "max_iterations"
+
+
+def test_limit_outcome_rejects_invalid_shape():
+    with pytest.raises(TypeError, match="breached"):
+        LimitOutcome(
+            breached=1,  # type: ignore[arg-type]
+            limit_name="limit",
+            observed=2,
+            ceiling=1,
+            scope="session",
+            on_breach="terminate",
+        )
+    with pytest.raises(ValueError, match="limit_name"):
+        LimitOutcome(
+            breached=True,
+            limit_name=" ",
+            observed=2,
+            ceiling=1,
+            scope="session",
+            on_breach="terminate",
+        )
+    with pytest.raises(ValueError, match="must match"):
+        LimitOutcome(
+            breached=True,
+            limit_name="limit",
+            observed=1,
+            ceiling=2,
+            scope="session",
+            on_breach="terminate",
+        )
+
+
+def test_governance_breach_error_validates_constructor_inputs():
+    with pytest.raises(ValueError, match="limit_name"):
+        GovernanceBreachError(
+            limit_name="",
+            observed=2,
+            ceiling=1,
+            scope="session",
+        )
+    with pytest.raises(ValueError, match="observed"):
+        GovernanceBreachError(
+            limit_name="limit",
+            observed=float("nan"),
+            ceiling=1,
+            scope="session",
+        )
+    with pytest.raises(ValueError, match="exceed"):
+        GovernanceBreachError(
+            limit_name="limit",
+            observed=1,
+            ceiling=1,
+            scope="session",
+        )

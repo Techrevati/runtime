@@ -7,7 +7,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -45,6 +45,25 @@ def test_manual_clock_satisfies_protocol() -> None:
     assert isinstance(c, Clock)
 
 
+def test_manual_clock_rejects_invalid_start_values() -> None:
+    with pytest.raises(TypeError, match="start"):
+        ManualClock(start=True)  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="start"):
+        ManualClock(start=float("nan"))
+    with pytest.raises(ValueError, match="start"):
+        ManualClock(start=float("inf"))
+
+
+def test_manual_clock_rejects_naive_wall_start() -> None:
+    with pytest.raises(ValueError, match="timezone-aware"):
+        ManualClock(wall_start=datetime(2026, 1, 1))
+
+
+def test_manual_clock_normalizes_wall_start_to_utc() -> None:
+    c = ManualClock(wall_start=datetime(2026, 1, 1, 12, 0, tzinfo=UTC))
+    assert c.wall_now().tzinfo is UTC
+
+
 def test_manual_clock_advance_moves_both_clocks_forward() -> None:
     c = ManualClock(start=100.0)
     m0 = c.monotonic()
@@ -52,6 +71,19 @@ def test_manual_clock_advance_moves_both_clocks_forward() -> None:
     c.advance(60.0)
     assert c.monotonic() == m0 + 60.0
     assert (c.wall_now() - w0).total_seconds() == pytest.approx(60.0)
+
+
+@pytest.mark.parametrize("seconds", [-1, float("nan"), float("inf")])
+def test_manual_clock_advance_rejects_invalid_durations(seconds: float) -> None:
+    c = ManualClock()
+    with pytest.raises(ValueError, match="seconds"):
+        c.advance(seconds)
+
+
+def test_manual_clock_advance_rejects_bool_duration() -> None:
+    c = ManualClock()
+    with pytest.raises(TypeError, match="seconds"):
+        c.advance(True)  # type: ignore[arg-type]
 
 
 def test_manual_clock_tick_to_absolute() -> None:
@@ -66,11 +98,33 @@ def test_manual_clock_tick_cannot_move_backwards() -> None:
         c.tick(50.0)
 
 
+@pytest.mark.parametrize("target", [float("nan"), float("inf")])
+def test_manual_clock_tick_rejects_non_finite_target(target: float) -> None:
+    c = ManualClock()
+    with pytest.raises(ValueError, match="absolute_monotonic"):
+        c.tick(target)
+
+
 @pytest.mark.asyncio
 async def test_manual_clock_sleep_async_advances_simulated_time() -> None:
     c = ManualClock(start=0.0)
     await c.sleep_async(5.0)
     assert c.monotonic() == 5.0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("seconds", [-1, float("nan"), float("inf")])
+async def test_clock_sleep_async_rejects_invalid_durations(seconds: float) -> None:
+    for clock in (ManualClock(), SystemClock()):
+        with pytest.raises(ValueError, match="seconds"):
+            await clock.sleep_async(seconds)
+
+
+@pytest.mark.asyncio
+async def test_clock_sleep_async_rejects_bool_duration() -> None:
+    for clock in (ManualClock(), SystemClock()):
+        with pytest.raises(TypeError, match="seconds"):
+            await clock.sleep_async(True)  # type: ignore[arg-type]
 
 
 @pytest.mark.asyncio
@@ -109,6 +163,16 @@ def test_sqlite_event_sink_replay_limit(tmp_path: Path) -> None:
         sink.close()
 
 
+def test_sqlite_event_sink_non_positive_replay_limit_is_empty(
+    tmp_path: Path,
+) -> None:
+    db = tmp_path / "events.db"
+    with SqliteEventSink(db) as sink:
+        sink.emit(AgentEvent.started("writer", "phase"))
+        assert list(sink.replay(limit=0)) == []
+        assert list(sink.replay(limit=-1)) == []
+
+
 # --------------------------------------------------------------------------
 # persistence.SqliteUsageSink
 # --------------------------------------------------------------------------
@@ -122,6 +186,15 @@ def test_sqlite_usage_sink_accumulates_totals(tmp_path: Path) -> None:
         totals = sink.totals()
     assert totals["turns"] == 2
     assert totals["total_cost_usd"] == pytest.approx(0.017)
+
+
+def test_sqlite_usage_sink_normalizes_model_name(tmp_path: Path) -> None:
+    db = tmp_path / "usage.db"
+    with SqliteUsageSink(db) as sink:
+        sink.record(" m ", UsageSnapshot(input_tokens=100), 0.005)
+        rows = sink._conn.execute("SELECT model FROM usage_records").fetchall()
+
+    assert rows == [("m",)]
 
 
 # --------------------------------------------------------------------------

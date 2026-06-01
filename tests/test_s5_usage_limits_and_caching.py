@@ -177,3 +177,33 @@ def test_agent_session_raises_usage_limit_exceeded_in_run_turn() -> None:
                 usage=UsageSnapshot(input_tokens=50, output_tokens=50),
             )
     assert ei.value.limit_name == "total_tokens"
+    failures = [e for e in session.events if e.event.value == "agent.failed"]
+    assert failures[-1].failure_class is not None
+    assert failures[-1].failure_class.value == "rate_limit"
+    assert failures[-1].detail == "usage limit exceeded: total_tokens"
+    assert failures[-1].data == {
+        "limit_name": "total_tokens",
+        "observed": 180,
+        "ceiling": 100,
+    }
+
+
+def test_agent_session_usage_limit_escape_marks_session_rate_limit() -> None:
+    orch = AgentSession(
+        role="writer",
+        phase="draft",
+        usage_limits=UsageLimits(total_tokens_max=100),
+    )
+
+    with pytest.raises(UsageLimitExceededError):
+        with orch.session() as session:
+            session.run_turn(
+                lambda: "ok",
+                model="m",
+                usage=UsageSnapshot(input_tokens=120, output_tokens=0),
+            )
+
+    failures = [e for e in session.events if e.event.value == "agent.failed"]
+    assert failures
+    assert all(e.failure_class is not None for e in failures)
+    assert [e.failure_class.value for e in failures] == ["rate_limit", "rate_limit"]

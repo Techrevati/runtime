@@ -1,25 +1,12 @@
-site_name: techrevati-runtime
+site_name: Runtime
 site_description: Runtime primitives for multi-step LLM agent loops (beta)
-site_url: https://Techrevati.github.io/runtime
-repo_url: https://github.com/Techrevati/runtime
-repo_name: Techrevati/runtime
-copyright: Copyright &copy; 2026 TechRevati doo
+copyright: Copyright 2026 Techrevati doo
 
 theme:
-  name: material
-  palette:
-    - scheme: default
-      primary: indigo
-      accent: indigo
-  features:
-    - navigation.tabs
-    - navigation.sections
-    - navigation.expand
-    - search.highlight
-    - content.code.copy
+  name: null
+  custom_dir: docs_theme
 
 plugins:
-  - search
   - mkdocstrings:
       default_handler: python
       handlers:
@@ -34,12 +21,38 @@ plugins:
             merge_init_into_class: true
             separate_signature: true
 
+hooks:
+  - scripts/mkdocs_hooks/remove_generator_meta.py
+
+extra:
+  generator: false
+
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
   - End-to-End Tutorial: tutorials/end-to-end.md
   - Migrating from 0.0.x: migrating-from-0.0.x.md
   - Migrating from 0.1.x: migrating-from-0.1.x.md
+  - Consuming as a Library: consuming-as-a-library.md
+  - Compliance:
+    - Compliance Mapping: compliance/index.md
+    - Production Readiness: compliance/production-readiness.md
+    - RC Readiness Summary: compliance/rc-readiness-summary.md
+    - Stable Promotion: compliance/stable-promotion.md
+    - Remote CI Validation: compliance/remote-ci-validation.md
+    - Final Diff Review: compliance/final-diff-review.md
+    - RC Review Handoff: compliance/rc-review-handoff.md
+    - Staging Manifest: compliance/staging-manifest.md
+    - Guard Calibration: compliance/guard-calibration.md
+    - Security Review: compliance/security-review.md
+    - Private RC Publication: compliance/private-rc-publication.md
+    - Pilot Operations Runbook: compliance/pilot-operations-runbook.md
+    - Pilot Execution Checklist: compliance/pilot-execution.md
+    - Pilot Dry-Run: compliance/pilot-dry-run.md
+    - Controlled RC Pilot Evidence: compliance/pilot-evidence-template.md
+    - Rollback Execution Checklist: compliance/rollback-execution.md
+    - Rollback Proof Checklist: compliance/rollback-proof-checklist.md
+    - Release Candidate Inventory: compliance/rc-inventory.md
   - Patterns:
     - Orchestrator: patterns/orchestrator.md
     - Retry Policy: patterns/retry.md
@@ -56,10 +69,16 @@ nav:
     - Governance Plane: patterns/governance.md
     - Streaming: patterns/streaming.md
     - Hooks: patterns/hooks.md
+    - Pilot Profile: patterns/pilot-profile.md
   - API Reference:
     - Orchestrator: api/orchestrator.md
+    - Agent Events: api/agent_events.md
+    - Agent Lifecycle: api/agent_lifecycle.md
     - Circuit Breaker: api/circuit_breaker.md
     - Checkpoint: api/checkpoint.md
+    - Permissions: api/permissions.md
+    - Policy Engine: api/policy_engine.md
+    - Quality Gate: api/quality_gate.md
     - Rate Limit: api/rate_limit.md
     - Routing: api/routing.md
     - Retry Policy: api/retry_policy.md
@@ -72,15 +91,13 @@ nav:
     - Sinks: api/sinks.md
     - Persistence: api/persistence.md
     - Scheduler: api/scheduler.md
-    - OpenTelemetry: api/otel.md
+    - Telemetry: api/otel.md
+    - Pilot Profile: api/pilot.md
   - Changelog: changelog.md
 
 markdown_extensions:
   - admonition
-  - pymdownx.details
-  - pymdownx.superfences
-  - pymdownx.highlight:
-      anchor_linenums: true
+  - fenced_code
   - tables
   - toc:
       permalink: true

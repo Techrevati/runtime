@@ -20,7 +20,7 @@ from opentelemetry.sdk.trace.export import SimpleSpanProcessor  # noqa: E402
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import (  # noqa: E402
     InMemorySpanExporter,
 )
-from opentelemetry.trace import SpanKind  # noqa: E402
+from opentelemetry.trace import SpanKind, StatusCode  # noqa: E402
 
 from techrevati.runtime import (  # noqa: E402
     AgentEvent,
@@ -79,6 +79,146 @@ def test_failed_completion_sets_error_status_on_parent() -> None:
     assert parent.status.status_code.name == "ERROR"
     assert parent.attributes is not None
     assert parent.attributes.get("error.type") == "llm_timeout"
+    assert parent.attributes.get("techrevati.failure_class") == "llm_timeout"
+
+
+def test_cancelled_completion_does_not_set_error_status_on_parent() -> None:
+    sink, exporter = _build_sink_and_exporter()
+
+    sink.emit(AgentEvent.started("writer", "draft"))
+    sink.emit(
+        AgentEvent.failed(
+            "writer",
+            "draft",
+            AgentFailureClass.CANCELLED,
+            detail="async session cancelled",
+        )
+    )
+
+    spans = exporter.get_finished_spans()
+    assert len(spans) == 1
+    parent = spans[0]
+    assert parent.status.status_code != StatusCode.ERROR
+    assert parent.attributes is not None
+    assert parent.attributes.get("techrevati.failure_class") == "cancelled"
+    assert "error.type" not in parent.attributes
+
+
+def test_tool_call_opens_child_span_under_agent_parent() -> None:
+    sink, exporter = _build_sink_and_exporter()
+
+    sink.emit(AgentEvent.started("writer", "draft"))
+    sink.emit(AgentEvent.tool_called("writer", "draft", "lookup"))
+    sink.emit(AgentEvent.tool_completed("writer", "draft", "lookup"))
+    sink.emit(AgentEvent.completed("writer", "draft"))
+
+    spans = exporter.get_finished_spans()
+    assert len(spans) == 2
+    parent = next(span for span in spans if span.parent is None)
+    tool = next(span for span in spans if span.parent is not None)
+    assert tool.parent is not None
+    assert tool.parent.span_id == parent.context.span_id
+    assert tool.name == "execute_tool lookup"
+    assert tool.attributes is not None
+    assert tool.attributes.get("gen_ai.operation.name") == "execute_tool"
+    assert tool.attributes.get("techrevati.data.tool") == "lookup"
+
+
+def test_tool_failure_closes_tool_span_without_closing_agent_parent() -> None:
+    sink, exporter = _build_sink_and_exporter()
+
+    sink.emit(AgentEvent.started("writer", "draft"))
+    sink.emit(AgentEvent.tool_called("writer", "draft", "lookup"))
+    sink.emit(
+        AgentEvent.failed(
+            "writer",
+            "draft",
+            AgentFailureClass.TOOL_ERROR,
+            detail="tool execution failed: lookup",
+        ).with_data({"tool": "lookup"})
+    )
+    sink.emit(AgentEvent.completed("writer", "draft"))
+
+    spans = exporter.get_finished_spans()
+    assert len(spans) == 2
+    parent = next(span for span in spans if span.parent is None)
+    tool = next(span for span in spans if span.parent is not None)
+    assert parent.status.status_code != StatusCode.ERROR
+    assert parent.attributes is not None
+    assert "error.type" not in parent.attributes
+    assert tool.status.status_code == StatusCode.ERROR
+    assert tool.attributes is not None
+    assert tool.attributes.get("error.type") == "tool_error"
+    assert tool.attributes.get("techrevati.data.tool") == "lookup"
+
+
+def test_concurrent_same_tool_calls_each_get_their_own_span() -> None:
+    # Regression: two in-flight calls to the same tool used to collide on one
+    # (role, phase, tool) key, so the second tool_called force-closed the first
+    # span as "tool_span_interrupted". They must now each get their own span.
+    sink, exporter = _build_sink_and_exporter()
+
+    sink.emit(AgentEvent.started("writer", "draft"))
+    sink.emit(AgentEvent.tool_called("writer", "draft", "lookup"))
+    sink.emit(AgentEvent.tool_called("writer", "draft", "lookup"))  # concurrent
+    sink.emit(AgentEvent.tool_completed("writer", "draft", "lookup"))
+    sink.emit(AgentEvent.tool_completed("writer", "draft", "lookup"))
+    sink.emit(AgentEvent.completed("writer", "draft"))
+
+    spans = exporter.get_finished_spans()
+    parent = next(s for s in spans if s.parent is None)
+    tool_spans = [s for s in spans if s.parent is not None]
+
+    assert len(tool_spans) == 2  # two distinct tool spans, not one
+    for tool in tool_spans:
+        assert tool.parent is not None
+        assert tool.parent.span_id == parent.context.span_id  # sibling children
+        assert tool.status.status_code != StatusCode.ERROR
+        assert tool.attributes is not None
+        assert tool.attributes.get("error.type") != "tool_span_interrupted"
+
+
+def test_parent_close_ends_all_in_flight_same_tool_spans() -> None:
+    # If the agent parent closes while two concurrent calls to the same tool are
+    # still open, BOTH must be force-closed as interrupted (not just one).
+    sink, exporter = _build_sink_and_exporter()
+
+    sink.emit(AgentEvent.started("writer", "draft"))
+    sink.emit(AgentEvent.tool_called("writer", "draft", "lookup"))
+    sink.emit(AgentEvent.tool_called("writer", "draft", "lookup"))
+    sink.emit(AgentEvent.completed("writer", "draft"))  # parent closes first
+
+    spans = exporter.get_finished_spans()
+    tool_spans = [s for s in spans if s.parent is not None]
+    assert len(tool_spans) == 2
+    for tool in tool_spans:
+        assert tool.status.status_code == StatusCode.ERROR
+        assert tool.attributes is not None
+        assert tool.attributes.get("error.type") == "tool_span_interrupted"
+
+
+def test_non_terminal_failed_event_with_data_does_not_close_parent() -> None:
+    sink, exporter = _build_sink_and_exporter()
+
+    sink.emit(AgentEvent.started("writer", "draft"))
+    sink.emit(
+        AgentEvent.failed(
+            "writer",
+            "draft",
+            AgentFailureClass.RATE_LIMIT,
+            detail="budget exceeded",
+        ).with_data({"budget_usd": 1.0})
+    )
+    sink.emit(AgentEvent.completed("writer", "draft"))
+
+    spans = exporter.get_finished_spans()
+    assert len(spans) == 2
+    parent = next(span for span in spans if span.parent is None)
+    budget_event = next(span for span in spans if span.parent is not None)
+    assert parent.status.status_code != StatusCode.ERROR
+    assert budget_event.status.status_code == StatusCode.ERROR
+    assert budget_event.attributes is not None
+    assert budget_event.attributes.get("error.type") == "rate_limit"
 
 
 def test_double_started_closes_previous_parent() -> None:

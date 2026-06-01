@@ -10,11 +10,11 @@ weighted by config.
 
 ```python
 from techrevati.runtime import (
-    Orchestrator, StaticProviderRouter,
+    AgentSession, StaticProviderRouter,
 )
 
 router = StaticProviderRouter(("model-a", "model-b", "model-c"))
-orch = Orchestrator(
+agent = AgentSession(
     role="writer", phase="draft",
     provider_router=router,
 )

@@ -75,6 +75,14 @@ class CircuitBreaker:
         default_factory=threading.Lock, init=False, repr=False
     )
 
+    def __post_init__(self) -> None:
+        if self.failure_threshold <= 0:
+            raise ValueError("failure_threshold must be > 0")
+        if self.recovery_timeout_seconds < 0:
+            raise ValueError("recovery_timeout_seconds must be >= 0")
+        if self.half_open_max_probes <= 0:
+            raise ValueError("half_open_max_probes must be > 0")
+
     def call(self, fn: Callable[..., T], *args: Any, **kwargs: Any) -> T:
         """Execute fn with breaker protection. Raises CircuitOpenError if open.
 
@@ -82,17 +90,20 @@ class CircuitBreaker:
         calls are admitted; excess callers receive ``CircuitOpenError``
         until in-flight probes complete.
         """
+        probe_admitted = False
         with self._lock:
             if self._state == CircuitState.OPEN:
                 if self._should_attempt_reset():
                     self._state = CircuitState.HALF_OPEN
                     self._probe_in_flight = 1
+                    probe_admitted = True
                 else:
                     raise CircuitOpenError(self.name)
             elif self._state == CircuitState.HALF_OPEN:
                 if self._probe_in_flight >= self.half_open_max_probes:
                     raise CircuitOpenError(self.name)
                 self._probe_in_flight += 1
+                probe_admitted = True
             # CLOSED: pass through without tracking probes.
 
         try:
@@ -100,7 +111,11 @@ class CircuitBreaker:
         except Exception:
             self.record_failure()
             raise
-        self.record_success()
+        except BaseException:
+            if probe_admitted:
+                self._release_probe()
+            raise
+        self._record_call_success(probe_admitted=probe_admitted)
         return result
 
     def record_success(self) -> None:
@@ -108,8 +123,7 @@ class CircuitBreaker:
         with self._lock:
             self._failure_count = 0
             if self._state == CircuitState.HALF_OPEN:
-                self._state = CircuitState.CLOSED
-                self._probe_in_flight = 0
+                self._complete_probe_locked()
 
     def record_failure(self) -> None:
         """Record a failed execution. Opens the circuit at threshold."""
@@ -148,6 +162,28 @@ class CircuitBreaker:
             return False
         return (self.clock() - self._last_failure_time) >= self.recovery_timeout_seconds
 
+    def _record_call_success(self, *, probe_admitted: bool) -> None:
+        with self._lock:
+            if self._state == CircuitState.HALF_OPEN and probe_admitted:
+                self._complete_probe_locked()
+                return
+            if self._state == CircuitState.CLOSED:
+                self._failure_count = 0
+                self._last_failure_time = None
+
+    def _complete_probe_locked(self) -> None:
+        if self._probe_in_flight > 0:
+            self._probe_in_flight -= 1
+        if self._probe_in_flight == 0:
+            self._state = CircuitState.CLOSED
+            self._failure_count = 0
+            self._last_failure_time = None
+
+    def _release_probe(self) -> None:
+        with self._lock:
+            if self._state == CircuitState.HALF_OPEN and self._probe_in_flight > 0:
+                self._probe_in_flight -= 1
+
 
 @dataclass
 class AsyncCircuitBreaker:
@@ -171,6 +207,14 @@ class AsyncCircuitBreaker:
     _probe_in_flight: int = field(default=0, init=False, repr=False)
     _lock: asyncio.Lock = field(default_factory=asyncio.Lock, init=False, repr=False)
 
+    def __post_init__(self) -> None:
+        if self.failure_threshold <= 0:
+            raise ValueError("failure_threshold must be > 0")
+        if self.recovery_timeout_seconds < 0:
+            raise ValueError("recovery_timeout_seconds must be >= 0")
+        if self.half_open_max_probes <= 0:
+            raise ValueError("half_open_max_probes must be > 0")
+
     async def call(
         self,
         coro_factory: Callable[..., Awaitable[T]],
@@ -178,24 +222,31 @@ class AsyncCircuitBreaker:
         **kwargs: Any,
     ) -> T:
         """Execute coro with breaker protection. Raises CircuitOpenError if open."""
+        probe_admitted = False
         async with self._lock:
             if self._state == CircuitState.OPEN:
                 if self._should_attempt_reset():
                     self._state = CircuitState.HALF_OPEN
                     self._probe_in_flight = 1
+                    probe_admitted = True
                 else:
                     raise CircuitOpenError(self.name)
             elif self._state == CircuitState.HALF_OPEN:
                 if self._probe_in_flight >= self.half_open_max_probes:
                     raise CircuitOpenError(self.name)
                 self._probe_in_flight += 1
+                probe_admitted = True
 
         try:
             result = await coro_factory(*args, **kwargs)
         except Exception:
             await self.record_failure()
             raise
-        await self.record_success()
+        except BaseException:
+            if probe_admitted:
+                await self._release_probe()
+            raise
+        await self._record_call_success(probe_admitted=probe_admitted)
         return result
 
     async def record_success(self) -> None:
@@ -203,8 +254,7 @@ class AsyncCircuitBreaker:
         async with self._lock:
             self._failure_count = 0
             if self._state == CircuitState.HALF_OPEN:
-                self._state = CircuitState.CLOSED
-                self._probe_in_flight = 0
+                self._complete_probe_locked()
 
     async def record_failure(self) -> None:
         """Record a failed execution. Opens the circuit at threshold."""
@@ -241,3 +291,25 @@ class AsyncCircuitBreaker:
         if self._last_failure_time is None:
             return False
         return (self.clock() - self._last_failure_time) >= self.recovery_timeout_seconds
+
+    async def _record_call_success(self, *, probe_admitted: bool) -> None:
+        async with self._lock:
+            if self._state == CircuitState.HALF_OPEN and probe_admitted:
+                self._complete_probe_locked()
+                return
+            if self._state == CircuitState.CLOSED:
+                self._failure_count = 0
+                self._last_failure_time = None
+
+    def _complete_probe_locked(self) -> None:
+        if self._probe_in_flight > 0:
+            self._probe_in_flight -= 1
+        if self._probe_in_flight == 0:
+            self._state = CircuitState.CLOSED
+            self._failure_count = 0
+            self._last_failure_time = None
+
+    async def _release_probe(self) -> None:
+        async with self._lock:
+            if self._state == CircuitState.HALF_OPEN and self._probe_in_flight > 0:
+                self._probe_in_flight -= 1

@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from techrevati.runtime import (
+    AgentFailureClass,
     AgentSession,
     GovernanceBreachError,
     GovernancePlane,
@@ -44,6 +45,26 @@ def test_no_governance_means_no_change_in_behavior():
             assert result == "ok"
 
 
+def test_governance_state_is_fresh_for_each_sync_session():
+    plane = GovernancePlane(
+        limits=(MaxIterationsLimit(value=1, on_breach="terminate"),)
+    )
+    sess = AgentSession(role="r", phase="p", governance=plane, max_iterations=100)
+
+    with sess.session() as first:
+        first.run_turn(lambda: "ok", model=_MODEL, usage=_ten_token_usage())
+
+    with sess.session() as second:
+        second.run_turn(lambda: "ok", model=_MODEL, usage=_ten_token_usage())
+
+    assert first.governance is not None
+    assert second.governance is not None
+    assert first.governance is not second.governance
+    assert first.governance.state.turns == 1
+    assert second.governance.state.turns == 1
+    assert plane.state.turns == 0
+
+
 def test_max_iterations_governance_raises_terminal_error():
     plane = GovernancePlane(
         limits=(MaxIterationsLimit(value=2, on_breach="terminate"),)
@@ -55,6 +76,10 @@ def test_max_iterations_governance_raises_terminal_error():
                 session.run_turn(lambda: "ok", model=_MODEL, usage=_ten_token_usage())
     assert exc_info.value.limit_name == "max_iterations"
     assert exc_info.value.observed == 3.0
+    failures = [
+        event for event in session.events if event.event.value == "agent.failed"
+    ]
+    assert failures[-1].failure_class == AgentFailureClass.GOVERNANCE_BREACH
 
 
 def test_governance_breach_skips_recovery_path():
@@ -85,6 +110,10 @@ def test_governance_breach_skips_recovery_path():
     assert recovery_events == [], (
         f"recovery was attempted on governance breach: {recovery_events}"
     )
+    failures = [
+        event for event in captured_events if event.event.value == "agent.failed"
+    ]
+    assert failures[-1].failure_class == AgentFailureClass.GOVERNANCE_BREACH
 
 
 def test_max_budget_governance_alert_does_not_raise():
@@ -184,6 +213,30 @@ async def test_async_session_honors_governance():
         async with sess.asession() as session:
             for _ in range(3):
                 await session.arun_turn(_coro, model=_MODEL, usage=_ten_token_usage())
+
+
+@pytest.mark.asyncio
+async def test_governance_state_is_fresh_for_each_async_session():
+    plane = GovernancePlane(
+        limits=(MaxIterationsLimit(value=1, on_breach="terminate"),)
+    )
+    sess = AgentSession(role="r", phase="p", governance=plane, max_iterations=100)
+
+    async def _coro() -> str:
+        return "ok"
+
+    async with sess.asession() as first:
+        await first.arun_turn(_coro, model=_MODEL, usage=_ten_token_usage())
+
+    async with sess.asession() as second:
+        await second.arun_turn(_coro, model=_MODEL, usage=_ten_token_usage())
+
+    assert first.governance is not None
+    assert second.governance is not None
+    assert first.governance is not second.governance
+    assert first.governance.state.turns == 1
+    assert second.governance.state.turns == 1
+    assert plane.state.turns == 0
 
 
 @pytest.mark.asyncio

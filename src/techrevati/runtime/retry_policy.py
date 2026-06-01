@@ -13,8 +13,10 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import math
 import random
 from collections.abc import Awaitable, Callable
+from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
@@ -56,6 +58,160 @@ class EscalationPolicy(str, Enum):
     ABORT = "abort"
 
 
+_RECOVERY_OUTCOMES: frozenset[str] = frozenset(
+    {"recovered", "partial_recovery", "escalation_required"}
+)
+_RECOVERY_EVENT_TYPES: frozenset[str] = frozenset(
+    {"attempted", "succeeded", "failed", "escalated"}
+)
+
+
+def _coerce_scenario(value: FailureScenario | str) -> FailureScenario:
+    if isinstance(value, FailureScenario):
+        return value
+    if isinstance(value, str):
+        try:
+            return FailureScenario(value)
+        except ValueError as exc:
+            raise ValueError("scenario must be a valid FailureScenario") from exc
+    raise TypeError("scenario must be a FailureScenario")
+
+
+def _coerce_step(field_name: str, value: RecoveryStep | str) -> RecoveryStep:
+    if isinstance(value, RecoveryStep):
+        return value
+    if isinstance(value, str):
+        try:
+            return RecoveryStep(value)
+        except ValueError as exc:
+            raise ValueError(f"{field_name} must be a valid RecoveryStep") from exc
+    raise TypeError(f"{field_name} must be a RecoveryStep")
+
+
+def _coerce_escalation_policy(
+    value: EscalationPolicy | str,
+) -> EscalationPolicy:
+    if isinstance(value, EscalationPolicy):
+        return value
+    if isinstance(value, str):
+        try:
+            return EscalationPolicy(value)
+        except ValueError as exc:
+            raise ValueError(
+                "escalation_policy must be a valid EscalationPolicy"
+            ) from exc
+    raise TypeError("escalation_policy must be an EscalationPolicy")
+
+
+def _validate_non_empty_str(field_name: str, value: str) -> str:
+    if not isinstance(value, str):
+        raise TypeError(f"{field_name} must be a string")
+    if not value.strip():
+        raise ValueError(f"{field_name} must not be empty")
+    return value
+
+
+def _validate_optional_str(field_name: str, value: str) -> str:
+    if not isinstance(value, str):
+        raise TypeError(f"{field_name} must be a string")
+    return value
+
+
+def _validate_non_negative_int(field_name: str, value: int) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError(f"{field_name} must be an integer")
+    if value < 0:
+        raise ValueError(f"{field_name} must be non-negative")
+    return value
+
+
+def _validate_positive_int(field_name: str, value: int) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError(f"{field_name} must be an integer")
+    if value <= 0:
+        raise ValueError(f"{field_name} must be positive")
+    return value
+
+
+def _validate_finite_number(field_name: str, value: float) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise TypeError(f"{field_name} must be a number")
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError(f"{field_name} must be finite")
+    return number
+
+
+def _validate_positive_number(field_name: str, value: float) -> float:
+    number = _validate_finite_number(field_name, value)
+    if number <= 0:
+        raise ValueError(f"{field_name} must be positive")
+    return number
+
+
+def _validate_non_negative_number(field_name: str, value: float) -> float:
+    number = _validate_finite_number(field_name, value)
+    if number < 0:
+        raise ValueError(f"{field_name} must be non-negative")
+    return number
+
+
+def _normalize_steps(steps: Any) -> tuple[RecoveryStep, ...]:
+    if isinstance(steps, (str, bytes)):
+        raise TypeError("steps must be a sequence of RecoveryStep values")
+    try:
+        normalized = tuple(_coerce_step("steps", step) for step in steps)
+    except TypeError as exc:
+        raise TypeError("steps must be a sequence of RecoveryStep values") from exc
+    if not normalized:
+        raise ValueError("steps must not be empty")
+    return normalized
+
+
+def _normalize_step_retries(
+    retries: dict[RecoveryStep, int],
+    steps: tuple[RecoveryStep, ...],
+) -> dict[RecoveryStep, int]:
+    if not isinstance(retries, dict):
+        raise TypeError("step_retries must be a dict")
+    normalized: dict[RecoveryStep, int] = {}
+    valid_steps = set(steps)
+    for raw_step, raw_budget in retries.items():
+        step = _coerce_step("step_retries", raw_step)
+        if step not in valid_steps:
+            raise ValueError("step_retries contains a step not present in steps")
+        normalized[step] = _validate_non_negative_int("step_retries budget", raw_budget)
+    return normalized
+
+
+def _normalize_string_list(field_name: str, values: list[str]) -> list[str]:
+    if not isinstance(values, list):
+        raise TypeError(f"{field_name} must be a list")
+    return [_validate_non_empty_str(f"{field_name} item", value) for value in values]
+
+
+def _copy_result(result: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(result, dict):
+        raise TypeError("result must be a dict")
+    copied = deepcopy(result)
+    for key in copied:
+        if not isinstance(key, str):
+            raise TypeError("result keys must be strings")
+    return copied
+
+
+def _copy_event(event: RecoveryEvent) -> RecoveryEvent:
+    if not isinstance(event, RecoveryEvent):
+        raise TypeError("event must be a RecoveryEvent")
+    return RecoveryEvent(
+        event_type=event.event_type,
+        scenario=event.scenario,
+        recipe_steps=list(event.recipe_steps),
+        result=event.result,
+        timestamp=event.timestamp,
+    )
+
+
 @dataclass(frozen=True)
 class RecoveryRecipe:
     """Recovery plan for a failure scenario.
@@ -89,10 +245,23 @@ class RecoveryRecipe:
     step_retries: dict[RecoveryStep, int] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        # Accept list/tuple at the call site; freeze to tuple so the
-        # frozen-dataclass contract is honored end-to-end.
-        if not isinstance(self.steps, tuple):
-            object.__setattr__(self, "steps", tuple(self.steps))
+        scenario = _coerce_scenario(self.scenario)
+        steps = _normalize_steps(self.steps)
+        object.__setattr__(self, "scenario", scenario)
+        object.__setattr__(self, "steps", steps)
+        object.__setattr__(
+            self,
+            "max_attempts",
+            _validate_positive_int("max_attempts", self.max_attempts),
+        )
+        object.__setattr__(
+            self,
+            "escalation_policy",
+            _coerce_escalation_policy(self.escalation_policy),
+        )
+        object.__setattr__(
+            self, "step_retries", _normalize_step_retries(self.step_retries, steps)
+        )
 
 
 @dataclass
@@ -105,12 +274,24 @@ class RecoveryResult:
     remaining_steps: list[str] = field(default_factory=list)
     reason: str = ""
 
+    def __post_init__(self) -> None:
+        if not isinstance(self.outcome, str) or self.outcome not in _RECOVERY_OUTCOMES:
+            raise ValueError("outcome must be a valid recovery outcome")
+        self.steps_taken = _validate_non_negative_int("steps_taken", self.steps_taken)
+        self.recovered_steps = _normalize_string_list(
+            "recovered_steps", self.recovered_steps
+        )
+        self.remaining_steps = _normalize_string_list(
+            "remaining_steps", self.remaining_steps
+        )
+        self.reason = _validate_optional_str("reason", self.reason)
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "outcome": self.outcome,
             "steps_taken": self.steps_taken,
-            "recovered_steps": self.recovered_steps,
-            "remaining_steps": self.remaining_steps,
+            "recovered_steps": list(self.recovered_steps),
+            "remaining_steps": list(self.remaining_steps),
             "reason": self.reason,
         }
 
@@ -125,12 +306,28 @@ class RecoveryEvent:
     result: dict[str, Any]
     timestamp: str
 
+    def __post_init__(self) -> None:
+        event_type = _validate_non_empty_str("event_type", self.event_type)
+        if event_type not in _RECOVERY_EVENT_TYPES:
+            raise ValueError("event_type must be a valid recovery event type")
+        object.__setattr__(self, "event_type", event_type)
+        object.__setattr__(self, "scenario", _coerce_scenario(self.scenario).value)
+        object.__setattr__(
+            self,
+            "recipe_steps",
+            _normalize_string_list("recipe_steps", self.recipe_steps),
+        )
+        object.__setattr__(self, "result", _copy_result(self.result))
+        object.__setattr__(
+            self, "timestamp", _validate_non_empty_str("timestamp", self.timestamp)
+        )
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "event_type": self.event_type,
             "scenario": self.scenario,
-            "recipe_steps": self.recipe_steps,
-            "result": self.result,
+            "recipe_steps": list(self.recipe_steps),
+            "result": deepcopy(self.result),
             "timestamp": self.timestamp,
         }
 
@@ -183,8 +380,9 @@ _RECIPES: dict[FailureScenario, RecoveryRecipe] = {
 }
 
 
-def recipe_for(scenario: FailureScenario) -> RecoveryRecipe:
+def recipe_for(scenario: FailureScenario | str) -> RecoveryRecipe:
     """Look up the recovery recipe for a failure scenario."""
+    scenario = _coerce_scenario(scenario)
     return _RECIPES[scenario]
 
 
@@ -195,12 +393,13 @@ class RecoveryContext:
         self._attempts: dict[FailureScenario, int] = {}
         self._events: list[RecoveryEvent] = []
 
-    def attempt_count(self, scenario: FailureScenario) -> int:
+    def attempt_count(self, scenario: FailureScenario | str) -> int:
+        scenario = _coerce_scenario(scenario)
         return self._attempts.get(scenario, 0)
 
     @property
     def events(self) -> list[RecoveryEvent]:
-        return list(self._events)
+        return [_copy_event(event) for event in self._events]
 
     def _fail_at_step(self) -> int | None:
         """Override in test subclasses to simulate partial recovery.
@@ -243,7 +442,7 @@ class RecoveryContext:
 
 
 def attempt_recovery(
-    scenario: FailureScenario,
+    scenario: FailureScenario | str,
     ctx: RecoveryContext,
 ) -> RecoveryResult:
     """Attempt recovery for a failure scenario.
@@ -251,6 +450,9 @@ def attempt_recovery(
     Returns RecoveryResult with outcome: recovered, partial_recovery,
     or escalation_required.
     """
+    if not isinstance(ctx, RecoveryContext):
+        raise TypeError("ctx must be a RecoveryContext")
+    scenario = _coerce_scenario(scenario)
     recipe = recipe_for(scenario)
 
     # Check max attempts
@@ -303,7 +505,7 @@ def attempt_recovery(
 
 
 async def aattempt_recovery(
-    scenario: FailureScenario,
+    scenario: FailureScenario | str,
     ctx: RecoveryContext,
     *,
     sleeper: Callable[[float], Awaitable[None]] | None = None,
@@ -320,6 +522,8 @@ async def aattempt_recovery(
     """
     if sleeper is None:
         sleeper = asyncio.sleep
+    elif not callable(sleeper):
+        raise TypeError("sleeper must be callable")
     # Sleeper is reserved for future use; record it on the context so
     # subclasses can read it. The default behavior is identical to sync.
     _ = sleeper  # noqa: F841 - reserved for future steps
@@ -354,6 +558,10 @@ def backoff_delay(
     ``jitter=False`` maps to ``"none"``. The ``base ** attempt + 25% noise``
     formula from 0.0.0 is gone — use ``"equal"`` for similar behavior.
     """
+    attempt = _validate_non_negative_int("attempt", attempt)
+    base = _validate_positive_number("base", base)
+    cap = _validate_positive_number("cap", cap)
+    prev_delay = _validate_non_negative_number("prev_delay", prev_delay)
     if jitter is True:
         mode: JitterMode = "full"
     elif jitter is False:
@@ -361,7 +569,10 @@ def backoff_delay(
     else:
         mode = jitter
 
-    cap_exp = min(cap, base**attempt)
+    try:
+        cap_exp = min(cap, base**attempt)
+    except OverflowError:
+        cap_exp = cap
 
     if mode == "none":
         return cap_exp
@@ -372,7 +583,10 @@ def backoff_delay(
         return half + random.uniform(0.0, half)
     if mode == "decorrelated":
         anchor = prev_delay if prev_delay > 0 else base
-        return min(cap, random.uniform(base, anchor * 3.0))
+        # Clamp the upper bound to at least ``base`` so a tiny ``prev_delay``
+        # (where ``anchor * 3 < base``) cannot invert the range and yield a
+        # delay below ``base``, which the documented lower bound forbids.
+        return min(cap, random.uniform(base, max(base, anchor * 3.0)))
     raise ValueError(f"unknown jitter mode: {mode!r}")
 
 
@@ -381,12 +595,23 @@ def next_provider(
     current_provider: str,
 ) -> str | None:
     """Select the next fallback provider, skipping the current one."""
-    candidates = [p for p in available_providers if p != current_provider]
+    if isinstance(available_providers, (str, bytes)):
+        raise TypeError("available_providers must be a sequence of provider names")
+    current_provider = _validate_non_empty_str("current_provider", current_provider)
+    candidates = []
+    for provider in available_providers:
+        provider = _validate_non_empty_str("available_providers item", provider)
+        if provider != current_provider:
+            candidates.append(provider)
     return candidates[0] if candidates else None
 
 
 def smaller_context_budget(current_chars: int, reduction: float = 0.75) -> int:
     """Calculate a reduced context budget (75% of current by default)."""
+    current_chars = _validate_non_negative_int("current_chars", current_chars)
+    reduction = _validate_finite_number("reduction", reduction)
+    if not 0.0 <= reduction <= 1.0:
+        raise ValueError("reduction must be between 0 and 1")
     return int(current_chars * reduction)
 
 
@@ -403,6 +628,7 @@ _EXCEPTION_TYPE_MAPPING: tuple[tuple[type[BaseException], FailureScenario], ...]
     (ConnectionResetError, FailureScenario.PROVIDER_FAILURE),
     (ConnectionError, FailureScenario.PROVIDER_FAILURE),
     (json.JSONDecodeError, FailureScenario.MEMORY_CORRUPTION),
+    (OSError, FailureScenario.DEPENDENCY_TIMEOUT),
 )
 
 
@@ -420,10 +646,11 @@ def classify_exception(error: Exception) -> FailureScenario:
     Two-pass dispatch:
 
     1. **Type-based** — ``isinstance`` against well-known stdlib classes
-       (``TimeoutError``, ``ConnectionError`` family, ``JSONDecodeError``).
-       Walks the exception chain via ``__cause__`` / ``__context__`` so a
-       ``RuntimeError`` wrapping a ``ConnectionError`` is still classified
-       as ``PROVIDER_FAILURE``.
+       (``TimeoutError``, ``ConnectionError`` family, ``JSONDecodeError``,
+       ``OSError``). Walks the exception chain via ``__cause__`` /
+       ``__context__`` so a ``RuntimeError`` wrapping a ``ConnectionError`` is
+       still classified as ``PROVIDER_FAILURE`` and a wrapped disk or file
+       system error is still classified as ``DEPENDENCY_TIMEOUT``.
     2. **String match** — provider SDKs that don't expose stdlib types
        fall through to substring matching on the rendered message.
     """
@@ -503,6 +730,16 @@ def classify_exception(error: Exception) -> FailureScenario:
             "external service",
             "dependent",
             "dependency timeout",
+            "database",
+            "sqlite",
+            "disk",
+            "filesystem",
+            "file system",
+            "i/o error",
+            "io error",
+            "input/output",
+            "no space left",
+            "read-only",
         )
     ):
         return FailureScenario.DEPENDENCY_TIMEOUT

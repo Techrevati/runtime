@@ -1,0 +1,50 @@
+{% macro render_nav(items) -%}
+  <ul class="nav-list">
+    {% for nav_item in items %}
+      <li class="nav-item{% if nav_item.active %} is-active{% endif %}">
+        {% if nav_item.url %}
+          <a href="{{ nav_item.url|url }}">{{ nav_item.title }}</a>
+        {% else %}
+          <span>{{ nav_item.title }}</span>
+        {% endif %}
+        {% if nav_item.children %}
+          {{ render_nav(nav_item.children) }}
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+{%- endmacro %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% if page and page.title %}{{ page.title }} - {% endif %}{{ config.site_name }}</title>
+    <link rel="stylesheet" href="{{ 'styles/runtime.css'|url }}">
+    {% for path in config.extra_css %}
+      <link rel="stylesheet" href="{{ path|url }}">
+    {% endfor %}
+  </head>
+  <body>
+    <header class="site-header">
+      {% if nav.homepage %}
+        <a class="brand" href="{{ nav.homepage.url|url }}">{{ config.site_name }}</a>
+      {% else %}
+        <a class="brand" href="{{ 'index.html'|url }}">{{ config.site_name }}</a>
+      {% endif %}
+    </header>
+    <div class="layout">
+      <nav class="site-nav" aria-label="Primary navigation">
+        {{ render_nav(nav) }}
+      </nav>
+      <main class="content" id="content">
+        {% block content %}
+          {{ page.content }}
+        {% endblock %}
+      </main>
+    </div>
+    <footer class="site-footer">
+      <span>{{ config.copyright }}</span>
+    </footer>
+  </body>
+</html>

@@ -21,9 +21,11 @@ small so adapters are easy.
 from __future__ import annotations
 
 import json
+import math
 import sqlite3
 import threading
 from collections.abc import Iterator
+from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -35,6 +37,50 @@ __all__ = [
     "SqliteEventSink",
     "SqliteUsageSink",
 ]
+
+
+_EVENT_SINK_COMPONENT = "event_sink"
+_USAGE_SINK_COMPONENT = "usage_sink"
+_SQLITE_SCHEMA_VERSION = 1
+
+
+def _validate_event(event: AgentEvent) -> AgentEvent:
+    if not isinstance(event, AgentEvent):
+        raise TypeError("event must be an AgentEvent")
+    return event
+
+
+def _validate_model(model: str) -> str:
+    if not isinstance(model, str):
+        raise TypeError("model must be a string")
+    if not model.strip():
+        raise ValueError("model must not be empty")
+    return model.strip()
+
+
+def _validate_usage(usage: UsageSnapshot) -> UsageSnapshot:
+    if not isinstance(usage, UsageSnapshot):
+        raise TypeError("usage must be a UsageSnapshot")
+    return usage
+
+
+def _validate_cost_usd(cost_usd: float) -> float:
+    if isinstance(cost_usd, bool) or not isinstance(cost_usd, (int, float)):
+        raise TypeError("cost_usd must be a number")
+    cost = float(cost_usd)
+    if not math.isfinite(cost):
+        raise ValueError("cost_usd must be finite")
+    if cost < 0:
+        raise ValueError("cost_usd must be non-negative")
+    return cost
+
+
+def _validate_optional_limit(limit: int | None) -> int | None:
+    if limit is None:
+        return None
+    if isinstance(limit, bool) or not isinstance(limit, int):
+        raise TypeError("limit must be an integer or None")
+    return limit
 
 
 _EVENT_SCHEMA = """
@@ -62,11 +108,46 @@ CREATE INDEX IF NOT EXISTS idx_usage_records_recorded_at
     ON usage_records(recorded_at);
 """
 
+_METADATA_SCHEMA = """
+CREATE TABLE IF NOT EXISTS techrevati_runtime_metadata (
+    component      TEXT PRIMARY KEY,
+    schema_version INTEGER NOT NULL
+);
+"""
+
+
+def _ensure_schema_version(
+    conn: sqlite3.Connection, *, component: str, version: int
+) -> None:
+    conn.executescript(_METADATA_SCHEMA)
+    row = conn.execute(
+        "SELECT schema_version FROM techrevati_runtime_metadata WHERE component = ?",
+        (component,),
+    ).fetchone()
+    if row is None:
+        conn.execute(
+            "INSERT INTO techrevati_runtime_metadata"
+            " (component, schema_version) VALUES (?, ?)",
+            (component, version),
+        )
+        return
+    observed = int(row[0])
+    if observed != version:
+        raise RuntimeError(
+            f"unsupported sqlite schema for {component}: "
+            f"version {observed}, expected {version}"
+        )
+
 
 def _open_wal(path: str | Path) -> sqlite3.Connection:
     """Open a sqlite connection in WAL mode (no-op for ``:memory:``)."""
     conn = sqlite3.connect(str(path), check_same_thread=False)
-    conn.execute("PRAGMA journal_mode=WAL")
+    try:
+        conn.execute("PRAGMA journal_mode=WAL")
+    except Exception:
+        with suppress(Exception):
+            conn.close()
+        raise
     return conn
 
 
@@ -87,11 +168,21 @@ class SqliteEventSink:
 
     def __post_init__(self) -> None:
         self._conn = _open_wal(self.path)
-        with self._lock:
-            self._conn.executescript(_EVENT_SCHEMA)
-            self._conn.commit()
+        try:
+            with self._lock:
+                _ensure_schema_version(
+                    self._conn,
+                    component=_EVENT_SINK_COMPONENT,
+                    version=_SQLITE_SCHEMA_VERSION,
+                )
+                self._conn.executescript(_EVENT_SCHEMA)
+                self._conn.commit()
+        except Exception:
+            self._conn.close()
+            raise
 
     def emit(self, event: AgentEvent) -> None:
+        event = _validate_event(event)
         payload = json.dumps(event.to_dict(), ensure_ascii=False)
         with self._lock:
             self._conn.execute(
@@ -103,11 +194,19 @@ class SqliteEventSink:
 
     def replay(self, *, limit: int | None = None) -> Iterator[AgentEvent]:
         """Yield every persisted event in insertion order."""
+        limit = _validate_optional_limit(limit)
+        if limit is not None and limit <= 0:
+            return
         with self._lock:
-            sql = "SELECT payload FROM agent_events ORDER BY id ASC" + (
-                f" LIMIT {int(limit)}" if limit is not None else ""
-            )
-            rows = self._conn.execute(sql).fetchall()
+            if limit is None:
+                rows = self._conn.execute(
+                    "SELECT payload FROM agent_events ORDER BY id ASC"
+                ).fetchall()
+            else:
+                rows = self._conn.execute(
+                    "SELECT payload FROM agent_events ORDER BY id ASC LIMIT ?",
+                    (limit,),
+                ).fetchall()
         for (payload,) in rows:
             yield AgentEvent.from_dict(json.loads(payload))
 
@@ -134,11 +233,23 @@ class SqliteUsageSink:
 
     def __post_init__(self) -> None:
         self._conn = _open_wal(self.path)
-        with self._lock:
-            self._conn.executescript(_USAGE_SCHEMA)
-            self._conn.commit()
+        try:
+            with self._lock:
+                _ensure_schema_version(
+                    self._conn,
+                    component=_USAGE_SINK_COMPONENT,
+                    version=_SQLITE_SCHEMA_VERSION,
+                )
+                self._conn.executescript(_USAGE_SCHEMA)
+                self._conn.commit()
+        except Exception:
+            self._conn.close()
+            raise
 
     def record(self, model: str, usage: UsageSnapshot, cost_usd: float) -> None:
+        model = _validate_model(model)
+        usage = _validate_usage(usage)
+        cost_usd = _validate_cost_usd(cost_usd)
         snapshot_json = json.dumps(usage.to_dict(), ensure_ascii=False)
         from datetime import UTC, datetime
 
@@ -156,7 +267,22 @@ class SqliteUsageSink:
             row = self._conn.execute(
                 "SELECT COUNT(*), COALESCE(SUM(cost_usd), 0.0) FROM usage_records"
             ).fetchone()
-        return {"turns": int(row[0] or 0), "total_cost_usd": float(row[1] or 0.0)}
+            snapshot_rows = self._conn.execute(
+                "SELECT snapshot FROM usage_records ORDER BY id ASC"
+            ).fetchall()
+        snapshots = [
+            UsageSnapshot.from_dict(json.loads(snapshot))
+            for (snapshot,) in snapshot_rows
+        ]
+        return {
+            "turns": int(row[0] or 0),
+            "total_cost_usd": float(row[1] or 0.0),
+            "total_input_tokens": sum(s.input_tokens for s in snapshots),
+            "total_output_tokens": sum(s.output_tokens for s in snapshots),
+            "total_cache_write_tokens": sum(s.cache_write_tokens for s in snapshots),
+            "total_cache_read_tokens": sum(s.cache_read_tokens for s in snapshots),
+            "total_tool_calls": sum(s.tool_calls for s in snapshots),
+        }
 
     def close(self) -> None:
         with self._lock:

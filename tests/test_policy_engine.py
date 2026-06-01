@@ -1,5 +1,9 @@
 """Tests for techrevati.runtime.policy_engine"""
 
+from typing import Any, cast
+
+import pytest
+
 from techrevati.runtime.policy_engine import (
     AgentFailed,
     AllAgentsComplete,
@@ -11,6 +15,7 @@ from techrevati.runtime.policy_engine import (
     PhaseContext,
     PolicyAction,
     PolicyActionData,
+    PolicyCondition,
     PolicyEngine,
     PolicyRule,
     QualityAt,
@@ -194,6 +199,58 @@ def test_cost_exceeded_condition():
     assert cond.matches(_ctx(total_cost_usd=3.0)) is False
 
 
+@pytest.mark.parametrize(
+    "factory",
+    [
+        lambda: GateBelow(-1.0),
+        lambda: GateBelow(float("nan")),
+        lambda: TimedOut(-1.0),
+        lambda: TimedOut(float("inf")),
+        lambda: CostExceeded(-1.0),
+        lambda: CostExceeded(float("nan")),
+    ],
+)
+def test_numeric_conditions_reject_invalid_thresholds(factory):
+    with pytest.raises(ValueError):
+        factory()
+
+
+def test_targeted_conditions_reject_blank_names():
+    with pytest.raises(ValueError, match="role"):
+        AgentFailed("")
+    with pytest.raises(ValueError, match="scenario"):
+        RetryExhausted("   ")
+
+
+def test_condition_reprs_are_stable():
+    conditions = [
+        And([PhaseCompleted()]),
+        Or([AgentFailed("writer")]),
+        QualityAt(QualityLevel.STANDARD),
+        PhaseCompleted(),
+        AgentFailed("writer"),
+        GateBelow(82.0),
+        RetryExhausted("llm_timeout"),
+        TimedOut(3600),
+        AllAgentsComplete(),
+        CostExceeded(5.0),
+    ]
+
+    for condition in conditions:
+        assert type(condition).__name__ in repr(condition)
+
+
+def test_base_condition_requires_matches_override():
+    with pytest.raises(TypeError, match="abstract class"):
+        PolicyCondition()
+
+
+def test_retry_exhausted_targeted_scenario():
+    cond = RetryExhausted("llm_timeout")
+    assert cond.matches(_ctx(retry_exhausted_scenarios={"llm_timeout"})) is True
+    assert cond.matches(_ctx(retry_exhausted_scenarios={"rate_limit"})) is False
+
+
 def test_all_agents_complete():
     cond = AllAgentsComplete()
     ctx = _ctx(
@@ -208,6 +265,10 @@ def test_all_agents_complete():
     assert cond.matches(ctx2) is False
 
 
+def test_all_agents_complete_requires_configured_roles():
+    assert AllAgentsComplete().matches(PhaseContext()) is False
+
+
 def test_gate_below():
     assert GateBelow(82.0).matches(_ctx(gate_score=75.0)) is True
     assert GateBelow(82.0).matches(_ctx(gate_score=90.0)) is False
@@ -218,6 +279,142 @@ def test_action_data_to_dict():
     d = ad.to_dict()
     assert d["action"] == "escalate"
     assert d["params"]["reason"] == "test"
+
+
+def test_action_data_to_dict_returns_params_copy():
+    params: dict[str, Any] = {"reason": "initial", "nested": {"values": [1]}}
+    ad = PolicyActionData(PolicyAction.NOTIFY, params)
+    params["nested"]["values"].append(2)
+
+    assert ad.params == {"reason": "initial", "nested": {"values": [1]}}
+
+    payload = ad.to_dict()
+
+    payload["params"]["reason"] = "mutated"
+    payload["params"]["nested"]["values"].append(3)
+
+    assert ad.params == {"reason": "initial", "nested": {"values": [1]}}
+
+
+def test_action_data_rejects_invalid_params():
+    with pytest.raises(TypeError, match="params"):
+        PolicyActionData(PolicyAction.NOTIFY, cast(Any, []))
+    with pytest.raises(TypeError, match="params keys"):
+        PolicyActionData(PolicyAction.NOTIFY, cast(Any, {1: "bad"}))
+
+
+def test_action_data_accepts_action_values_and_omits_empty_params():
+    ad = PolicyActionData("notify")  # type: ignore[arg-type]
+
+    assert ad.action == PolicyAction.NOTIFY
+    assert ad.to_dict() == {"action": "notify"}
+
+
+def test_action_data_rejects_invalid_action():
+    with pytest.raises(ValueError, match="action"):
+        PolicyActionData("not-real")  # type: ignore[arg-type]
+
+
+def test_policy_rule_rejects_invalid_configuration():
+    with pytest.raises(ValueError, match="name"):
+        PolicyRule("", PhaseCompleted(), [PolicyActionData(PolicyAction.NOTIFY)])
+    with pytest.raises(ValueError, match="actions"):
+        PolicyRule("no-actions", PhaseCompleted(), [])
+    with pytest.raises(TypeError, match="actions"):
+        PolicyRule("bad-actions", PhaseCompleted(), cast(Any, object()))
+    with pytest.raises(TypeError, match="PolicyActionData"):
+        PolicyRule(
+            "bad-action-item",
+            PhaseCompleted(),
+            cast(Any, [object()]),
+        )
+    with pytest.raises(TypeError, match="priority"):
+        PolicyRule(
+            "bad-priority",
+            PhaseCompleted(),
+            [PolicyActionData(PolicyAction.NOTIFY)],
+            priority=cast(Any, True),
+        )
+    with pytest.raises(ValueError, match="matches"):
+        PolicyRule(
+            "bad-condition",
+            object(),  # type: ignore[arg-type]
+            [PolicyActionData(PolicyAction.NOTIFY)],
+        )
+
+
+def test_policy_rule_trims_name_and_copies_actions():
+    action = PolicyActionData(PolicyAction.NOTIFY, {"nested": {"values": [1]}})
+    actions = [action]
+
+    rule = PolicyRule("  notify  ", PhaseCompleted(), actions)
+    actions.append(PolicyActionData(PolicyAction.ESCALATE))
+    assert isinstance(rule.actions, tuple)
+
+    assert rule.name == "notify"
+    assert [action.action for action in rule.actions] == [PolicyAction.NOTIFY]
+
+    action.params["nested"]["values"].append(2)  # type: ignore[index]
+    assert rule.actions[0].params == {"nested": {"values": [1]}}
+
+
+def test_phase_context_rejects_invalid_numbers():
+    with pytest.raises(ValueError, match="elapsed_seconds"):
+        PhaseContext(elapsed_seconds=-1.0)
+    with pytest.raises(ValueError, match="total_cost_usd"):
+        PhaseContext(total_cost_usd=float("nan"))
+    with pytest.raises(ValueError, match="gate_score"):
+        PhaseContext(gate_score=True)  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="quality level"):
+        PhaseContext(quality_level=999)  # type: ignore[arg-type]
+
+
+def test_phase_context_rejects_invalid_shape_and_copies_sets():
+    completed = {"writer"}
+    ctx = PhaseContext(phase=" draft ", completed_roles=completed)
+    completed.add("mutated")
+
+    assert ctx.phase == "draft"
+    assert ctx.completed_roles == {"writer"}
+
+    with pytest.raises(TypeError, match="phase"):
+        PhaseContext(phase=cast(Any, 123))
+    with pytest.raises(ValueError, match="phase"):
+        PhaseContext(phase=" ")
+    with pytest.raises(TypeError, match="completed_roles"):
+        PhaseContext(completed_roles=cast(Any, ["writer"]))
+    with pytest.raises(ValueError, match="failed_roles"):
+        PhaseContext(failed_roles={""})
+    with pytest.raises(TypeError, match="phase_completed"):
+        PhaseContext(phase_completed=cast(Any, "yes"))
+
+
+def test_policy_engine_copies_rules_and_returned_actions():
+    rule = PolicyRule(
+        "notify",
+        PhaseCompleted(),
+        [PolicyActionData(PolicyAction.NOTIFY, {"nested": {"values": [1]}})],
+        priority=1,
+    )
+    engine = PolicyEngine([rule])
+
+    rule.actions[0].params["nested"]["values"].append(2)  # type: ignore[index]
+    first_actions = engine.evaluate(_ctx())
+    assert first_actions[0].params == {"nested": {"values": [1]}}
+
+    first_actions[0].params["nested"]["values"].append(3)  # type: ignore[index]
+    assert engine.evaluate(_ctx())[0].params == {"nested": {"values": [1]}}
+
+    exposed_rules = engine.rules
+    exposed_rules[0].actions[0].params["nested"]["values"].append(4)  # type: ignore[index]
+    assert engine.evaluate(_ctx())[0].params == {"nested": {"values": [1]}}
+
+
+def test_policy_engine_rejects_invalid_rules_container():
+    with pytest.raises(TypeError, match="rules"):
+        PolicyEngine(cast(Any, object()))
+    with pytest.raises(TypeError, match="PolicyRule"):
+        PolicyEngine(cast(Any, [object()]))
 
 
 def test_multiple_rules_fire_in_priority_order():

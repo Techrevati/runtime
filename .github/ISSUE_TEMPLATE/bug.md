@@ -19,7 +19,7 @@ labels: bug
 ```
 
 **Environment**
-- techrevati-runtime version: `pip show techrevati-runtime | grep -i version`
+- Package version: `pip show techrevati-runtime | grep -i version`
 - Python: `python --version`
 - OS: <e.g. Linux 6.x / macOS 14 / Windows 11>
 

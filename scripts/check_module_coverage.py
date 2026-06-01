@@ -39,10 +39,11 @@ def main() -> int:
     # parse instead of touching the filesystem so this works in any CWD
     # that already contains a ``.coverage`` data file.
     result = subprocess.run(
-        ["coverage", "json", "-o", "-", "--quiet"],
+        [sys.executable, "-m", "coverage", "json", "-o", "-", "--quiet"],
         capture_output=True,
         text=True,
         check=False,
+        timeout=60,
     )
     if result.returncode != 0:
         print(f"coverage json failed:\n{result.stderr}", file=sys.stderr)

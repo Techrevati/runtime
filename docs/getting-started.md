@@ -1,5 +1,7 @@
 # Getting Started
 
+Author: Techrevati doo
+
 ## Install
 
 ```bash
@@ -8,22 +10,22 @@ pip install techrevati-runtime
 
 Requires Python 3.11+. No runtime dependencies.
 
-## The easy path: the Orchestrator
+## The easy path: AgentSession
 
-`Orchestrator` opens a session with lifecycle, usage tracking, retry
+`AgentSession` opens a session with lifecycle, usage tracking, retry
 classification, circuit-breaker protection, permission gating, and policy
 evaluation already wired in.
 
 ```python
 from techrevati.runtime import (
-    Orchestrator, UsageSnapshot, CircuitBreaker,
+    AgentSession, UsageSnapshot, CircuitBreaker,
     register_pricing, ModelPricing,
 )
 
-# Pricing is empty by default — register what you use.
+# Pricing is empty by default. Register what you use.
 register_pricing("model-a", ModelPricing(input_per_million=3.0, output_per_million=15.0))
 
-orch = Orchestrator(
+agent = AgentSession(
     role="writer",
     phase="draft",
     project_id=42,
@@ -31,7 +33,7 @@ orch = Orchestrator(
     budget_usd=10.0,
 )
 
-with orch.session() as session:
+with agent.session() as session:
     result, usage = session.run_turn(
         lambda: call_model(prompt),
         model="model-a",
@@ -47,7 +49,7 @@ exception, to `FAILED` with the error classified into an
 
 ## Primitives, standalone
 
-Every primitive works without the Orchestrator.
+Every primitive works without the session factory.
 
 ### Failure classification + retry recipe
 
@@ -69,8 +71,7 @@ except Exception as exc:
 ```
 
 `result.recovered_steps` is the list of recipe steps the caller should
-apply before retrying. The recipe registry is in
-[`retry_policy.py`](https://github.com/Techrevati/runtime/blob/main/src/techrevati/runtime/retry_policy.py).
+apply before retrying. The recipe registry is in `retry_policy.py`.
 
 ### Agent lifecycle
 

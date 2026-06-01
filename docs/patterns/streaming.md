@@ -12,8 +12,7 @@ and is rarely what callers actually want.
 
 ## When to use this
 
-- You have a provider client that exposes a token-by-token stream
-  (Anthropic SSE, OpenAI ChatCompletion streaming, etc.) and want to
+- You have a provider client that exposes a token-by-token stream and want to
   surface deltas to a UI before the full response lands.
 - You want to keep hook + governance + usage accounting wiring even
   when the model call is streaming. `arun_turn_stream` ticks the
@@ -50,7 +49,7 @@ session_factory = AgentSession(role="writer", phase="draft")
 async with session_factory.asession() as session:
     async for event in session.arun_turn_stream(
         chunks,
-        model="claude-opus-4-7",
+        model="your-model",
         usage=UsageSnapshot(input_tokens=1200, output_tokens=350),
     ):
         if event.type == "text_delta":
@@ -84,7 +83,7 @@ generator with `contextlib.aclosing`** so cleanup runs deterministically:
 from contextlib import aclosing
 
 async with aclosing(
-    session.arun_turn_stream(chunks, model="claude")
+    session.arun_turn_stream(chunks, model="your-model")
 ) as stream:
     async for event in stream:
         if should_stop(event):
@@ -111,6 +110,11 @@ If the upstream generator raises, the stream yields:
 1. `StreamEvent.error(error_type=..., message=...)`
 2. `StreamEvent.final(status="failed", detail=...)`
 3. then re-raises so the caller's `async for` propagates the exception.
+
+The stream payload uses a sanitized diagnostic such as
+`RuntimeError raised` for `message` and `detail`; the original exception
+is still re-raised to the caller, but its raw text is not copied into
+stream events.
 
 A `timeout=` keyword wraps the entire stream in `asyncio.timeout`.
 Timeout fires the same error+final sequence and raises
@@ -169,9 +173,7 @@ The runtime stays out of the per-chunk hot path on purpose.
   without thinking about ordering.** Both touch the same iteration
   counter, governance plane, and usage tracker.
 
-## Sources
+## See Also
 
-- OpenAI Agents SDK — *Streaming*: <https://openai.github.io/openai-agents-python/streaming/>
-- Anthropic — *Streaming messages*: <https://docs.anthropic.com/en/api/streaming>
-- PEP 525 — *Asynchronous Generators*: <https://peps.python.org/pep-0525/>
-- `contextlib.aclosing` — <https://docs.python.org/3/library/contextlib.html#contextlib.aclosing>
+- `docs/api/streaming.md`
+- `docs/patterns/hooks.md`

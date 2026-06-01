@@ -1,6 +1,9 @@
 """Tests for agent_patterns.agent_events"""
 
 import json
+from typing import Any, cast
+
+import pytest
 
 from techrevati.runtime.agent_events import (
     AgentEvent,
@@ -20,9 +23,53 @@ def test_event_names_serialize():
 
 
 def test_failure_classes_complete():
-    assert len(AgentFailureClass) == 10
+    assert len(AgentFailureClass) == 14
     assert AgentFailureClass.LLM_TIMEOUT.value == "llm_timeout"
+    assert AgentFailureClass.GOVERNANCE_BREACH.value == "governance_breach"
+    assert AgentFailureClass.PERMISSION_DENIED.value == "permission_denied"
+    assert AgentFailureClass.GUARDRAIL_VIOLATION.value == "guardrail_violation"
+    assert AgentFailureClass.CANCELLED.value == "cancelled"
     assert AgentFailureClass.UNKNOWN.value == "unknown"
+
+
+def test_cancelled_failure_uses_cancelled_status():
+    event = AgentEvent.failed(
+        "writer",
+        "draft",
+        AgentFailureClass.CANCELLED,
+        detail="user requested cancellation",
+    )
+
+    assert event.event == AgentEventName.AGENT_FAILED
+    assert event.status == AgentEventStatus.CANCELLED
+    assert event.failure_class == AgentFailureClass.CANCELLED
+    assert event.to_dict()["status"] == "cancelled"
+
+
+def test_cancelled_failure_rejects_failed_status():
+    with pytest.raises(ValueError, match="status cancelled"):
+        AgentEvent(
+            event=AgentEventName.AGENT_FAILED,
+            status=AgentEventStatus.FAILED,
+            failure_class=AgentFailureClass.CANCELLED,
+        )
+
+
+def test_cancelled_status_requires_cancelled_failure_class():
+    with pytest.raises(ValueError, match="failure_class cancelled"):
+        AgentEvent(
+            event=AgentEventName.AGENT_FAILED,
+            status=AgentEventStatus.CANCELLED,
+            failure_class=AgentFailureClass.LLM_ERROR,
+        )
+
+
+def test_failed_event_requires_failure_class():
+    with pytest.raises(ValueError, match="require failure_class"):
+        AgentEvent(
+            event=AgentEventName.AGENT_FAILED,
+            status=AgentEventStatus.FAILED,
+        )
 
 
 def test_started_constructor():
@@ -31,6 +78,19 @@ def test_started_constructor():
     assert e.status == AgentEventStatus.RUNNING
     assert e.role == "writer"
     assert e.phase == "draft"
+
+
+def test_ready_constructor_carries_metadata_only():
+    e = AgentEvent.ready(
+        "writer",
+        "draft",
+        detail="input received",
+        data={"kind": "human_input"},
+    )
+
+    assert e.event == AgentEventName.AGENT_READY
+    assert e.status == AgentEventStatus.READY
+    assert e.data == {"kind": "human_input"}
 
 
 def test_failed_includes_failure_class():
@@ -46,6 +106,52 @@ def test_completed_constructor():
     assert e.detail == "confidence=0.92"
 
 
+def test_blocked_constructor_carries_metadata_only():
+    e = AgentEvent.blocked(
+        "writer",
+        "draft",
+        detail="permission blocked tool call",
+        data={"tool": "write_db", "kind": "permission"},
+    )
+
+    assert e.event == AgentEventName.AGENT_BLOCKED
+    assert e.status == AgentEventStatus.BLOCKED
+    assert e.data == {"tool": "write_db", "kind": "permission"}
+
+
+def test_tool_event_constructors_do_not_capture_tool_output():
+    called = AgentEvent.tool_called("writer", "draft", "lookup")
+    completed = AgentEvent.tool_completed("writer", "draft", "lookup")
+
+    assert called.event == AgentEventName.AGENT_TOOL_CALLED
+    assert called.status == AgentEventStatus.RUNNING
+    assert called.data == {"tool": "lookup"}
+    assert completed.event == AgentEventName.AGENT_TOOL_COMPLETED
+    assert completed.status == AgentEventStatus.COMPLETED
+    assert completed.data == {"tool": "lookup"}
+
+
+def test_recovery_outcome_constructors_carry_structured_metadata():
+    data = {"scenario": "llm_timeout", "outcome": "recovered", "steps_taken": 1}
+    succeeded = AgentEvent.recovery_succeeded(
+        "writer", "draft", detail="llm_timeout: recovered", data=data
+    )
+    failed = AgentEvent.recovery_failed(
+        "writer", "draft", detail="llm_timeout: partial_recovery", data=data
+    )
+    escalated = AgentEvent.recovery_escalated(
+        "writer", "draft", detail="llm_timeout: escalation_required", data=data
+    )
+
+    assert succeeded.event == AgentEventName.RECOVERY_SUCCEEDED
+    assert succeeded.status == AgentEventStatus.RUNNING
+    assert failed.event == AgentEventName.RECOVERY_FAILED
+    assert failed.status == AgentEventStatus.FAILED
+    assert escalated.event == AgentEventName.RECOVERY_ESCALATED
+    assert escalated.status == AgentEventStatus.FAILED
+    assert succeeded.data == data
+
+
 def test_builder_pattern():
     e = (
         AgentEvent.started("writer", "draft")
@@ -58,6 +164,57 @@ def test_builder_pattern():
     assert e.detail == "file not found"
     assert e.data == {"file": "main.py"}
     assert e.project_id == 42
+
+
+def test_event_rejects_invalid_shape():
+    with pytest.raises(ValueError, match="valid AgentEventName"):
+        AgentEvent(event=cast(Any, "bad.event"), status=AgentEventStatus.RUNNING)
+    with pytest.raises(ValueError, match="valid AgentEventStatus"):
+        AgentEvent(event=AgentEventName.AGENT_STARTED, status=cast(Any, "bad"))
+    with pytest.raises(ValueError, match="role"):
+        AgentEvent.started("", "draft")
+    with pytest.raises(ValueError, match="phase"):
+        AgentEvent.started("writer", " ")
+    with pytest.raises(TypeError, match="project_id"):
+        AgentEvent.started("writer", "draft").with_project(cast(Any, True))
+    with pytest.raises(ValueError, match="project_id"):
+        AgentEvent.started("writer", "draft").with_project(-1)
+    with pytest.raises(TypeError, match="failure_class"):
+        AgentEvent.started("writer", "draft").with_failure_class(cast(Any, object()))
+    with pytest.raises(TypeError, match="data"):
+        AgentEvent.started("writer", "draft").with_data(cast(Any, []))
+    with pytest.raises(TypeError, match="data keys"):
+        AgentEvent.started("writer", "draft").with_data(cast(Any, {1: "bad"}))
+    with pytest.raises(ValueError, match="emitted_at"):
+        AgentEvent(
+            event=AgentEventName.AGENT_STARTED,
+            status=AgentEventStatus.RUNNING,
+            emitted_at="",
+        )
+
+
+def test_event_copies_data_on_builders_and_serialization():
+    data: dict[str, Any] = {"file": "main.py", "meta": {"tags": ["initial"]}}
+    e = AgentEvent.started("writer", "draft").with_data(data)
+    data["later"] = True
+    data["meta"]["tags"].append("changed")
+    assert e.data == {"file": "main.py", "meta": {"tags": ["initial"]}}
+
+    d = e.to_dict()
+    d["data"]["extra"] = True
+    d["data"]["meta"]["tags"].append("serialized-change")
+    assert e.data == {"file": "main.py", "meta": {"tags": ["initial"]}}
+
+
+def test_event_constructor_data_is_deep_copied():
+    data: dict[str, Any] = {"meta": {"attempts": [1]}}
+    e = AgentEvent.ready("writer", "draft", data=data)
+    data["meta"]["attempts"].append(2)
+
+    assert e.data == {"meta": {"attempts": [1]}}
+
+    restored = AgentEvent.from_dict(e.to_dict())
+    assert restored.data == {"meta": {"attempts": [1]}}
 
 
 def test_to_dict_backward_compat():
@@ -155,6 +312,27 @@ def test_from_dict_all_optional_fields():
     assert e.data == {"retry_after_sec": 120}
 
 
+def test_from_dict_rejects_inconsistent_cancelled_failure_status():
+    with pytest.raises(ValueError, match="status cancelled"):
+        AgentEvent.from_dict(
+            {
+                "event": "agent.failed",
+                "status": "failed",
+                "failure_class": "cancelled",
+            }
+        )
+
+
+def test_from_dict_rejects_failed_event_without_failure_class():
+    with pytest.raises(ValueError, match="require failure_class"):
+        AgentEvent.from_dict(
+            {
+                "event": "agent.failed",
+                "status": "failed",
+            }
+        )
+
+
 def test_from_dict_minimal():
     """Test from_dict with only required fields."""
     d = {
@@ -168,6 +346,51 @@ def test_from_dict_minimal():
     assert e.role is None
     assert e.phase is None
     assert e.failure_class is None
+
+
+def test_from_dict_rejects_invalid_payload_shape():
+    with pytest.raises(TypeError, match="data must be a dict"):
+        AgentEvent.from_dict(cast(Any, []))
+    with pytest.raises(TypeError, match="JSON payload"):
+        AgentEvent.from_json("[1, 2, 3]")
+    with pytest.raises(TypeError, match="project_id"):
+        AgentEvent.from_dict(
+            {"event": "agent.started", "status": "running", "project_id": True}
+        )
+    with pytest.raises(TypeError, match="data"):
+        AgentEvent.from_dict(
+            {"event": "agent.started", "status": "running", "data": []}
+        )
+
+
+def test_governance_event_constructors_validate_payload():
+    event = AgentEvent.governance_breach(
+        "r",
+        "p",
+        limit_name="max_iterations",
+        observed=3.0,
+        ceiling=2.0,
+        scope="session",
+    )
+    assert event.failure_class == AgentFailureClass.GOVERNANCE_BREACH
+    with pytest.raises(ValueError, match="observed"):
+        AgentEvent.governance_breach(
+            "r",
+            "p",
+            limit_name="max_cost",
+            observed=float("nan"),
+            ceiling=1.0,
+            scope="session",
+        )
+    with pytest.raises(ValueError, match="limit_name"):
+        AgentEvent.governance_alert(
+            "r",
+            "p",
+            limit_name="",
+            observed=2.0,
+            ceiling=1.0,
+            scope="session",
+        )
 
 
 def test_to_otel_attributes_basic():
@@ -191,6 +414,15 @@ def test_to_otel_attributes_with_failure():
     assert attrs["agent.event.status"] == "failed"
     assert attrs["agent.failure_class"] == "llm_timeout"
     assert attrs["agent.detail"] == "30 second timeout"
+
+
+def test_to_otel_attributes_with_cancelled_failure():
+    """Cancelled terminal events remain typed without claiming failure status."""
+    e = AgentEvent.failed("writer", "release", AgentFailureClass.CANCELLED)
+    attrs = e.to_otel_attributes()
+    assert attrs["agent.event"] == "agent.failed"
+    assert attrs["agent.event.status"] == "cancelled"
+    assert attrs["agent.failure_class"] == "cancelled"
 
 
 def test_to_otel_attributes_with_project():

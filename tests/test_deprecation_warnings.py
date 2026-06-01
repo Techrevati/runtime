@@ -1,4 +1,4 @@
-"""Verify the 0.2.x → 0.3.0 deprecation surface."""
+"""Verify the 0.3.x compatibility deprecation surface."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ def test_orchestrator_alias_emits_deprecation_warning_on_first_instantiation() -
     message = str(deprecations[0].message)
     assert "Orchestrator" in message
     assert "AgentSession" in message
-    assert "0.3.0" in message
+    assert "0.4.0" in message
 
 
 def test_orchestrator_alias_only_warns_once_per_process() -> None:

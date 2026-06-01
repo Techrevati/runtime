@@ -26,6 +26,13 @@ if tracker.is_over_budget(budget_usd=10.0):
     raise RuntimeError("budget exceeded")
 ```
 
+When `UsageLimits` are configured on an `AgentSession`, token, tool-call,
+and cost-limit overruns raise `UsageLimitExceededError` and emit an
+`agent.failed` event with `failure_class="rate_limit"` plus limit metadata.
+`budget_usd` overruns use the same `rate_limit` failure class; with
+`enforce_budget=True`, the terminal session failure is classified the same
+way when `BudgetExceededError` escapes the context manager.
+
 ## Pricing file format
 
 ```json
@@ -47,6 +54,8 @@ Both `register_pricing` and `load_pricing_from_file` are thread-safe. Subsequent
 ## Model name resolution
 
 `UsageTracker` resolves model names case-insensitively, with **longest-prefix match** as a fallback. That means a dated variant like `model-a-20260514` resolves to `model-a` if that's the most specific registered entry. Unknown models fall back to zero pricing (treated as free).
+
+The same resolution is exposed publicly as `resolve_pricing(model) -> ModelPricing` for callers that need a model's pricing directly (e.g. cost pre-flight). It uses the same exact-then-longest-prefix logic and returns `ModelPricing(0.0, 0.0)` for unknown models — it never raises.
 
 ## API
 
@@ -82,6 +91,8 @@ class UsageTracker:
 # Module functions
 register_pricing(model: str, pricing: ModelPricing) -> None
 load_pricing_from_file(path: str | Path) -> None
+resolve_pricing(model: str) -> ModelPricing  # exact-then-prefix; zero-fallback
+has_pricing(model: str) -> bool
 ```
 
 ## When not to use it

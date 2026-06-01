@@ -4,7 +4,7 @@ techrevati.runtime — Runtime primitives for multi-step LLM agent loops.
 Reliability, cost tracking, and lifecycle for multi-step agent execution.
 Zero runtime dependencies.
 
->>> from techrevati.runtime import Orchestrator, UsageSnapshot
+>>> from techrevati.runtime import AgentSession, UsageSnapshot
 >>> from techrevati.runtime import classify_exception, attempt_recovery, RecoveryContext
 >>> from techrevati.runtime import CircuitBreaker, PolicyEngine
 """
@@ -172,6 +172,7 @@ from techrevati.runtime.usage_tracking import (
     has_pricing,
     load_pricing_from_file,
     register_pricing,
+    resolve_pricing,
 )
 
 __all__ = [
@@ -291,5 +292,6 @@ __all__ = [
     "next_provider",
     "recipe_for",
     "register_pricing",
+    "resolve_pricing",
     "smaller_context_budget",
 ]

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -38,6 +38,33 @@ def test_hook_context_defaults() -> None:
     assert ctx.tool == ""
     assert ctx.args == {}
     assert ctx.extra == {}
+
+
+def test_hook_context_rejects_invalid_shape() -> None:
+    with pytest.raises(ValueError, match="role"):
+        HookContext(role="", phase="draft")
+    with pytest.raises(ValueError, match="phase"):
+        HookContext(role="writer", phase=" ")
+    with pytest.raises(TypeError, match="model"):
+        HookContext(role="writer", phase="draft", model=cast(Any, 123))
+    with pytest.raises(ValueError, match="tool"):
+        HookContext(role="writer", phase="draft", tool=" ")
+    with pytest.raises(TypeError, match="args"):
+        HookContext(role="writer", phase="draft", args=cast(Any, []))
+    with pytest.raises(TypeError, match="extra keys"):
+        HookContext(role="writer", phase="draft", extra=cast(Any, {1: "bad"}))
+
+
+def test_hook_context_preserves_mutable_arg_reference() -> None:
+    args: dict[str, Any] = {"x": 1}
+    extra: dict[str, Any] = {"trace": "abc"}
+    ctx = HookContext(role="writer", phase="draft", args=args, extra=extra)
+
+    ctx.args["mutated"] = True
+    ctx.extra["seen"] = True
+
+    assert args == {"x": 1, "mutated": True}
+    assert extra == {"trace": "abc", "seen": True}
 
 
 def test_hook_context_mutable_prompt_propagates_via_closure() -> None:
@@ -217,6 +244,17 @@ def test_redact_pii_rejects_empty_patterns() -> None:
         RedactPIIHook(patterns=[])
 
 
+def test_redact_pii_rejects_invalid_config() -> None:
+    with pytest.raises(TypeError, match="sequence"):
+        RedactPIIHook(patterns="secret")  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="empty regexes"):
+        RedactPIIHook(patterns=[""])
+    with pytest.raises(TypeError, match="replacement"):
+        RedactPIIHook(replacement=object())  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="name"):
+        RedactPIIHook(name="")
+
+
 def test_redact_pii_after_model_redacts_output() -> None:
     h = RedactPIIHook(patterns=[r"\d{3}-\d{2}-\d{4}"])
     ctx = HookContext(role="r", phase="p")
@@ -232,7 +270,11 @@ def test_redact_pii_after_model_redacts_output() -> None:
 def test_log_model_io_hook_emits_input_and_output(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    h = LogModelIOHook(level=logging.DEBUG)
+    h = LogModelIOHook(
+        level=logging.DEBUG,
+        include_prompt=True,
+        include_result=True,
+    )
     ctx = HookContext(role="r", phase="p", model="m", prompt="hi")
     with caplog.at_level(logging.DEBUG, logger="techrevati.runtime.hooks"):
         h.before_model(ctx)
@@ -243,8 +285,31 @@ def test_log_model_io_hook_emits_input_and_output(
     assert "model_output" in messages
 
 
+def test_log_model_io_hook_defaults_to_metadata_only(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    h = LogModelIOHook(level=logging.DEBUG)
+    ctx = HookContext(role="r", phase="p", model="m", prompt="secret prompt")
+    with caplog.at_level(logging.DEBUG, logger="techrevati.runtime.hooks"):
+        h.before_model(ctx)
+        result = h.after_model(ctx, "secret result")
+
+    assert result == "secret result"
+    input_record = next(
+        record for record in caplog.records if record.message == "model_input"
+    )
+    output_record = next(
+        record for record in caplog.records if record.message == "model_output"
+    )
+    assert input_record.role == "r"  # type: ignore[attr-defined]
+    assert input_record.prompt_logged is False  # type: ignore[attr-defined]
+    assert not hasattr(input_record, "prompt")
+    assert output_record.result_logged is False  # type: ignore[attr-defined]
+    assert not hasattr(output_record, "result")
+
+
 def test_log_model_io_hook_truncates(caplog: pytest.LogCaptureFixture) -> None:
-    h = LogModelIOHook(max_chars=10)
+    h = LogModelIOHook(max_chars=10, include_prompt=True)
     ctx = HookContext(role="r", phase="p", model="m", prompt="x" * 50)
     with caplog.at_level(logging.INFO, logger="techrevati.runtime.hooks"):
         h.before_model(ctx)
@@ -257,6 +322,19 @@ def test_log_model_io_hook_rejects_zero_max_chars() -> None:
         LogModelIOHook(max_chars=0)
 
 
+def test_log_model_io_hook_rejects_invalid_config() -> None:
+    with pytest.raises(TypeError, match="max_chars"):
+        LogModelIOHook(max_chars=True)  # type: ignore[arg-type]
+    with pytest.raises(TypeError, match="include_prompt"):
+        LogModelIOHook(include_prompt="yes")  # type: ignore[arg-type]
+    with pytest.raises(TypeError, match="level"):
+        LogModelIOHook(level="info")  # type: ignore[arg-type]
+    with pytest.raises(TypeError, match="logger"):
+        LogModelIOHook(logger=object())  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="name"):
+        LogModelIOHook(name="")
+
+
 def test_log_model_io_hook_respects_include_toggles(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
@@ -265,7 +343,12 @@ def test_log_model_io_hook_respects_include_toggles(
     with caplog.at_level(logging.DEBUG, logger="techrevati.runtime.hooks"):
         h.before_model(ctx)
         h.after_model(ctx, "out")
-    assert all(r.message not in {"model_input", "model_output"} for r in caplog.records)
+    assert {record.message for record in caplog.records} == {
+        "model_input",
+        "model_output",
+    }
+    assert all(not hasattr(record, "prompt") for record in caplog.records)
+    assert all(not hasattr(record, "result") for record in caplog.records)
 
 
 # ---------------------------------------------------------------------------
@@ -294,11 +377,49 @@ def test_token_budget_hook_rejects_non_positive_limit() -> None:
         TokenBudgetCheckHook(token_limit=0)
 
 
+def test_token_budget_hook_rejects_invalid_config() -> None:
+    with pytest.raises(TypeError, match="token_limit"):
+        TokenBudgetCheckHook(token_limit=True)  # type: ignore[arg-type]
+    with pytest.raises(TypeError, match="token_limit"):
+        TokenBudgetCheckHook(token_limit=1.5)  # type: ignore[arg-type]
+    with pytest.raises(TypeError, match="estimator"):
+        TokenBudgetCheckHook(token_limit=10, estimator=object())  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="name"):
+        TokenBudgetCheckHook(token_limit=10, name="")
+
+
 def test_token_budget_hook_accepts_custom_estimator() -> None:
     h = TokenBudgetCheckHook(token_limit=5, estimator=lambda _: 7)
     ctx = HookContext(role="r", phase="p", model="m", prompt="anything")
     with pytest.raises(HookBudgetExceededError):
         h.before_model(ctx)
+
+
+@pytest.mark.parametrize(
+    ("estimate", "error_type"),
+    [
+        (-1, ValueError),
+        (float("inf"), ValueError),
+        (float("nan"), ValueError),
+        ("5", TypeError),
+        (True, TypeError),
+    ],
+)
+def test_token_budget_hook_rejects_invalid_estimator_results(
+    estimate: Any, error_type: type[Exception]
+) -> None:
+    h = TokenBudgetCheckHook(token_limit=10, estimator=lambda _: estimate)
+    ctx = HookContext(role="r", phase="p", model="m", prompt="anything")
+    with pytest.raises(error_type, match="finite non-negative"):
+        h.before_model(ctx)
+
+
+def test_token_budget_hook_rounds_fractional_estimates_up() -> None:
+    h = TokenBudgetCheckHook(token_limit=2, estimator=lambda _: 2.1)
+    ctx = HookContext(role="r", phase="p", model="m", prompt="anything")
+    with pytest.raises(HookBudgetExceededError) as ei:
+        h.before_model(ctx)
+    assert ei.value.estimated == 3
 
 
 # ---------------------------------------------------------------------------

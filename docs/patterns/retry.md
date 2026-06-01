@@ -43,6 +43,19 @@ except Exception as exc:
 
 Look up a recipe with `recipe_for(scenario)`. Modify the registry by editing the module-level `_RECIPES` dict at startup if your fault model is different.
 
+## Classification boundary
+
+`classify_exception()` first checks well-known exception types, including
+timeouts, connection errors, JSON decode errors, and local `OSError` failures.
+Wrapped causes are inspected too, so a `RuntimeError` raised from a disk,
+filesystem, or dependency I/O error still maps to `DEPENDENCY_TIMEOUT` instead
+of being reported as an LLM failure.
+
+String matching covers common provider and dependency messages. Database,
+SQLite, disk, filesystem, read-only, and no-space-left errors are classified as
+dependency failures so terminal audit events can distinguish runtime
+infrastructure problems from model failures.
+
 ## Escalation policies
 
 - `EscalationPolicy.ALERT_HUMAN`

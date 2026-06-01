@@ -11,8 +11,7 @@ This is content gating — orthogonal to ``PermissionEnforcer`` which
 answers "is this role allowed to use this tool at all?". Permissions
 are role × tool; guardrails are value × context.
 
-Inspired by the OpenAI Agents SDK guardrail model. Output checks are
-mandatory; input/pre-call checks are optional and default to
+Output checks are mandatory; input/pre-call checks are optional and default to
 ``GuardrailOutcome(allowed=True)`` if a guardrail does not implement
 them, matching the structural Protocol pattern.
 """
@@ -22,10 +21,11 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass
-from typing import Any, Literal, Protocol, runtime_checkable
+from typing import Any, Literal, Protocol, cast, runtime_checkable
 
 logger = logging.getLogger(__name__)
 _ASYNC_IN_SYNC_WARNED: set[int] = set()
+_VALID_GUARDRAIL_STAGES = frozenset(("pre", "post"))
 
 
 def _maybe_warn_async_in_sync(g: object) -> None:
@@ -43,6 +43,54 @@ def _maybe_warn_async_in_sync(g: object) -> None:
 GuardrailStage = Literal["pre", "post"]
 
 
+def _validate_name(value: str, *, field_name: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{field_name} must be a non-empty string")
+    return value.strip()
+
+
+def _validate_stage(stage: str) -> GuardrailStage:
+    if stage not in _VALID_GUARDRAIL_STAGES:
+        raise ValueError("guardrail stage must be one of: pre, post")
+    return cast(GuardrailStage, stage)
+
+
+def _normalize_stages(stages: tuple[GuardrailStage, ...]) -> frozenset[GuardrailStage]:
+    if not stages:
+        raise ValueError("guardrail stages must not be empty")
+    return frozenset(_validate_stage(stage) for stage in stages)
+
+
+def _normalize_patterns(patterns: list[str]) -> tuple[str, ...]:
+    if not patterns:
+        raise ValueError("PatternGuardrail requires at least one deny pattern")
+    normalized: list[str] = []
+    for pattern in patterns:
+        if not isinstance(pattern, str) or pattern == "":
+            raise ValueError("deny patterns must be non-empty strings")
+        normalized.append(pattern)
+    return tuple(normalized)
+
+
+def _validate_outcome(outcome: GuardrailOutcome) -> GuardrailOutcome:
+    if not isinstance(outcome, GuardrailOutcome):
+        raise TypeError("guardrail checks must return GuardrailOutcome")
+    return outcome
+
+
+def _normalize_violations(
+    violations: tuple[GuardrailViolation, ...],
+) -> tuple[GuardrailViolation, ...]:
+    if not violations:
+        raise ValueError("GuardrailViolatedError requires at least one violation")
+    normalized: list[GuardrailViolation] = []
+    for violation in violations:
+        if not isinstance(violation, GuardrailViolation):
+            raise TypeError("violations must contain GuardrailViolation instances")
+        normalized.append(violation)
+    return tuple(normalized)
+
+
 @dataclass(frozen=True)
 class GuardrailOutcome:
     """Result of a guardrail check.
@@ -53,6 +101,12 @@ class GuardrailOutcome:
 
     allowed: bool
     reason: str | None = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.allowed, bool):
+            raise ValueError("allowed must be a bool")
+        if self.reason is not None and not isinstance(self.reason, str):
+            raise ValueError("reason must be a string or None")
 
 
 @runtime_checkable
@@ -114,6 +168,14 @@ class GuardrailViolation:
     guardrail: str
     stage: GuardrailStage
 
+    def __post_init__(self) -> None:
+        if not isinstance(self.outcome, GuardrailOutcome):
+            raise ValueError("outcome must be a GuardrailOutcome")
+        object.__setattr__(
+            self, "guardrail", _validate_name(self.guardrail, field_name="guardrail")
+        )
+        object.__setattr__(self, "stage", _validate_stage(self.stage))
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "outcome": {"allowed": self.outcome.allowed, "reason": self.outcome.reason},
@@ -151,12 +213,9 @@ class GuardrailViolatedError(Exception):
                 ),
             )
 
-        if not violations:
-            raise ValueError("GuardrailViolatedError requires at least one violation")
-
-        self.violations: tuple[GuardrailViolation, ...] = tuple(violations)
-        self.role = role
-        self.tool = tool
+        self.violations = _normalize_violations(violations)
+        self.role = _validate_name(role, field_name="role")
+        self.tool = _validate_name(tool, field_name="tool")
 
         # Mirror the first violation onto top-level attributes for
         # 0.2.0-era callers that read `error.outcome` / `error.guardrail`
@@ -170,13 +229,13 @@ class GuardrailViolatedError(Exception):
             reason = first.outcome.reason or "no reason provided"
             message = (
                 f"{first.stage} guardrail '{first.guardrail}' blocked tool "
-                f"'{tool}' for role '{role}': {reason}"
+                f"'{self.tool}' for role '{self.role}': {reason}"
             )
         else:
             names = ", ".join(v.guardrail for v in self.violations)
             message = (
                 f"{first.stage} stage: {len(self.violations)} guardrails "
-                f"blocked tool '{tool}' for role '{role}': {names}"
+                f"blocked tool '{self.tool}' for role '{self.role}': {names}"
             )
         super().__init__(message)
 
@@ -192,12 +251,14 @@ def run_pre_checks(
     ``AsyncGuardrail`` instances are skipped with a one-shot logger warning
     (sync path has no event loop to await on).
     """
+    role = _validate_name(role, field_name="role")
+    tool = _validate_name(tool, field_name="tool")
     violations: list[GuardrailViolation] = []
     for g in guardrails:
         if isinstance(g, AsyncGuardrail) and not isinstance(g, Guardrail):
             _maybe_warn_async_in_sync(g)
             continue
-        outcome = g.check_pre(role=role, tool=tool)
+        outcome = _validate_outcome(g.check_pre(role=role, tool=tool))
         if not outcome.allowed:
             violations.append(
                 GuardrailViolation(
@@ -221,12 +282,14 @@ def run_post_checks(
 
     ``AsyncGuardrail`` instances are skipped with a one-shot logger warning.
     """
+    role = _validate_name(role, field_name="role")
+    tool = _validate_name(tool, field_name="tool")
     violations: list[GuardrailViolation] = []
     for g in guardrails:
         if isinstance(g, AsyncGuardrail) and not isinstance(g, Guardrail):
             _maybe_warn_async_in_sync(g)
             continue
-        outcome = g.check_post(value, role=role, tool=tool)
+        outcome = _validate_outcome(g.check_post(value, role=role, tool=tool))
         if not outcome.allowed:
             violations.append(
                 GuardrailViolation(
@@ -246,12 +309,14 @@ async def arun_pre_checks(
     tool: str,
 ) -> None:
     """Run every pre-call guardrail; await async ones, call sync ones inline."""
+    role = _validate_name(role, field_name="role")
+    tool = _validate_name(tool, field_name="tool")
     violations: list[GuardrailViolation] = []
     for g in guardrails:
         if isinstance(g, AsyncGuardrail):
-            outcome = await g.acheck_pre(role=role, tool=tool)
+            outcome = _validate_outcome(await g.acheck_pre(role=role, tool=tool))
         else:
-            outcome = g.check_pre(role=role, tool=tool)
+            outcome = _validate_outcome(g.check_pre(role=role, tool=tool))
         if not outcome.allowed:
             violations.append(
                 GuardrailViolation(
@@ -272,12 +337,16 @@ async def arun_post_checks(
     tool: str,
 ) -> None:
     """Run every post-call guardrail; await async ones, call sync ones inline."""
+    role = _validate_name(role, field_name="role")
+    tool = _validate_name(tool, field_name="tool")
     violations: list[GuardrailViolation] = []
     for g in guardrails:
         if isinstance(g, AsyncGuardrail):
-            outcome = await g.acheck_post(value, role=role, tool=tool)
+            outcome = _validate_outcome(
+                await g.acheck_post(value, role=role, tool=tool)
+            )
         else:
-            outcome = g.check_post(value, role=role, tool=tool)
+            outcome = _validate_outcome(g.check_post(value, role=role, tool=tool))
         if not outcome.allowed:
             violations.append(
                 GuardrailViolation(
@@ -323,16 +392,15 @@ class PatternGuardrail:
         name: str = "pattern",
         flags: int = re.IGNORECASE,
     ) -> None:
-        if not deny_patterns:
-            raise ValueError("PatternGuardrail requires at least one deny pattern")
-        self.name = name
-        self._stages = frozenset(stages)
+        self.name = _validate_name(name, field_name="name")
+        self._stages = _normalize_stages(stages)
+        patterns = _normalize_patterns(deny_patterns)
         # One compiled regex via alternation; groups stripped to keep it cheap.
         self._regex = re.compile(
-            "|".join(f"(?:{p})" for p in deny_patterns),
+            "|".join(f"(?:{p})" for p in patterns),
             flags=flags,
         )
-        self._deny_patterns = tuple(deny_patterns)
+        self._deny_patterns = patterns
 
     @property
     def deny_patterns(self) -> tuple[str, ...]:

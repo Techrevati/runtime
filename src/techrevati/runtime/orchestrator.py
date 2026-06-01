@@ -4,14 +4,14 @@ Orchestrator — single execution loop wiring the runtime primitives together.
 Pairs an agent session with lifecycle tracking, usage accounting,
 circuit-breaker protection, automatic failure classification, permission
 gating, and policy evaluation. Use the primitives standalone or use
-``Orchestrator.session()`` (sync) / ``Orchestrator.asession()`` (async)
+``AgentSession.session()`` (sync) / ``AgentSession.asession()`` (async)
 to get all of them wired in.
 
 Example (sync):
-    from techrevati.runtime import Orchestrator, UsageSnapshot
+    from techrevati.runtime import AgentSession, UsageSnapshot
 
-    orch = Orchestrator(role="writer", phase="draft", project_id=1)
-    with orch.session() as session:
+    agent = AgentSession(role="writer", phase="draft", project_id=1)
+    with agent.session() as session:
         text, usage = session.run_turn(
             lambda: call_model(prompt),
             model="model-a",
@@ -20,7 +20,7 @@ Example (sync):
     print(session.summary())
 
 Example (async):
-    async with orch.asession() as session:
+    async with agent.asession() as session:
         text, usage = await session.arun_turn(
             lambda: acall_model(prompt),
             model="model-a",
@@ -34,6 +34,7 @@ import asyncio
 import concurrent.futures
 import json
 import logging
+import math
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterator, Sequence
 from contextlib import asynccontextmanager, contextmanager
@@ -56,6 +57,7 @@ from techrevati.runtime.governance import GovernanceBreachError, GovernancePlane
 from techrevati.runtime.guardrails import (
     AsyncGuardrail,
     Guardrail,
+    GuardrailViolatedError,
     arun_post_checks,
     arun_pre_checks,
     run_post_checks,
@@ -67,10 +69,12 @@ from techrevati.runtime.hooks import (
     HookLike,
     arun_after_model,
     arun_after_tool,
+    arun_before_handoff,
     arun_before_model,
     arun_before_tool,
     run_after_model,
     run_after_tool,
+    run_before_handoff,
     run_before_model,
     run_before_tool,
 )
@@ -85,10 +89,15 @@ from techrevati.runtime.quality_gate import (
     QualityGateOutcome,
     QualityLevel,
 )
-from techrevati.runtime.rate_limit import AsyncRateLimiter, RateLimiter
+from techrevati.runtime.rate_limit import (
+    AsyncRateLimiter,
+    RateLimiter,
+    RateLimitExceededError,
+)
 from techrevati.runtime.retry_policy import (
     FailureScenario,
     RecoveryContext,
+    RecoveryResult,
     aattempt_recovery,
     attempt_recovery,
     classify_exception,
@@ -103,6 +112,7 @@ from techrevati.runtime.sinks import (
 from techrevati.runtime.streaming import StreamEvent
 from techrevati.runtime.usage_tracking import (
     BudgetExceededError,
+    UsageLimitExceededError,
     UsageLimits,
     UsageSnapshot,
     UsageTracker,
@@ -112,6 +122,18 @@ logger = logging.getLogger("techrevati.runtime.orchestrator")
 logger.addHandler(logging.NullHandler())
 
 T = TypeVar("T")
+_PROMPT_REJECTION_MARKERS = (
+    "prompt rejected",
+    "prompt rejection",
+    "content policy",
+    "content filter",
+    "safety policy",
+    "blocked by safety",
+    "moderation",
+    "jailbreak",
+    "unsafe prompt",
+    "disallowed content",
+)
 
 
 class PermissionDeniedError(Exception):
@@ -138,8 +160,7 @@ class TurnTimeoutError(Exception):
 class MaxIterationsExceededError(Exception):
     """Raised when a session attempts more turns than ``max_iterations`` allows.
 
-    Default cap of 25 matches the OpenAI Agents SDK convention and prevents
-    runaway agent loops — stopping conditions are an industry
+    Default cap of 25 prevents runaway agent loops; stopping conditions are a
     production-readiness requirement.
     """
 
@@ -151,6 +172,57 @@ class MaxIterationsExceededError(Exception):
         )
 
 
+def _validate_non_empty_str(field_name: str, value: str) -> str:
+    if not isinstance(value, str):
+        raise TypeError(f"{field_name} must be a string")
+    if not value.strip():
+        raise ValueError(f"{field_name} must not be empty")
+    return value
+
+
+def _validate_optional_non_empty_str(field_name: str, value: str | None) -> str | None:
+    if value is None:
+        return None
+    return _validate_non_empty_str(field_name, value)
+
+
+def _validate_project_id(value: int | None) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError("project_id must be an integer or None")
+    if value < 0:
+        raise ValueError("project_id must be non-negative")
+    return value
+
+
+def _validate_budget_usd(value: float | None) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise TypeError("budget_usd must be a number or None")
+    budget = float(value)
+    if not math.isfinite(budget):
+        raise ValueError("budget_usd must be finite")
+    if budget < 0:
+        raise ValueError("budget_usd must be non-negative")
+    return budget
+
+
+def _validate_bool(field_name: str, value: bool) -> bool:
+    if not isinstance(value, bool):
+        raise TypeError(f"{field_name} must be a bool")
+    return value
+
+
+def _validate_max_iterations(value: int) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError("max_iterations must be an integer")
+    if value < 0:
+        raise ValueError("max_iterations must be non-negative")
+    return value
+
+
 def _record_recovery_event(session: OrchestrationSession, exc: Exception) -> None:
     """Classify exc and emit a recovery-attempted event on the session.
 
@@ -158,13 +230,7 @@ def _record_recovery_event(session: OrchestrationSession, exc: Exception) -> Non
     """
     scenario = classify_exception(exc)
     recovery_result = attempt_recovery(scenario, session.recovery)
-    session._emit_event(
-        AgentEvent.recovery_attempted(
-            session.role,
-            session.phase,
-            detail=f"{scenario.value}: {recovery_result.outcome}",
-        )
-    )
+    _emit_recovery_events(session, scenario, recovery_result)
     logger.info(
         "recovery_attempted",
         extra={
@@ -183,13 +249,7 @@ async def _arecord_recovery_event(
     """Async sibling of _record_recovery_event."""
     scenario = classify_exception(exc)
     recovery_result = await aattempt_recovery(scenario, session.recovery)
-    session._emit_event(
-        AgentEvent.recovery_attempted(
-            session.role,
-            session.phase,
-            detail=f"{scenario.value}: {recovery_result.outcome}",
-        )
-    )
+    _emit_recovery_events(session, scenario, recovery_result)
     logger.info(
         "recovery_attempted",
         extra={
@@ -202,12 +262,42 @@ async def _arecord_recovery_event(
     )
 
 
+def _emit_recovery_events(
+    session: _SessionBase,
+    scenario: FailureScenario,
+    recovery_result: RecoveryResult,
+) -> None:
+    detail = f"{scenario.value}: {recovery_result.outcome}"
+    session._emit_event(
+        AgentEvent.recovery_attempted(
+            session.role,
+            session.phase,
+            detail=detail,
+        )
+    )
+    data = recovery_result.to_dict()
+    data["scenario"] = scenario.value
+    if recovery_result.outcome == "recovered":
+        event = AgentEvent.recovery_succeeded(
+            session.role, session.phase, detail=detail, data=data
+        )
+    elif recovery_result.outcome == "partial_recovery":
+        event = AgentEvent.recovery_failed(
+            session.role, session.phase, detail=detail, data=data
+        )
+    else:
+        event = AgentEvent.recovery_escalated(
+            session.role, session.phase, detail=detail, data=data
+        )
+    session._emit_event(event)
+
+
 @dataclass
 class AgentSession:
     """Factory for sessions. Holds shared, long-lived components.
 
     Components are optional; the simplest invocation is
-    ``Orchestrator(role=..., phase=...)``. Provide ``circuit_breaker``
+    ``AgentSession(role=..., phase=...)``. Provide ``circuit_breaker``
     for sync sessions, ``async_circuit_breaker`` for async sessions, or
     both — they are independent.
 
@@ -240,6 +330,19 @@ class AgentSession:
     governance: GovernancePlane | None = None
     hooks: list[HookLike] = field(default_factory=list)
 
+    def __post_init__(self) -> None:
+        self.role = _validate_non_empty_str("role", self.role)
+        self.phase = _validate_non_empty_str("phase", self.phase)
+        self.project_id = _validate_project_id(self.project_id)
+        self.budget_usd = _validate_budget_usd(self.budget_usd)
+        self.enforce_budget = _validate_bool("enforce_budget", self.enforce_budget)
+        self.max_iterations = _validate_max_iterations(self.max_iterations)
+
+    def _governance_for_session(self) -> GovernancePlane | None:
+        if self.governance is None:
+            return None
+        return self.governance.for_session()
+
     @contextmanager
     def session(
         self, *, thread_id: str | None = None
@@ -253,6 +356,7 @@ class AgentSession:
         the session writes a checkpoint after each turn and an
         ``idempotency_key`` on ``run_turn`` makes that turn replay-safe.
         """
+        thread_id = _validate_optional_non_empty_str("thread_id", thread_id)
         worker = self._start_worker()
         session = OrchestrationSession(
             worker=worker,
@@ -277,9 +381,10 @@ class AgentSession:
             provider_router=self.provider_router,
             rate_limiter=self.rate_limiter,
             usage_limits=self.usage_limits,
-            governance=self.governance,
+            governance=self._governance_for_session(),
             hooks=list(self.hooks),
         )
+        session._emit_event(AgentEvent.started(self.role, self.phase))
 
         try:
             yield session
@@ -287,12 +392,14 @@ class AgentSession:
             # Terminal — record FAILED with governance class, do NOT recover.
             session.fail(
                 detail="governance breach",
-                failure_class=AgentFailureClass.DEPENDENCY_FAILED,
+                failure_class=AgentFailureClass.GOVERNANCE_BREACH,
             )
             raise
         except Exception as exc:
-            scenario = classify_exception(exc)
-            session.fail(detail=str(exc), failure_class=_scenario_to_class(scenario))
+            session.fail(
+                detail=_safe_exception_detail(exc),
+                failure_class=_failure_class_for_exception(exc),
+            )
             raise
         else:
             if not worker.is_terminal:
@@ -312,6 +419,7 @@ class AgentSession:
         applies; pair with ``arun_turn(..., idempotency_key=...)`` for
         replay-safe async turns.
         """
+        thread_id = _validate_optional_non_empty_str("thread_id", thread_id)
         worker = self._start_worker()
         session = AsyncOrchestrationSession(
             worker=worker,
@@ -336,9 +444,10 @@ class AgentSession:
             provider_router=self.provider_router,
             async_rate_limiter=self.async_rate_limiter,
             usage_limits=self.usage_limits,
-            governance=self.governance,
+            governance=self._governance_for_session(),
             hooks=list(self.hooks),
         )
+        session._emit_event(AgentEvent.started(self.role, self.phase))
 
         try:
             yield session
@@ -348,12 +457,14 @@ class AgentSession:
         except GovernanceBreachError:
             session.fail(
                 detail="governance breach",
-                failure_class=AgentFailureClass.DEPENDENCY_FAILED,
+                failure_class=AgentFailureClass.GOVERNANCE_BREACH,
             )
             raise
         except Exception as exc:
-            scenario = classify_exception(exc)
-            session.fail(detail=str(exc), failure_class=_scenario_to_class(scenario))
+            session.fail(
+                detail=_safe_exception_detail(exc),
+                failure_class=_failure_class_for_exception(exc),
+            )
             raise
         else:
             if not worker.is_terminal:
@@ -400,6 +511,15 @@ class _SessionBase:
     _iteration_count: int = field(default=0, init=False, repr=False)
     _last_stream_cancelled: bool = field(default=False, init=False, repr=False)
 
+    def __post_init__(self) -> None:
+        self.role = _validate_non_empty_str("role", self.role)
+        self.phase = _validate_non_empty_str("phase", self.phase)
+        self.project_id = _validate_project_id(self.project_id)
+        self.budget_usd = _validate_budget_usd(self.budget_usd)
+        self.enforce_budget = _validate_bool("enforce_budget", self.enforce_budget)
+        self.max_iterations = _validate_max_iterations(self.max_iterations)
+        self.thread_id = _validate_optional_non_empty_str("thread_id", self.thread_id)
+
     def _resolve_hook_ctx(
         self,
         ctx: HookContext | None,
@@ -435,6 +555,96 @@ class _SessionBase:
         if args is not None and not ctx.args:
             ctx.args = args
         return ctx
+
+    def _resolve_handoff_hook_ctx(
+        self,
+        ctx: HookContext | None,
+        *,
+        target_role: str,
+        reason: str,
+        context: dict[str, Any] | None,
+    ) -> HookContext:
+        handoff_context: dict[str, Any] = {} if context is None else context
+        if ctx is None:
+            return HookContext(
+                role=self.role,
+                phase=self.phase,
+                extra={
+                    "target_role": target_role,
+                    "reason": reason,
+                    "context": handoff_context,
+                    "project_id": self.project_id,
+                },
+            )
+        ctx.role = self.role
+        ctx.phase = self.phase
+        ctx.extra["target_role"] = target_role
+        ctx.extra["reason"] = reason
+        ctx.extra["context"] = handoff_context
+        ctx.extra["project_id"] = self.project_id
+        return ctx
+
+    def _issue_handoff_from_ctx(self, ctx: HookContext) -> Handoff:
+        target_role = ctx.extra.get("target_role")
+        if not isinstance(target_role, str):
+            raise TypeError("target_role must be a string")
+        reason = ctx.extra.get("reason")
+        if not isinstance(reason, str):
+            raise TypeError("reason must be a string")
+        pending_handoff = Handoff(
+            source_role=self.role,
+            target_role=target_role,
+            phase=self.phase,
+            reason=reason,
+            context=ctx.extra.get("context", {}),
+            project_id=self.project_id,
+        )
+        new_worker = self.registry.create(
+            role=pending_handoff.target_role,
+            phase=pending_handoff.phase,
+            project_id=pending_handoff.project_id,
+        )
+        new_worker.transition(
+            AgentStatus.INITIALIZING,
+            detail=f"handoff from {self.role}: {pending_handoff.reason}",
+        )
+
+        if not self.worker.is_terminal:
+            self.worker.transition(
+                AgentStatus.COMPLETED,
+                detail=f"handoff to {pending_handoff.target_role}",
+            )
+
+        handoff = Handoff(
+            source_role=pending_handoff.source_role,
+            target_role=pending_handoff.target_role,
+            phase=pending_handoff.phase,
+            reason=pending_handoff.reason,
+            context=pending_handoff.context,
+            project_id=pending_handoff.project_id,
+            target_worker_id=new_worker.worker_id,
+        )
+        self._emit_event(
+            AgentEvent.completed(
+                self.role,
+                self.phase,
+                detail=(
+                    f"handoff → {pending_handoff.target_role}: {pending_handoff.reason}"
+                ),
+            ).with_data({"handoff": handoff.to_dict()})
+        )
+        logger.info(
+            "handoff_issued",
+            extra={
+                "role": self.role,
+                "phase": self.phase,
+                "project_id": self.project_id,
+                "target_role": pending_handoff.target_role,
+                "reason": pending_handoff.reason,
+                "target_worker_id": new_worker.worker_id,
+            },
+        )
+        return handoff
 
     # -- Durable execution helpers (idempotent replay + per-turn checkpoint).
     # Both no-op gracefully when either ``thread_id`` or ``saver`` is absent,
@@ -608,7 +818,7 @@ class _SessionBase:
             AgentEvent.failed(
                 self.role,
                 self.phase,
-                AgentFailureClass.UNKNOWN,
+                AgentFailureClass.CANCELLED,
                 detail=detail or "cancelled",
             )
         )
@@ -639,6 +849,19 @@ class _SessionBase:
             return estimate_usage(result)
         return UsageSnapshot()
 
+    def _sink_failure_event(self, component: str, exc: Exception) -> AgentEvent:
+        return AgentEvent.failed(
+            self.role,
+            self.phase,
+            AgentFailureClass.DEPENDENCY_FAILED,
+            detail=f"{component} failed; session continued",
+        ).with_data({"component": component, "error_type": type(exc).__name__})
+
+    def _append_local_diagnostic_event(self, event: AgentEvent) -> None:
+        if self.project_id is not None and event.project_id is None:
+            event = event.with_project(self.project_id)
+        self.events.append(event)
+
     def _emit_event(self, event: AgentEvent) -> None:
         """Append to the session event log AND forward to the configured sink.
 
@@ -646,12 +869,23 @@ class _SessionBase:
         observability stays consistent. The sink call is wrapped in a
         try/except so a misbehaving sink can't break the session.
         """
+        if self.project_id is not None and event.project_id is None:
+            event = event.with_project(self.project_id)
         self.events.append(event)
         try:
             self.event_sink.emit(event)
-        except Exception:
-            logger.exception(
-                "event_sink.emit raised; suppressing to keep session alive"
+        except Exception as exc:
+            self._append_local_diagnostic_event(
+                self._sink_failure_event("event_sink", exc)
+            )
+            logger.error(
+                "event_sink.emit raised; suppressing to keep session alive",
+                extra={
+                    "role": self.role,
+                    "phase": self.phase,
+                    "project_id": self.project_id,
+                    "error_type": type(exc).__name__,
+                },
             )
 
     def _check_iteration_cap(self) -> None:
@@ -699,6 +933,46 @@ class _SessionBase:
             raise
         self._emit_governance_outcomes(outcomes)
 
+    def _emit_tool_blocked(
+        self,
+        tool_name: str,
+        *,
+        kind: str,
+        stage: str | None = None,
+        guardrails: list[str] | None = None,
+    ) -> None:
+        data: dict[str, Any] = {"tool": tool_name, "kind": kind}
+        if stage is not None:
+            data["stage"] = stage
+        if guardrails:
+            data["guardrails"] = guardrails
+        self._emit_event(
+            AgentEvent.blocked(
+                self.role,
+                self.phase,
+                detail=f"{kind} blocked tool call",
+                data=data,
+            )
+        )
+
+    def _emit_guardrail_blocked(self, err: GuardrailViolatedError) -> None:
+        self._emit_tool_blocked(
+            err.tool,
+            kind="guardrail",
+            stage=err.stage,
+            guardrails=[violation.guardrail for violation in err.violations],
+        )
+
+    def _emit_tool_failed(self, tool_name: str) -> None:
+        self._emit_event(
+            AgentEvent.failed(
+                self.role,
+                self.phase,
+                AgentFailureClass.TOOL_ERROR,
+                detail=f"tool execution failed: {tool_name}",
+            ).with_data({"tool": tool_name})
+        )
+
     def _check_governance_pre_turn(self) -> None:
         """Tick the turn counter and enforce limits before fn runs."""
         if self.governance is None:
@@ -733,6 +1007,8 @@ class _SessionBase:
         target_role: str,
         reason: str,
         context: dict[str, Any] | None = None,
+        *,
+        hook_ctx: HookContext | None = None,
     ) -> Handoff:
         """Finalize this session's worker and register a target worker.
 
@@ -745,48 +1021,14 @@ class _SessionBase:
         completion). The new worker is created in the same registry under
         the same ``project_id`` and is left in ``INITIALIZING``.
         """
-        ctx_copy = dict(context or {})
-        new_worker = self.registry.create(
-            role=target_role, phase=self.phase, project_id=self.project_id
-        )
-        new_worker.transition(
-            AgentStatus.INITIALIZING,
-            detail=f"handoff from {self.role}: {reason}",
-        )
-
-        if not self.worker.is_terminal:
-            self.worker.transition(
-                AgentStatus.COMPLETED, detail=f"handoff to {target_role}"
-            )
-
-        handoff = Handoff(
-            source_role=self.role,
+        ctx = self._resolve_handoff_hook_ctx(
+            hook_ctx,
             target_role=target_role,
-            phase=self.phase,
             reason=reason,
-            context=ctx_copy,
-            project_id=self.project_id,
-            target_worker_id=new_worker.worker_id,
+            context=context,
         )
-        self._emit_event(
-            AgentEvent.completed(
-                self.role,
-                self.phase,
-                detail=f"handoff → {target_role}: {reason}",
-            ).with_data({"handoff": handoff.to_dict()})
-        )
-        logger.info(
-            "handoff_issued",
-            extra={
-                "role": self.role,
-                "phase": self.phase,
-                "project_id": self.project_id,
-                "target_role": target_role,
-                "reason": reason,
-                "target_worker_id": new_worker.worker_id,
-            },
-        )
-        return handoff
+        run_before_handoff(self.hooks, ctx)
+        return self._issue_handoff_from_ctx(ctx)
 
     def _apply_usage_and_check_budget(
         self, model: str, snapshot: UsageSnapshot
@@ -796,9 +1038,16 @@ class _SessionBase:
             cost = self.tracker.cost_for_turn(model, snapshot)
             try:
                 self.usage_sink.record(model, snapshot, cost)
-            except Exception:
-                logger.exception(
-                    "usage_sink.record raised; suppressing to keep session alive"
+            except Exception as exc:
+                self._emit_event(self._sink_failure_event("usage_sink", exc))
+                logger.error(
+                    "usage_sink.record raised; suppressing to keep session alive",
+                    extra={
+                        "role": self.role,
+                        "phase": self.phase,
+                        "project_id": self.project_id,
+                        "error_type": type(exc).__name__,
+                    },
                 )
 
         budget = self.budget_usd
@@ -807,7 +1056,7 @@ class _SessionBase:
                 AgentEvent.failed(
                     self.role,
                     self.phase,
-                    AgentFailureClass.UNKNOWN,
+                    AgentFailureClass.RATE_LIMIT,
                     detail=f"budget exceeded: {self.tracker.format_cost()}",
                 ).with_data({"budget_usd": budget})
             )
@@ -833,12 +1082,29 @@ class _SessionBase:
             # first overrun. We let it propagate so callers can react
             # to per-dimension caps (token quota, tool-call budget)
             # distinctly from cost overruns.
-            self.tracker.check_limits(self.usage_limits)
+            try:
+                self.tracker.check_limits(self.usage_limits)
+            except UsageLimitExceededError as exc:
+                self._emit_event(
+                    AgentEvent.failed(
+                        self.role,
+                        self.phase,
+                        AgentFailureClass.RATE_LIMIT,
+                        detail=f"usage limit exceeded: {exc.limit_name}",
+                    ).with_data(
+                        {
+                            "limit_name": exc.limit_name,
+                            "observed": exc.observed,
+                            "ceiling": exc.ceiling,
+                        }
+                    )
+                )
+                raise
 
 
 @dataclass
 class OrchestrationSession(_SessionBase):
-    """Single-agent sync execution context. Created by Orchestrator.session()."""
+    """Single-agent sync execution context. Created by AgentSession.session()."""
 
     circuit_breaker: CircuitBreaker | None = None
     rate_limiter: RateLimiter | None = None
@@ -864,14 +1130,29 @@ class OrchestrationSession(_SessionBase):
         """
         outcome = self.authorize(tool_name)
         if not outcome.allowed:
+            self._emit_tool_blocked(tool_name, kind="permission")
             raise PermissionDeniedError(outcome)
         self._check_governance_pre_tool()
         ctx = self._resolve_hook_ctx(hook_ctx, tool=tool_name)
         run_before_tool(self.hooks, ctx)
-        run_pre_checks(self.guardrails, role=self.role, tool=tool_name)
-        result_raw: T = fn()
-        run_post_checks(self.guardrails, result_raw, role=self.role, tool=tool_name)
+        try:
+            run_pre_checks(self.guardrails, role=self.role, tool=tool_name)
+        except GuardrailViolatedError as exc:
+            self._emit_guardrail_blocked(exc)
+            raise
+        self._emit_event(AgentEvent.tool_called(self.role, self.phase, tool_name))
+        try:
+            result_raw: T = fn()
+        except Exception:
+            self._emit_tool_failed(tool_name)
+            raise
+        try:
+            run_post_checks(self.guardrails, result_raw, role=self.role, tool=tool_name)
+        except GuardrailViolatedError as exc:
+            self._emit_guardrail_blocked(exc)
+            raise
         result: T = run_after_tool(self.hooks, ctx, result_raw)
+        self._emit_event(AgentEvent.tool_completed(self.role, self.phase, tool_name))
         return result
 
     def run_turn(
@@ -927,7 +1208,8 @@ class OrchestrationSession(_SessionBase):
         except CircuitOpenError:
             self._record_governance_turn_outcome(success=False)
             raise
-        except TurnTimeoutError:
+        except TurnTimeoutError as exc:
+            _record_recovery_event(self, exc)
             self._record_governance_turn_outcome(success=False)
             raise
         except Exception as exc:
@@ -991,7 +1273,7 @@ class OrchestrationSession(_SessionBase):
 
 @dataclass
 class AsyncOrchestrationSession(_SessionBase):
-    """Single-agent async execution context. Created by Orchestrator.asession().
+    """Single-agent async execution context. Created by AgentSession.asession().
 
     Sibling of OrchestrationSession. Sync helpers (authorize, evaluate_policy,
     evaluate_gate, summary, lifecycle methods) are inherited; only the
@@ -1001,6 +1283,24 @@ class AsyncOrchestrationSession(_SessionBase):
 
     circuit_breaker: AsyncCircuitBreaker | None = None
     async_rate_limiter: AsyncRateLimiter | None = None
+
+    async def ahandoff_to(
+        self,
+        target_role: str,
+        reason: str,
+        context: dict[str, Any] | None = None,
+        *,
+        hook_ctx: HookContext | None = None,
+    ) -> Handoff:
+        """Async handoff helper that awaits async ``before_handoff`` hooks."""
+        ctx = self._resolve_handoff_hook_ctx(
+            hook_ctx,
+            target_role=target_role,
+            reason=reason,
+            context=context,
+        )
+        await arun_before_handoff(self.hooks, ctx)
+        return self._issue_handoff_from_ctx(ctx)
 
     async def arun_tool(
         self,
@@ -1018,16 +1318,31 @@ class AsyncOrchestrationSession(_SessionBase):
         """
         outcome = self.authorize(tool_name)
         if not outcome.allowed:
+            self._emit_tool_blocked(tool_name, kind="permission")
             raise PermissionDeniedError(outcome)
         self._check_governance_pre_tool()
         ctx = self._resolve_hook_ctx(hook_ctx, tool=tool_name)
         await arun_before_tool(self.hooks, ctx)
-        await arun_pre_checks(self.guardrails, role=self.role, tool=tool_name)
-        result_raw: T = await coro_factory()
-        await arun_post_checks(
-            self.guardrails, result_raw, role=self.role, tool=tool_name
-        )
+        try:
+            await arun_pre_checks(self.guardrails, role=self.role, tool=tool_name)
+        except GuardrailViolatedError as exc:
+            self._emit_guardrail_blocked(exc)
+            raise
+        self._emit_event(AgentEvent.tool_called(self.role, self.phase, tool_name))
+        try:
+            result_raw: T = await coro_factory()
+        except Exception:
+            self._emit_tool_failed(tool_name)
+            raise
+        try:
+            await arun_post_checks(
+                self.guardrails, result_raw, role=self.role, tool=tool_name
+            )
+        except GuardrailViolatedError as exc:
+            self._emit_guardrail_blocked(exc)
+            raise
         result: T = await arun_after_tool(self.hooks, ctx, result_raw)
+        self._emit_event(AgentEvent.tool_completed(self.role, self.phase, tool_name))
         return result
 
     async def arun_turn(
@@ -1071,7 +1386,8 @@ class AsyncOrchestrationSession(_SessionBase):
         except CircuitOpenError:
             self._record_governance_turn_outcome(success=False)
             raise
-        except TurnTimeoutError:
+        except TurnTimeoutError as exc:
+            await _arecord_recovery_event(self, exc)
             self._record_governance_turn_outcome(success=False)
             raise
         except asyncio.CancelledError:
@@ -1157,10 +1473,16 @@ class AsyncOrchestrationSession(_SessionBase):
                             aggregated.append(chunk)
                             yield StreamEvent.text(chunk)
             except TimeoutError as exc:
+                timeout_error = TurnTimeoutError(timeout or 0.0)
+                # Record the failure outcome BEFORE yielding the terminal
+                # event: an idiomatic consumer that breaks the async-for on
+                # seeing ``final`` would otherwise throw GeneratorExit at that
+                # yield and skip the recovery/governance recording entirely.
+                await _arecord_recovery_event(self, timeout_error)
+                self._record_governance_turn_outcome(success=False)
                 yield StreamEvent.error("timeout", f"stream exceeded {timeout}s")
                 yield StreamEvent.final("failed", detail="timeout")
-                self._record_governance_turn_outcome(success=False)
-                raise TurnTimeoutError(timeout or 0.0) from exc
+                raise timeout_error from exc
             except GeneratorExit:
                 # Consumer broke the async-for loop. Flag + finally cleanup
                 # run; we cannot yield further since the consumer is gone.
@@ -1181,10 +1503,14 @@ class AsyncOrchestrationSession(_SessionBase):
                 self._record_governance_turn_outcome(success=False)
                 raise
             except Exception as exc:
-                yield StreamEvent.error(type(exc).__name__, str(exc))
-                yield StreamEvent.final("failed", detail=str(exc))
+                safe_detail = _safe_exception_detail(exc)
+                # Record before the terminal yield (see TimeoutError branch):
+                # a consumer that stops iterating at ``final`` must not be able
+                # to skip the recovery/governance recording.
                 await _arecord_recovery_event(self, exc)
                 self._record_governance_turn_outcome(success=False)
+                yield StreamEvent.error(type(exc).__name__, safe_detail)
+                yield StreamEvent.final("failed", detail=safe_detail)
                 raise
 
             full_text = "".join(aggregated)
@@ -1211,8 +1537,19 @@ class AsyncOrchestrationSession(_SessionBase):
                 if aclose is not None:
                     try:
                         await aclose()
-                    except Exception:
-                        logger.exception("arun_turn_stream: upstream.aclose() raised")
+                    except Exception as exc:
+                        self._append_local_diagnostic_event(
+                            self._sink_failure_event("stream_upstream", exc)
+                        )
+                        logger.error(
+                            "arun_turn_stream: upstream.aclose() raised",
+                            extra={
+                                "role": self.role,
+                                "phase": self.phase,
+                                "project_id": self.project_id,
+                                "error_type": type(exc).__name__,
+                            },
+                        )
 
     async def _ainvoke(
         self,
@@ -1295,6 +1632,14 @@ class AsyncOrchestrationSession(_SessionBase):
             raise RuntimeError("a previous pause_for_input is still pending")
 
         self.worker.transition(AgentStatus.WAITING_FOR_INPUT, detail=prompt)
+        self._emit_event(
+            AgentEvent.blocked(
+                self.role,
+                self.phase,
+                detail="waiting for input",
+                data={"kind": "human_input"},
+            )
+        )
         loop = asyncio.get_running_loop()
         future: asyncio.Future[str] = loop.create_future()
         self._pending_input = future
@@ -1304,6 +1649,14 @@ class AsyncOrchestrationSession(_SessionBase):
             self._pending_input = None
         if not self.worker.is_terminal:
             self.worker.transition(AgentStatus.RUNNING, detail="input received")
+            self._emit_event(
+                AgentEvent.ready(
+                    self.role,
+                    self.phase,
+                    detail="input received",
+                    data={"kind": "human_input"},
+                )
+            )
         return value
 
     def provide_input(self, value: str) -> None:
@@ -1332,11 +1685,58 @@ def _scenario_to_class(scenario: FailureScenario) -> AgentFailureClass:
     return mapping.get(scenario, AgentFailureClass.UNKNOWN)
 
 
+def _failure_class_for_exception(exc: Exception) -> AgentFailureClass:
+    """Classify terminal session exceptions into the public event taxonomy."""
+    if isinstance(exc, BudgetExceededError | UsageLimitExceededError):
+        return AgentFailureClass.RATE_LIMIT
+    if isinstance(exc, RateLimitExceededError):
+        return AgentFailureClass.RATE_LIMIT
+    if isinstance(exc, MaxIterationsExceededError):
+        return AgentFailureClass.GOVERNANCE_BREACH
+    if isinstance(exc, PermissionDeniedError):
+        return AgentFailureClass.PERMISSION_DENIED
+    if isinstance(exc, GuardrailViolatedError):
+        return AgentFailureClass.GUARDRAIL_VIOLATION
+    scenario = classify_exception(exc)
+    if scenario != FailureScenario.LLM_ERROR:
+        return _scenario_to_class(scenario)
+    if _is_prompt_rejection_exception(exc):
+        return AgentFailureClass.PROMPT_REJECTION
+    if isinstance(exc, ValueError | TypeError):
+        return AgentFailureClass.VALIDATION_ERROR
+    return _scenario_to_class(scenario)
+
+
+def _is_prompt_rejection_exception(exc: Exception) -> bool:
+    """Return True when an exception chain looks like a prompt safety rejection."""
+    seen: set[int] = set()
+    cursor: BaseException | None = exc
+    while cursor is not None and id(cursor) not in seen:
+        seen.add(id(cursor))
+        message = str(cursor).lower()
+        if any(marker in message for marker in _PROMPT_REJECTION_MARKERS):
+            return True
+        nxt: BaseException | None = cursor.__cause__
+        if nxt is None and not cursor.__suppress_context__:
+            nxt = cursor.__context__
+        cursor = nxt
+    return False
+
+
+def _safe_exception_detail(exc: Exception) -> str:
+    """Describe a terminal exception without copying its message into events."""
+    return f"{type(exc).__name__} raised"
+
+
 # `Orchestrator` is the legacy 0.1.x name; `AgentSession` is canonical.
 # Subclass (not bare alias) so we can emit DeprecationWarning on the
-# first instantiation in a process. Removed in 0.3.0.
+# first instantiation in a process. Kept through 0.3.x for compatibility.
 class Orchestrator(AgentSession):
-    """Deprecated alias for ``AgentSession``. Removed in 0.3.0."""
+    """Deprecated compatibility alias for ``AgentSession``.
+
+    Kept through the 0.3.x line so existing callers can upgrade without
+    a hard break. New code should construct ``AgentSession`` directly.
+    """
 
     _deprecation_emitted: ClassVar[bool] = False
 
@@ -1346,8 +1746,8 @@ class Orchestrator(AgentSession):
 
             warnings.warn(
                 "Orchestrator is a deprecated alias for AgentSession and will "
-                "be removed in 0.3.0. Replace `Orchestrator(...)` with "
-                "`AgentSession(...)` — the constructor and behavior are "
+                "be removed no earlier than 0.4.0. Replace `Orchestrator(...)` "
+                "with `AgentSession(...)` — the constructor and behavior are "
                 "identical.",
                 DeprecationWarning,
                 stacklevel=2,

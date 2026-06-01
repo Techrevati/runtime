@@ -23,8 +23,10 @@ async.
 from __future__ import annotations
 
 import asyncio
+import math
+import threading
 import time
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Protocol, runtime_checkable
 
 __all__ = [
@@ -67,10 +69,11 @@ class SystemClock:
         return datetime.now(UTC)
 
     async def sleep_async(self, seconds: float) -> None:
-        if seconds <= 0:
+        duration = _validate_duration("seconds", seconds)
+        if duration == 0:
             await asyncio.sleep(0)
             return
-        await asyncio.sleep(seconds)
+        await asyncio.sleep(duration)
 
     def __call__(self) -> float:
         """Compatibility shim — many existing primitives accept a
@@ -97,46 +100,80 @@ class ManualClock:
         start: float = 1000.0,
         wall_start: datetime | None = None,
     ) -> None:
-        self._t = float(start)
-        self._wall = wall_start or datetime(2026, 1, 1, tzinfo=UTC)
+        self._lock = threading.RLock()
+        self._t = _validate_finite_float("start", start)
+        if wall_start is not None:
+            self._wall = _validate_wall_start(wall_start)
+        else:
+            self._wall = datetime(2026, 1, 1, tzinfo=UTC)
 
     # Sync entry points -------------------------------------------------
 
     def monotonic(self) -> float:
-        return self._t
+        with self._lock:
+            return self._t
 
     def wall_now(self) -> datetime:
-        return self._wall
+        with self._lock:
+            return self._wall
 
     def __call__(self) -> float:
-        return self._t
+        return self.monotonic()
 
     # Mutation helpers --------------------------------------------------
 
     def advance(self, seconds: float) -> None:
         """Move both clocks forward by ``seconds``."""
-        from datetime import timedelta
-
-        self._t += float(seconds)
-        self._wall = self._wall + timedelta(seconds=float(seconds))
+        duration = _validate_duration("seconds", seconds)
+        with self._lock:
+            self._t += duration
+            self._wall = self._wall + timedelta(seconds=duration)
 
     def tick(self, absolute_monotonic: float) -> None:
         """Set monotonic to a specific value (must be non-decreasing)."""
-        if absolute_monotonic < self._t:
-            raise ValueError(
-                f"ManualClock cannot move backwards: {absolute_monotonic} < {self._t}"
-            )
-        delta = absolute_monotonic - self._t
-        self.advance(delta)
+        target = _validate_finite_float("absolute_monotonic", absolute_monotonic)
+        with self._lock:
+            if target < self._t:
+                raise ValueError(
+                    f"ManualClock cannot move backwards: {target} < {self._t}"
+                )
+            delta = target - self._t
+            self._t = target
+            self._wall = self._wall + timedelta(seconds=delta)
 
     def now_utc(self) -> datetime:
-        return self._wall
+        return self.wall_now()
 
     # Async helper ------------------------------------------------------
 
     async def sleep_async(self, seconds: float) -> None:
         # Yield once so cooperative awaiters get scheduled, then bump
         # the simulated clock. Real wall time does not pass.
+        duration = _validate_duration("seconds", seconds)
         await asyncio.sleep(0)
-        if seconds > 0:
-            self.advance(seconds)
+        if duration > 0:
+            self.advance(duration)
+
+
+def _validate_finite_float(field_name: str, value: float) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise TypeError(f"{field_name} must be a number")
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError(f"{field_name} must be finite")
+    return number
+
+
+def _validate_duration(field_name: str, value: float) -> float:
+    duration = _validate_finite_float(field_name, value)
+    if duration < 0:
+        raise ValueError(f"{field_name} must be non-negative")
+    return duration
+
+
+def _validate_wall_start(value: datetime) -> datetime:
+    if not isinstance(value, datetime):
+        raise TypeError("wall_start must be a datetime")
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError("wall_start must be timezone-aware")
+    return value.astimezone(UTC)
