@@ -60,6 +60,17 @@ For `0.3.0rc1`, publication is limited to:
 Public package index publication is out of scope until pilot approval is
 recorded.
 
+**Channel reality (this repository is public).** The established controlled
+channel for pre-releases is a **repository pre-release** — the tag triggers
+`release.yml`, which marks `rc`/`dev` tags as a prerelease and attaches the
+wheel, source archive, SBOM (JSON + XML), and `SHA256SUMS`. The artifact is
+downloadable but deliberately **not** advertised on the stable package index
+(so `pip install techrevati-runtime` stays on the stable line); only consumers
+who fetch the prerelease by version receive it. A truly private package
+registry is an **optional** additional channel: the private publish step runs
+only when the `PRIVATE_PACKAGE_*` secrets are configured, and is skipped
+otherwise without blocking the repository pre-release.
+
 ## Required Inputs
 
 Publication requires all of these inputs:

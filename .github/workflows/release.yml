@@ -247,16 +247,27 @@ jobs:
         run: python scripts/check_release_evidence.py dist
 
       - name: Check private package repository configuration
+        id: private_registry
         env:
           PRIVATE_PACKAGE_REPOSITORY_URL: ${{ secrets.PRIVATE_PACKAGE_REPOSITORY_URL }}
           PRIVATE_PACKAGE_USERNAME: ${{ secrets.PRIVATE_PACKAGE_USERNAME }}
           PRIVATE_PACKAGE_PASSWORD: ${{ secrets.PRIVATE_PACKAGE_PASSWORD }}
+        # Private index is an OPTIONAL channel: publish there only when all
+        # three secrets are configured. When they are not, skip the private
+        # publish and let the repository pre-release be the controlled artifact
+        # channel (the project's established mechanism for pre-releases).
         run: |
-          test -n "$PRIVATE_PACKAGE_REPOSITORY_URL"
-          test -n "$PRIVATE_PACKAGE_USERNAME"
-          test -n "$PRIVATE_PACKAGE_PASSWORD"
+          if test -n "$PRIVATE_PACKAGE_REPOSITORY_URL" \
+             && test -n "$PRIVATE_PACKAGE_USERNAME" \
+             && test -n "$PRIVATE_PACKAGE_PASSWORD"; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Private registry secrets unset — skipping private publish; the repository pre-release is the controlled channel."
+          fi
 
       - name: Publish private package
+        if: steps.private_registry.outputs.configured == 'true'
         # pypa/gh-action-pypi-publish release/v1
         uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b
         with:
@@ -269,6 +280,7 @@ jobs:
         # softprops/action-gh-release v1
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844
         with:
+          prerelease: ${{ contains(github.ref_name, 'rc') || contains(github.ref_name, 'dev') }}
           generate_release_notes: true
           files: |
             dist/*.whl
