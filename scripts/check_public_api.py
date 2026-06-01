@@ -126,6 +126,7 @@ EXPECTED_RUNTIME_EXPORTS = (
     "next_provider",
     "recipe_for",
     "register_pricing",
+    "resolve_pricing",
     "smaller_context_budget",
 )
 

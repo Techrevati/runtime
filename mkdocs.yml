@@ -33,6 +33,7 @@ nav:
   - End-to-End Tutorial: tutorials/end-to-end.md
   - Migrating from 0.0.x: migrating-from-0.0.x.md
   - Migrating from 0.1.x: migrating-from-0.1.x.md
+  - Consuming as a Library: consuming-as-a-library.md
   - Compliance:
     - Compliance Mapping: compliance/index.md
     - Production Readiness: compliance/production-readiness.md

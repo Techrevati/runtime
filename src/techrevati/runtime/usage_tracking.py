@@ -364,11 +364,12 @@ def load_pricing_from_file(path: str | Path) -> None:
         PRICING_TABLE.update(loaded)
 
 
-def _resolve_pricing(model: str) -> ModelPricing:
+def resolve_pricing(model: str) -> ModelPricing:
     """Resolve pricing for a model. Falls back to zero (local/unknown).
 
-    Tries exact match first, then longest prefix match so dated variants
-    like 'model-a-20260514' map to 'model-a'.
+    Public utility. Tries exact match first, then longest prefix match so
+    dated variants like 'model-a-20260514' map to 'model-a'. Unknown models
+    return ``ModelPricing(0.0, 0.0)`` (zero-fallback — this never raises).
 
     Read path is guarded against concurrent ``register_pricing`` /
     ``load_pricing_from_file`` mutations: we snapshot the table under
@@ -387,6 +388,10 @@ def _resolve_pricing(model: str) -> ModelPricing:
         if model_lower.startswith(key) and (best is None or len(key) > best[0]):
             best = (len(key), pricing)
     return best[1] if best else ModelPricing(0.0, 0.0)
+
+
+# Backwards-compatible internal alias (was the private name through 0.2.x).
+_resolve_pricing = resolve_pricing
 
 
 @dataclass(frozen=True)

@@ -409,3 +409,19 @@ def test_usage_bound_errors_validate_constructor_inputs():
         BudgetExceededError(budget_usd=-1.0, current_cost_usd=0.0)
     with pytest.raises(ValueError, match="limit_name"):
         UsageLimitExceededError(limit_name="", observed=1, ceiling=0)
+
+
+def test_resolve_pricing_is_public_exact_prefix_and_zero_fallback():
+    # resolve_pricing is now a public export (was private _resolve_pricing).
+    from techrevati.runtime import resolve_pricing as public_resolve
+    from techrevati.runtime.usage_tracking import _resolve_pricing, resolve_pricing
+
+    assert public_resolve is resolve_pricing
+    assert _resolve_pricing is resolve_pricing  # backwards-compatible alias
+
+    register_pricing("dxmodel-x", ModelPricing(1.0, 2.0))
+    assert resolve_pricing("dxmodel-x").input_per_million == 1.0  # exact
+    # longest-prefix match for a dated variant
+    assert resolve_pricing("dxmodel-x-20260601").input_per_million == 1.0
+    # zero-fallback for an unknown model — never raises
+    assert resolve_pricing("totally-unregistered-zzz") == ModelPricing(0.0, 0.0)

@@ -17,6 +17,9 @@ Added:
 - Release, documentation, workflow, package, public API, and security guard
   scripts for repeatable release-candidate validation.
 - Explicit pilot profile helper for controlled release-candidate workflows.
+- Public `resolve_pricing(model)` helper (exact-then-longest-prefix model
+  pricing lookup, zero-fallback) so callers no longer reach into a private
+  symbol.
 - Fan-out event and usage sinks for combining durable local evidence with
   telemetry exporters.
 - Pilot operations runbook and guard for required signals, alerts, retention,

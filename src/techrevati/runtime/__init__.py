@@ -172,6 +172,7 @@ from techrevati.runtime.usage_tracking import (
     has_pricing,
     load_pricing_from_file,
     register_pricing,
+    resolve_pricing,
 )
 
 __all__ = [
@@ -291,5 +292,6 @@ __all__ = [
     "next_provider",
     "recipe_for",
     "register_pricing",
+    "resolve_pricing",
     "smaller_context_budget",
 ]

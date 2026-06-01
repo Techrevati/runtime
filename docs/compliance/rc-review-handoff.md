@@ -86,7 +86,7 @@ The handoff must point to the latest current gate evidence in
 Current handoff snapshot collected on 2026-06-01:
 
 - branch: `production-rc-0.3.0`,
-- tracked diff: 190 files changed, 28674 insertions, 1807 deletions (committed
+- tracked diff: 191 files changed, 28792 insertions, 1810 deletions (committed
   branch delta `main...HEAD`; the release candidate is no longer an uncommitted
   working tree),
 - untracked release assets: 0 files, all release assets are committed,
