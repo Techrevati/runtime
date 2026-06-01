@@ -20,7 +20,16 @@ def _workflow_files(root: Path) -> Iterable[Path]:
         yield from sorted(root.rglob(pattern))
 
 
+def _strip_quotes(value: str) -> str:
+    """Drop matching surrounding YAML quotes so a quoted pin is read like a
+    bare one (``"actions/checkout@<sha>"`` -> ``actions/checkout@<sha>``)."""
+    if len(value) >= 2 and value[0] in "\"'" and value[-1] == value[0]:
+        return value[1:-1]
+    return value
+
+
 def _is_pinned(value: str) -> bool:
+    value = _strip_quotes(value)
     if value.startswith("./"):
         return True
     return bool(SHA_REF_RE.fullmatch(value))

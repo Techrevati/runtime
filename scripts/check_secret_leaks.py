@@ -41,24 +41,39 @@ SECRET_NAME_PATTERN = (
     r"(?:api[_-]?key|access[_-]?token|auth[_-]?token|bearer[_-]?token|"
     r"client[_-]?secret|private[_-]?key|secret|password|passwd|token)"
 )
+# Treat an alphanumeric run as the boundary so that a secret keyword embedded
+# in a longer identifier (e.g. ``DATABASE_PASSWORD``, where ``_`` is a regex
+# word char and ``\b`` would not fire before ``PASSWORD``) is still detected.
+# Underscores, spaces, and start/end of line all count as boundaries.
+_NAME_PREFIX = r"(?<![A-Za-z0-9])"
+_NAME_SUFFIX = r"(?![A-Za-z0-9])"
 SECRET_ASSIGNMENT_RE = re.compile(
-    rf"\b{SECRET_NAME_PATTERN}\b\s*(?::|=)\s*"
+    rf"{_NAME_PREFIX}{SECRET_NAME_PATTERN}{_NAME_SUFFIX}\s*(?::|=)\s*"
     r"(?P<quote>['\"])(?P<value>[^'\"\n]{12,})(?P=quote)",
     re.IGNORECASE,
 )
 UNQUOTED_ENV_SECRET_RE = re.compile(
-    rf"^\s*(?:export\s+)?{SECRET_NAME_PATTERN}\s*=\s*(?P<value>[^\s#]{{20,}})",
+    rf"{_NAME_PREFIX}{SECRET_NAME_PATTERN}\s*=\s*"
+    r"(?P<value>[^'\"\s#][^\s#]{19,})",
     re.IGNORECASE,
 )
 CLOUD_ACCESS_KEY_RE = re.compile(r"\b(?:AKIA|ASIA)[0-9A-Z]{16}\b")
 PRIVATE_KEY_BLOCK_RE = re.compile(r"-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----")
+# Placeholder keywords must appear as a distinct token — bounded by start/end
+# or a non-alphanumeric separator — so a real credential that merely *contains*
+# a word like ``example`` as a substring (``examplekJHGsecretLIVE``) is NOT
+# allow-listed. The structural forms (``${VAR}``, ``<token>``, ``__token__``)
+# stay fully anchored.
+_PLACEHOLDER_TOKENS = (
+    r"redacted|placeholder|example|sample|dummy|changeme|change-me|"
+    r"not-a-secret|test-only|your"
+)
 ALLOWLIST_VALUE_RE = re.compile(
     r"(?i)(?:"
     r"^\$\{[^}]+\}$|"
     r"^<[^>]+>$|"
     r"^_+token_+$|"
-    r"redacted|placeholder|example|sample|dummy|changeme|change-me|"
-    r"your-|not-a-secret|test-only"
+    rf"(?:^|[^A-Za-z0-9])(?:{_PLACEHOLDER_TOKENS})(?![A-Za-z0-9])"
     r")"
 )
 

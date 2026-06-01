@@ -78,6 +78,34 @@ def test_secret_leaks_rejects_private_key_block(tmp_path: Path) -> None:
     assert any("private key block" in failure for failure in failures)
 
 
+def test_secret_leaks_rejects_secret_containing_placeholder_substring(
+    tmp_path: Path,
+) -> None:
+    # A real credential that merely *contains* an allow-list word as a
+    # substring must not be allow-listed (regression: unanchored allow-list).
+    module = _load_secret_leaks_module()
+    value = "examplekJHGsecretLIVE" + ("9" * 8)
+    path = tmp_path / "settings.py"
+    path.write_text(f'api_key = "{value}"\n', encoding="utf-8")
+
+    failures = module._failures([tmp_path])
+
+    assert any("hard-coded secret assignment" in failure for failure in failures)
+
+
+def test_secret_leaks_rejects_prefixed_env_secret_name(tmp_path: Path) -> None:
+    # The secret keyword is embedded after a prefix + underscore; ``\b`` would
+    # not fire here, so a prefixed env var must still be detected.
+    module = _load_secret_leaks_module()
+    value = "r3al-" + ("E" * 24)
+    path = tmp_path / ".env"
+    path.write_text(f"DATABASE_PASSWORD={value}\n", encoding="utf-8")
+
+    failures = module._failures([tmp_path])
+
+    assert any("environment value" in failure for failure in failures)
+
+
 def test_secret_leaks_skips_binary_and_cache_files(tmp_path: Path) -> None:
     module = _load_secret_leaks_module()
     cache = tmp_path / "__pycache__"
