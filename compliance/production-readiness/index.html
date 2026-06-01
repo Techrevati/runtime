@@ -1,0 +1,1230 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Production Readiness - Runtime</title>
+    <link rel="stylesheet" href="../../styles/runtime.css">
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+  </head>
+  <body>
+    <header class="site-header">
+      
+        <a class="brand" href="../..">Runtime</a>
+      
+    </header>
+    <div class="layout">
+      <nav class="site-nav" aria-label="Primary navigation">
+        <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <span>Home</span>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../getting-started/">Getting Started</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../tutorials/end-to-end/">End-to-End Tutorial</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../migrating-from-0.0.x/">Migrating from 0.0.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../migrating-from-0.1.x/">Migrating from 0.1.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item is-active">
+        
+          <span>Compliance</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../">Compliance Mapping</a>
+        
+        
+      </li>
+    
+      <li class="nav-item is-active">
+        
+          <a href="./">Production Readiness</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rc-readiness-summary/">RC Readiness Summary</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../stable-promotion/">Stable Promotion</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../remote-ci-validation/">Remote CI Validation</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../final-diff-review/">Final Diff Review</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rc-review-handoff/">RC Review Handoff</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../staging-manifest/">Staging Manifest</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../guard-calibration/">Guard Calibration</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../security-review/">Security Review</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../private-rc-publication/">Private RC Publication</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-operations-runbook/">Pilot Operations Runbook</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-execution/">Pilot Execution Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-dry-run/">Pilot Dry-Run</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-evidence-template/">Controlled RC Pilot Evidence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rollback-execution/">Rollback Execution Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rollback-proof-checklist/">Rollback Proof Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rc-inventory/">Release Candidate Inventory</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>Patterns</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/retry/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/circuit-breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/durability/">Durability</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/rate-limiting/">Rate Limiting</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/quality-gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/agent-events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/policy/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/usage-tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/governance/">Governance Plane</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/pilot-profile/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>API Reference</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../../api/orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/agent_events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/agent_lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/circuit_breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/checkpoint/">Checkpoint</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/policy_engine/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/quality_gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/rate_limit/">Rate Limit</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/retry_policy/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/usage_tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/guardrails/">Guardrails</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/governance/">Governance</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/handoffs/">Handoffs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/sinks/">Sinks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/persistence/">Persistence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/scheduler/">Scheduler</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/otel/">Telemetry</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/pilot/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../changelog/">Changelog</a>
+        
+        
+      </li>
+    
+  </ul>
+      </nav>
+      <main class="content" id="content">
+        
+          <h1 id="production-readiness-plan">Production Readiness Plan<a class="headerlink" href="#production-readiness-plan" title="Permanent link">&para;</a></h1>
+<p>Author: Techrevati doo</p>
+<p>This plan defines the path from the current hardened runtime state to a
+production-ready <code>techrevati-runtime</code> release. The first production milestone is
+<code>0.3.0rc1</code> as a private package release with repository release artifacts, SBOM,
+full CI evidence, and a controlled pilot. The stable <code>0.3.0</code> release follows
+only after the release candidate has passed pilot acceptance criteria.</p>
+<h2 id="definition-of-100-production-readiness">Definition of 100% Production Readiness<a class="headerlink" href="#definition-of-100-production-readiness" title="Permanent link">&para;</a></h2>
+<p>For this package, "100% production ready" means the release is ready to be used
+as a dependency in production agent workflows. It does not mean zero risk, and
+it does not include building a hosted API service around the runtime.</p>
+<p>A release is production ready only when all of these are true:</p>
+<ul>
+<li>The package builds repeatably as wheel and sdist.</li>
+<li>The same commit is green in local/server gates and remote CI.</li>
+<li>Public branding is limited to Techrevati doo.</li>
+<li>The technical namespace remains <code>techrevati.runtime</code>.</li>
+<li>Public API compatibility is frozen for the release line.</li>
+<li>Session-scoped governance limits use fresh state per session and fail closed
+  for unsupported cross-session scopes.</li>
+<li>Controlled pilot permissions deny unknown roles by default while the base
+  permission policy keeps compatibility behavior unless callers opt into
+  fail-closed unknown-role handling.</li>
+<li>Terminal audit taxonomy distinguishes runtime rate limits, budget and usage
+  limits, governance breaches, permission denials, guardrail violations, tool
+  errors, and dependency failures, including local persistence, I/O,
+  validation failures, and prompt rejections.</li>
+<li>Security, source, repository, workflow, release, and package policy guards
+  pass.</li>
+<li>Total coverage is at least 90 percent and every runtime module is at least
+  85 percent covered.</li>
+<li>Documentation builds with <code>mkdocs build --strict</code>.</li>
+<li>Release artifacts pass distribution and metadata checks.</li>
+<li>A CycloneDX SBOM is produced for release artifacts.</li>
+<li>A private registry or controlled artifact channel is available.</li>
+<li>A pilot workflow has completed without unresolved P0/P1 issues.</li>
+<li>Operators have a runbook for monitoring, incident response, and rollback.</li>
+<li>The stable promotion record is approved with fresh external evidence.</li>
+</ul>
+<h2 id="baseline-state">Baseline State<a class="headerlink" href="#baseline-state" title="Permanent link">&para;</a></h2>
+<p>At plan creation, the runtime is already significantly hardened:</p>
+<ul>
+<li>The package is a Python library/runtime, not a hosted service.</li>
+<li>Runtime package name: <code>techrevati-runtime</code>.</li>
+<li>Current release-candidate version: <code>0.3.0rc1</code>.</li>
+<li>Runtime dependency policy: zero required runtime dependencies.</li>
+<li>Supported Python versions: 3.11, 3.12, and 3.13.</li>
+<li>Existing gates cover lint, formatting, strict typing, tests, coverage,
+  package metadata, docs, branding, CI hardening, workflow pinning, release
+  checks, public API checks, full-scope source hygiene for source, scripts,
+  tests, generated/cache directory skips, abstract-method stubs, and
+  deterministic text I/O encodings, and full-scope security patterns for
+  source, scripts, and tests,
+  including literal truthy subprocess shell bypasses, missing subprocess
+  timeouts, implicit <code>subprocess.run</code> check semantics, direct
+  <code>subprocess.Popen</code>, missing HTTP client timeouts, disabled TLS verification,
+  raw logging traceback checks, raw exception text checks for
+  logging/observability payloads, and unsafe YAML loading checks.</li>
+<li>Current local/server evidence is green at 999 tests with 94.85 percent total
+  coverage, including dedicated regression coverage for session governance
+  state, dependency I/O classification, rate-limit hard-stops, max-iterations
+  hard-stops, cancellation, pilot unknown-role denial, and terminal
+  failure-class taxonomy.</li>
+<li>The working tree contains a large uncommitted hardening set and must be
+  reviewed as one release candidate body of work before tagging.</li>
+</ul>
+<h2 id="deep-assessment-2026-06-01">Deep Assessment - 2026-06-01<a class="headerlink" href="#deep-assessment-2026-06-01" title="Permanent link">&para;</a></h2>
+<p>The runtime is technically strong enough to stop broad local hardening and move
+to evidence closure. More local guard work is still useful when it removes a
+specific release risk, but it should no longer displace final review, remote CI,
+private RC publication, pilot, or rollback proof.</p>
+<p>Current realistic ratings:</p>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th style="text-align: right;">Rating</th>
+<th>Evidence</th>
+<th>Remaining gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Runtime behavior and API</td>
+<td style="text-align: right;">91 / 100</td>
+<td>Typed primitives, frozen public API guard, compatibility tests, terminal failure taxonomy</td>
+<td>Final reviewer must confirm the large behavior diff</td>
+</tr>
+<tr>
+<td>Local quality gate</td>
+<td style="text-align: right;">94 / 100</td>
+<td>999 tests, 94.85 percent total coverage, module floor, lint, format, strict typing</td>
+<td>Same commit still needs remote CI proof</td>
+</tr>
+<tr>
+<td>Release engineering</td>
+<td style="text-align: right;">88 / 100</td>
+<td>Wheel/sdist build, distribution checks, SBOM flow, release evidence guards, private publication controls</td>
+<td>Private RC has not been tagged or published</td>
+</tr>
+<tr>
+<td>Security posture</td>
+<td style="text-align: right;">86 / 100</td>
+<td>Secret scan, dependency audit, workflow hardening, action pinning, strict security/source guards</td>
+<td>Human security sign-off and external CI evidence remain open</td>
+</tr>
+<tr>
+<td>Documentation and operator readiness</td>
+<td style="text-align: right;">84 / 100</td>
+<td>Strict docs build, public branding guard, operations, pilot, rollback, and promotion docs</td>
+<td>Runbooks have not yet been exercised by a real pilot operator</td>
+</tr>
+<tr>
+<td>External production proof</td>
+<td style="text-align: right;">45 / 100</td>
+<td>Local pilot dry-run and checklists exist</td>
+<td>No real controlled pilot, rollback execution, or stable promotion evidence yet</td>
+</tr>
+</tbody>
+</table>
+<p>Overall current assessment:</p>
+<ul>
+<li>Local/server technical readiness: 91 / 100.</li>
+<li>Private RC readiness: 86 / 100.</li>
+<li>Stable production readiness: 78 / 100.</li>
+</ul>
+<p>This is a release candidate with a very strong local gate, not yet a stable
+production release. The stable score is held down by missing external evidence,
+not by a known local code defect.</p>
+<p>The highest-risk items now are:</p>
+<ul>
+<li>the large unstaged release-candidate diff still needs final subsystem review,</li>
+<li>remote CI has not yet proven the same reviewed commit,</li>
+<li>the security review is guarded but not signed off,</li>
+<li>the private package channel has not published the RC artifact,</li>
+<li>the runtime has not run in a real controlled pilot workflow,</li>
+<li>rollback has not been proven in the pilot environment.</li>
+</ul>
+<h2 id="corrected-forward-plan">Corrected Forward Plan<a class="headerlink" href="#corrected-forward-plan" title="Permanent link">&para;</a></h2>
+<p>From this point, prioritize evidence closure over additional broad hardening.
+Only accept new local code or guard changes when they fix a discovered bug,
+close a release blocker, or reduce a concrete P0/P1 production risk.</p>
+<ol>
+<li>Freeze the local release-candidate diff.</li>
+<li>Stop opportunistic feature work.</li>
+<li>Keep only bug fixes, guard fixes, docs accuracy fixes, and release
+     evidence fixes in scope.</li>
+<li>
+<p>Re-run the full production gate after any change.</p>
+</li>
+<li>
+<p>Complete final diff review and staging review.</p>
+</li>
+<li>Review the 85-file tracked diff by subsystem.</li>
+<li>Review all 104 untracked release assets with
+     <code>git status --short --untracked-files=all</code>.</li>
+<li>Confirm generated/cache artifacts remain ignored and unstaged.</li>
+<li>
+<p>Complete <code>docs/compliance/final-diff-review.md</code>,
+     <code>docs/compliance/rc-review-handoff.md</code>, and
+     <code>docs/compliance/staging-manifest.md</code>.</p>
+</li>
+<li>
+<p>Prove remote CI parity.</p>
+</li>
+<li>Push the reviewed branch or open the release-candidate PR.</li>
+<li>Require CI, docs, release verification, workflow hardening, action
+     pinning, security, source, package, and distribution guards on the same
+     commit.</li>
+<li>
+<p>Record workflow run URLs and commit SHA in
+     <code>docs/compliance/remote-ci-validation.md</code>.</p>
+</li>
+<li>
+<p>Complete security review sign-off.</p>
+</li>
+<li>Use <code>docs/compliance/security-review.md</code>.</li>
+<li>Resolve all high or critical findings before tagging.</li>
+<li>
+<p>Document any accepted lower-severity risk with owner, mitigation, and
+     follow-up version.</p>
+</li>
+<li>
+<p>Publish the private RC.</p>
+</li>
+<li>Tag <code>v0.3.0rc1</code> only after local/server gate, remote CI, review handoff,
+     and security review are complete.</li>
+<li>Let the release workflow build wheel, sdist, SBOM JSON, SBOM XML, and
+     checksum manifest.</li>
+<li>
+<p>Verify repository release evidence and private package artifacts before
+     pilot use.</p>
+</li>
+<li>
+<p>Run one controlled RC pilot.</p>
+</li>
+<li>Use exactly one bounded workflow with known operators and limited volume.</li>
+<li>Enable permissions, guardrails, governance limits, durable event/usage
+     sinks, and telemetry.</li>
+<li>
+<p>Collect terminal failure-class distribution, cost, token usage, guardrail
+     blocks, permission denials, governance breaches, sink failures, and
+     provider failover evidence.</p>
+</li>
+<li>
+<p>Prove rollback in the pilot environment.</p>
+</li>
+<li>Identify the previous known-good package version.</li>
+<li>Install it from the controlled artifact source.</li>
+<li>
+<p>Run the rollback validation commands and record the evidence.</p>
+</li>
+<li>
+<p>Decide stable promotion.</p>
+</li>
+<li>Promote only if the pilot has zero P0 incidents, zero unresolved P1
+     incidents, complete rollback proof, approved stable promotion record, and
+     green final local/server plus remote CI gates.</li>
+<li>If pilot fixes are needed, cut <code>0.3.0rc2</code> instead of promoting a known
+     flawed RC.</li>
+</ol>
+<h2 id="production-strategy">Production Strategy<a class="headerlink" href="#production-strategy" title="Permanent link">&para;</a></h2>
+<p>Use a phased strategy:</p>
+<ol>
+<li>Freeze and inventory the current hardening work.</li>
+<li>Lock public API and compatibility for <code>0.3.0</code>.</li>
+<li>Prepare <code>0.3.0rc1</code> release engineering.</li>
+<li>Run a lightweight security and compliance pass.</li>
+<li>Add operations evidence: monitoring, alerts, and rollback.</li>
+<li>Publish a private release candidate.</li>
+<li>Run one controlled production pilot.</li>
+<li>Fix only RC bugs.</li>
+<li>Promote to stable <code>0.3.0</code>.</li>
+<li>Stabilize for 7 to 14 days after production use begins.</li>
+</ol>
+<p>The recommended release channel order is:</p>
+<ol>
+<li>Private package registry.</li>
+<li>Repository release artifacts.</li>
+<li>Public package index only after the pilot succeeds and the business decision
+   is made.</li>
+</ol>
+<p>The current release-candidate decision boundary is summarized in
+<code>docs/compliance/rc-readiness-summary.md</code> and enforced by
+<code>scripts/check_rc_readiness.py</code>.</p>
+<p>Stable promotion controls live in <code>docs/compliance/stable-promotion.md</code> and are
+enforced by <code>scripts/check_stable_promotion.py</code>.</p>
+<p>Remote CI validation evidence lives in
+<code>docs/compliance/remote-ci-validation.md</code> and is enforced by
+<code>scripts/check_remote_ci_validation.py</code>.</p>
+<p>Final reviewer handoff lives in <code>docs/compliance/rc-review-handoff.md</code> and is
+enforced by <code>scripts/check_rc_review_handoff.py</code>.</p>
+<p>Staging manifest review lives in <code>docs/compliance/staging-manifest.md</code> and is
+enforced by <code>scripts/check_staging_manifest.py</code>.</p>
+<p>Private release-candidate publication controls live in
+<code>docs/compliance/private-rc-publication.md</code> and are enforced by
+<code>scripts/check_private_rc_publication.py</code>.</p>
+<p>Security review scope and no-go rules live in
+<code>docs/compliance/security-review.md</code> and are enforced by
+<code>scripts/check_security_review.py</code>.</p>
+<p>Real controlled pilot execution controls live in
+<code>docs/compliance/pilot-execution.md</code> and are enforced by
+<code>scripts/check_pilot_execution.py</code>. The guard also verifies the documented
+branch, base HEAD, working-tree diff, and untracked release-asset count against
+the local dirty-tree snapshot before pilot evidence can be treated as current.</p>
+<p>Real rollback execution controls live in
+<code>docs/compliance/rollback-execution.md</code> and are enforced by
+<code>scripts/check_rollback_execution.py</code>. The guard also verifies the documented
+branch, base HEAD, working-tree diff, and untracked release-asset count against
+the local dirty-tree snapshot before rollback proof can be treated as current.</p>
+<h2 id="sprint-0-freeze-and-inventory">Sprint 0: Freeze And Inventory<a class="headerlink" href="#sprint-0-freeze-and-inventory" title="Permanent link">&para;</a></h2>
+<p>Goal: preserve the current work safely and make the release candidate diff
+reviewable.</p>
+<p>Actions:</p>
+<ul>
+<li>Work on branch <code>production-rc-0.3.0</code>.</li>
+<li>Capture a full <code>git status --short --branch</code> snapshot.</li>
+<li>Capture <code>git diff --stat</code> and group changes by subsystem:
+  branding, workflows, docs, runtime modules, tests, scripts, packaging.</li>
+<li>Confirm no generated cache, local artifact, virtualenv, or accidental file is
+  included in the release diff.</li>
+<li>Confirm all public branding names Techrevati doo only.</li>
+<li>Confirm <code>techrevati.runtime</code> remains unchanged.</li>
+<li>Run the full production gate from a clean shell.</li>
+<li>Record any remaining debt as explicit backlog items, not hidden review notes.</li>
+<li>Use <code>docs/compliance/final-diff-review.md</code> for subsystem review and keep it
+  enforced by <code>scripts/check_final_diff_review.py</code>.</li>
+<li>Use <code>docs/compliance/rc-review-handoff.md</code> as the final reviewer handoff
+  before stage, tag, or publish.</li>
+<li>Use <code>docs/compliance/staging-manifest.md</code> and
+  <code>scripts/check_staging_manifest.py</code> to classify every untracked RC asset
+  before staging.</li>
+<li>Use <code>docs/compliance/guard-calibration.md</code> to triage guard false positives
+  before tagging or stable promotion.</li>
+</ul>
+<p>Debt to pay in this sprint:</p>
+<ul>
+<li>Unreviewed large diff.</li>
+<li>Missing release-candidate inventory.</li>
+<li>Any accidental files or stale generated outputs.</li>
+<li>Unclassified or unexplained guard false positives.</li>
+</ul>
+<p>Definition of Done:</p>
+<ul>
+<li>Branch exists.</li>
+<li>Diff inventory exists.</li>
+<li>Full gate passes.</li>
+<li>No unexplained tracked or untracked files remain in the release set.</li>
+<li>New guards have documented scope, workflow classification, and
+  false-positive handling.</li>
+</ul>
+<h2 id="sprint-1-public-api-and-compatibility-freeze">Sprint 1: Public API And Compatibility Freeze<a class="headerlink" href="#sprint-1-public-api-and-compatibility-freeze" title="Permanent link">&para;</a></h2>
+<p>Goal: prevent accidental breaking changes before the release candidate.</p>
+<p>Actions:</p>
+<ul>
+<li>Review all public exports from <code>techrevati.runtime</code>.</li>
+<li>Confirm deprecated names remain available where promised.</li>
+<li>Confirm public API guard expectations match the intended <code>0.3.0</code> surface.</li>
+<li>Freeze behavior for core primitives:
+  <code>AgentSession</code>, guardrails, governance, permissions, usage tracking, retry,
+  routing, checkpoints, sinks, streaming, hooks, and OTel integration.</li>
+<li>Freeze terminal failure-class semantics for policy, safety, governance,
+  rate-limit, tool, dependency, local persistence/I/O, validation, and model
+  failures.</li>
+<li>Add or tighten regression tests for any public behavior discovered during
+  review.</li>
+<li>Reject new features until stable <code>0.3.0</code> is released.</li>
+</ul>
+<p>Debt to pay in this sprint:</p>
+<ul>
+<li>Accidental exports.</li>
+<li>Weak public boundary validation.</li>
+<li>Missing compatibility tests.</li>
+<li>Unclear deprecation behavior.</li>
+</ul>
+<p>Definition of Done:</p>
+<ul>
+<li>Public API guard passes.</li>
+<li>Deprecation tests pass.</li>
+<li>All public behavior changes are documented in changelog/release notes.</li>
+<li>Breaking changes are deferred to a later minor release.</li>
+</ul>
+<h2 id="sprint-2-release-engineering-for-030rc1">Sprint 2: Release Engineering For <code>0.3.0rc1</code><a class="headerlink" href="#sprint-2-release-engineering-for-030rc1" title="Permanent link">&para;</a></h2>
+<p>Goal: make release creation repeatable and tag-gated.</p>
+<p>Actions:</p>
+<ul>
+<li>Change version from <code>0.3.0.dev1</code> to <code>0.3.0rc1</code>.</li>
+<li>Add changelog entry for <code>0.3.0rc1</code>.</li>
+<li>Verify version consistency across package metadata, runtime <code>__version__</code>,
+  changelog, and release tag.</li>
+<li>Build wheel and sdist.</li>
+<li>Run distribution checks and <code>twine check</code>.</li>
+<li>Run zero-dependency wheel install smoke.</li>
+<li>Run optional OTel extra smoke.</li>
+<li>Generate CycloneDX SBOM JSON and XML.</li>
+<li>Confirm release workflow blocks invalid tags.</li>
+<li>Confirm private registry publish steps are documented.</li>
+</ul>
+<p>Debt to pay in this sprint:</p>
+<ul>
+<li>Manual release assumptions.</li>
+<li>Missing RC metadata.</li>
+<li>Artifact verification gaps.</li>
+</ul>
+<p>Definition of Done:</p>
+<ul>
+<li><code>v0.3.0rc1</code> can be tagged safely.</li>
+<li>Wheel and sdist are verified.</li>
+<li>SBOM is generated.</li>
+<li>Release notes clearly mark the build as a release candidate.</li>
+</ul>
+<h3 id="private-rc-publication-steps">Private RC Publication Steps<a class="headerlink" href="#private-rc-publication-steps" title="Permanent link">&para;</a></h3>
+<p>Use these steps for <code>0.3.0rc1</code>:</p>
+<ol>
+<li>Start from the reviewed release-candidate branch.</li>
+<li>Confirm <code>pyproject.toml</code>, <code>CHANGELOG.md</code>, and <code>docs/changelog.md</code> all point
+   to <code>0.3.0rc1</code>.</li>
+<li>Run the full production gate from a clean shell.</li>
+<li>Require remote CI to pass on the release candidate commit.</li>
+<li>Complete the remote CI validation checklist for the same reviewed commit.</li>
+<li>Complete the guarded security review before creating the private RC tag.</li>
+<li>Create tag <code>v0.3.0rc1</code> only after the local/server gate and remote CI are
+   both green.</li>
+<li>Let the release workflow build the wheel, source archive, and SBOM files.</li>
+<li>Verify the repository release artifacts: wheel, source archive, SBOM JSON,
+   and SBOM XML.</li>
+<li>Verify <code>private-package-dist</code> with distribution and metadata checks before
+   publishing.</li>
+<li>Publish only the wheel and source archive to the private registry or
+   controlled artifact channel.</li>
+<li>Keep SBOM files attached as repository release evidence; do not upload them
+   as package artifacts.</li>
+<li>Do not publish to a public package index until the controlled RC pilot has
+    passed and explicit approval is recorded.</li>
+</ol>
+<p>Private registry credentials must be short-lived or managed by the CI secret
+store. They must never be committed, printed in logs, or stored in release
+artifacts.</p>
+<p>The guarded private RC publication checklist in
+<code>docs/compliance/private-rc-publication.md</code> must be completed before pilot use.</p>
+<h2 id="sprint-3-security-and-compliance-pass">Sprint 3: Security And Compliance Pass<a class="headerlink" href="#sprint-3-security-and-compliance-pass" title="Permanent link">&para;</a></h2>
+<p>Goal: reduce supply-chain, secret leakage, and audit risks before the pilot.</p>
+<p>Actions:</p>
+<ul>
+<li>Run a repository secret scan.</li>
+<li>Run dependency vulnerability scanning for dev, docs, build, release, and OTel
+  extras.</li>
+<li>Confirm runtime dependencies remain empty.</li>
+<li>Confirm workflow actions are pinned.</li>
+<li>Confirm workflow permissions are minimal.</li>
+<li>Review logs, traces, diagnostics, and error handling for raw secret leakage.</li>
+<li>Review guardrails, permissions, and governance defaults for pilot use.</li>
+<li>Confirm audit events and terminal failure classes preserve safety semantics:
+  <code>governance_breach</code>, <code>permission_denied</code>, and <code>guardrail_violation</code> must not
+  be collapsed into generic dependency or model failures.</li>
+<li>Confirm local persistence, database, disk, and filesystem failures classify
+  as dependency failures rather than model failures.</li>
+<li>Confirm fallback caller validation failures classify as <code>validation_error</code>
+  rather than model failures without masking more specific classifier matches.</li>
+<li>Confirm provider/model prompt or content-policy rejections classify as
+  <code>prompt_rejection</code> rather than generic model failures.</li>
+<li>Confirm runtime rate-limiter hard-stops classify as <code>rate_limit</code> rather than
+  generic model failures.</li>
+<li>Confirm uncaught <code>MaxIterationsExceededError</code> terminal failures classify as
+  <code>governance_breach</code> rather than generic model failures.</li>
+<li>Confirm caller-driven cancellation classifies as <code>cancelled</code> rather than
+  <code>unknown</code>.</li>
+<li>Confirm caller-driven cancellation does not set OTel <code>error.type</code> or
+  <code>StatusCode.ERROR</code>.</li>
+<li>Confirm event schema validation rejects inconsistent cancellation status and
+  failure-class combinations.</li>
+<li>Confirm <code>agent.failed</code> schema validation rejects payloads without a
+  <code>failure_class</code>.</li>
+<li>Update <code>SECURITY.md</code> with supported versions, SBOM/provenance guidance, and
+  incident reporting expectations.</li>
+<li>Document a lightweight threat model for agent runtime deployments.</li>
+<li>Keep the security review checklist explicit and pending until reviewer
+  sign-off is recorded.</li>
+</ul>
+<p>Debt to pay in this sprint:</p>
+<ul>
+<li>Supply-chain review gaps.</li>
+<li>Weak incident response documentation.</li>
+<li>Possible sensitive-data leakage through logs or traces.</li>
+</ul>
+<p>Definition of Done:</p>
+<ul>
+<li>No unresolved high or critical security findings.</li>
+<li>SBOM/provenance process is documented.</li>
+<li>Security docs are usable by operators and downstream users.</li>
+</ul>
+<h2 id="sprint-4-operations-and-observability">Sprint 4: Operations And Observability<a class="headerlink" href="#sprint-4-operations-and-observability" title="Permanent link">&para;</a></h2>
+<p>Goal: make pilot behavior visible and diagnosable.</p>
+<p>Required signals:</p>
+<ul>
+<li>Session count.</li>
+<li>Success and failure rate.</li>
+<li>Guardrail blocks.</li>
+<li>Permission denials.</li>
+<li>Governance breaches.</li>
+<li>Failure-class distribution, including <code>governance_breach</code>,
+  <code>permission_denied</code>, and <code>guardrail_violation</code>.</li>
+<li>Retry attempts.</li>
+<li>Provider switches.</li>
+<li>Token usage.</li>
+<li>Estimated cost.</li>
+<li>Tool call count.</li>
+<li>Checkpoint writes and replays.</li>
+<li>Event and usage sink failures.</li>
+<li>Turn latency and tool-call latency.</li>
+</ul>
+<p>Actions:</p>
+<ul>
+<li>Define a minimal OTel collector/exporter setup for pilot deployments.</li>
+<li>Confirm event and usage sinks are enabled in the pilot workflow.</li>
+<li>Define retention for durable event and usage records.</li>
+<li>Add an operator runbook for:
+  version checks, event inspection, usage inspection, governance breaches,
+  rollback, pilot shutdown, and diagnostic bundle collection.</li>
+<li>Define minimum alerts:
+  runtime exception spike, governance terminate spike, cost threshold breach,
+  provider failure spike, sink persistence failure, and OTel export failure.</li>
+<li>Keep the pilot operations runbook in
+  <code>docs/compliance/pilot-operations-runbook.md</code> and enforce it with
+  <code>scripts/check_operations_runbook.py</code>.</li>
+</ul>
+<p>Debt to pay in this sprint:</p>
+<ul>
+<li>Missing runbook.</li>
+<li>Missing alert definitions.</li>
+<li>Unclear log/event retention.</li>
+</ul>
+<p>Definition of Done:</p>
+<ul>
+<li>Operators know how to observe, diagnose, and roll back the pilot.</li>
+<li>Pilot telemetry is sufficient to evaluate success criteria.</li>
+<li>Rollback is tested outside the production pilot.</li>
+</ul>
+<h2 id="sprint-5-controlled-rc-pilot">Sprint 5: Controlled RC Pilot<a class="headerlink" href="#sprint-5-controlled-rc-pilot" title="Permanent link">&para;</a></h2>
+<p>Goal: prove <code>0.3.0rc1</code> in one real workflow before stable release.</p>
+<p>Pilot workflow:</p>
+<ul>
+<li>One internal inbound support or back-office agent workflow.</li>
+<li>Limited users and limited request volume.</li>
+<li>No destructive tool action without explicit permission.</li>
+<li>Guardrails enabled before and after model/tool execution.</li>
+<li>Governance hard limits enabled.</li>
+<li>Event and usage persistence enabled.</li>
+<li>OTel or equivalent telemetry enabled.</li>
+</ul>
+<p>Controlled test scenarios:</p>
+<ul>
+<li>Successful session.</li>
+<li>Prompt-injection attempt.</li>
+<li>Permission denial.</li>
+<li>Guardrail block.</li>
+<li>Max-iterations breach.</li>
+<li>Max-tool-calls breach.</li>
+<li>Provider failover.</li>
+<li>Checkpoint resume.</li>
+<li>Sink failure diagnostic.</li>
+<li>Rollback to the previous known-good version.</li>
+</ul>
+<p>Evidence preparation:</p>
+<ul>
+<li>Use the pilot execution checklist at
+  <code>docs/compliance/pilot-execution.md</code> to separate the local dry-run from the
+  real downstream pilot. Its guard must pass with matching branch, base HEAD,
+  working-tree diff, and untracked release-asset snapshot parity before launch.</li>
+<li>Use the rollback execution checklist at
+  <code>docs/compliance/rollback-execution.md</code> to prove the previous known-good
+  version can run in the pilot environment. Its guard must pass with matching
+  branch, base HEAD, working-tree diff, and untracked release-asset snapshot
+  parity before rollback proof is accepted.</li>
+<li>Run <code>scripts/check_pilot_dry_run.py</code> before the real downstream pilot to
+  validate local pilot wiring.</li>
+<li>Use the controlled RC pilot evidence template at
+  <code>docs/compliance/pilot-evidence-template.md</code> for the pilot go/no-go record.</li>
+<li>Use the rollback proof checklist at
+  <code>docs/compliance/rollback-proof-checklist.md</code>.</li>
+<li>Keep both templates enforced by <code>scripts/check_pilot_evidence.py</code>.</li>
+</ul>
+<p>Success criteria:</p>
+<ul>
+<li>Zero P0 incidents.</li>
+<li>Zero unresolved P1 incidents.</li>
+<li>At least 99 percent of sessions complete without runtime crash.</li>
+<li>Blocked, denied, and breached actions are audit-ready.</li>
+<li>Terminal policy and safety stops carry the expected failure classes:
+  <code>permission_denied</code>, <code>guardrail_violation</code>, and <code>governance_breach</code>.</li>
+<li>Usage and cost tracking are reasonable and explainable.</li>
+<li>Recovery and provider failover behavior is visible in logs/events.</li>
+<li>Rollback has been tested and documented.</li>
+</ul>
+<p>Debt to pay in this sprint:</p>
+<ul>
+<li>Unknown real-world behavior.</li>
+<li>Unproven rollback.</li>
+<li>Unproven observability quality.</li>
+</ul>
+<p>Definition of Done:</p>
+<ul>
+<li>Pilot evidence is collected.</li>
+<li>Go/no-go decision is documented.</li>
+<li>Any bug that affects stable readiness has an owner and severity.</li>
+</ul>
+<h2 id="sprint-6-rc-bugfix-window">Sprint 6: RC Bugfix Window<a class="headerlink" href="#sprint-6-rc-bugfix-window" title="Permanent link">&para;</a></h2>
+<p>Goal: fix only what the pilot proves is necessary.</p>
+<p>Rules:</p>
+<ul>
+<li>No new features.</li>
+<li>No opportunistic refactors.</li>
+<li>Bugfixes, docs fixes, test fixes, and security fixes only.</li>
+<li>Every pilot bug gets a regression test.</li>
+<li>Breaking changes are deferred to <code>0.4.0</code> unless required to resolve a P0.</li>
+</ul>
+<p>Possible outcomes:</p>
+<ul>
+<li>Promote <code>0.3.0rc1</code> to <code>0.3.0</code> if no serious issues are found.</li>
+<li>Cut <code>0.3.0rc2</code> if minor fixes are needed.</li>
+<li>Stop stable release if an architectural issue appears.</li>
+</ul>
+<p>Debt to pay in this sprint:</p>
+<ul>
+<li>Pilot-discovered defects.</li>
+<li>Missing regression coverage.</li>
+<li>Documentation mismatches.</li>
+</ul>
+<p>Definition of Done:</p>
+<ul>
+<li>All stable-blocking pilot issues are closed.</li>
+<li>Full gate and remote CI pass.</li>
+<li>Release notes accurately describe RC findings and fixes.</li>
+</ul>
+<h2 id="sprint-7-stable-030-release">Sprint 7: Stable <code>0.3.0</code> Release<a class="headerlink" href="#sprint-7-stable-030-release" title="Permanent link">&para;</a></h2>
+<p>Goal: publish the production package.</p>
+<p>Actions:</p>
+<ul>
+<li>Change version from final RC to <code>0.3.0</code>.</li>
+<li>Finalize changelog.</li>
+<li>Run full local/server gate.</li>
+<li>Require remote CI green on the release commit.</li>
+<li>Complete the stable promotion record with fresh external evidence.</li>
+<li>Tag <code>v0.3.0</code>.</li>
+<li>Publish to private registry.</li>
+<li>Create a repository release with wheel, sdist, SBOM JSON, and SBOM XML.</li>
+<li>Publish to a public package index only if approved after pilot.</li>
+<li>Record rollback target and rollback command.</li>
+</ul>
+<p>Debt to pay in this sprint:</p>
+<ul>
+<li>Final release metadata gaps.</li>
+<li>Missing stable release evidence.</li>
+</ul>
+<p>Definition of Done:</p>
+<ul>
+<li>Stable artifacts are published.</li>
+<li>Stable promotion evidence is archived.</li>
+<li>Operators know the rollback version.</li>
+<li>Release evidence is archived.</li>
+</ul>
+<h2 id="sprint-8-post-production-stabilization">Sprint 8: Post-Production Stabilization<a class="headerlink" href="#sprint-8-post-production-stabilization" title="Permanent link">&para;</a></h2>
+<p>Goal: watch the first production period closely and avoid silent drift.</p>
+<p>Duration: 7 to 14 days after stable production use begins.</p>
+<p>Actions:</p>
+<ul>
+<li>Review metrics daily.</li>
+<li>Review incidents and near misses.</li>
+<li>Track cost drift.</li>
+<li>Track provider failover rates.</li>
+<li>Track guardrail false positives and false negatives.</li>
+<li>Track release guard false positives and calibration drift.</li>
+<li>Track governance breach patterns.</li>
+<li>Track terminal failure-class distribution and investigate any unexpected
+  <code>unknown</code>, dependency, or model classification for policy/safety stops.</li>
+<li>Track persistence, database, disk, and filesystem dependency classifications
+  separately from model-provider failures during pilot review.</li>
+<li>Maintain patch release readiness for <code>0.3.1</code> if needed.</li>
+<li>Start the <code>0.4.0</code> backlog only after <code>0.3.0</code> is stable.</li>
+</ul>
+<p>Debt to pay in this sprint:</p>
+<ul>
+<li>Post-release operational findings.</li>
+<li>Pilot assumptions that did not hold at production volume.</li>
+</ul>
+<p>Definition of Done:</p>
+<ul>
+<li>No open P0 or unresolved P1 issues.</li>
+<li>No worsening monitoring trend.</li>
+<li>Patch or follow-up backlog is documented.</li>
+</ul>
+<h2 id="debt-payment-cadence">Debt Payment Cadence<a class="headerlink" href="#debt-payment-cadence" title="Permanent link">&para;</a></h2>
+<p>Debt must be paid continuously, not deferred to the end:</p>
+<ul>
+<li>Every sprint begins with a short debt scan for its subsystem.</li>
+<li>Any defect discovered while hardening gets a regression test.</li>
+<li>Any new guard or release rule gets a matching test.</li>
+<li>Any guard false positive gets triaged as a guard bug, repository bug, or
+  documented policy exception.</li>
+<li>Any public behavior change gets documentation or changelog coverage.</li>
+<li>Any skipped item must be written as a backlog entry with a reason.</li>
+<li>No sprint closes with hidden, undocumented production risk.</li>
+</ul>
+<h2 id="production-gate-command-shape">Production Gate Command Shape<a class="headerlink" href="#production-gate-command-shape" title="Permanent link">&para;</a></h2>
+<p>The release candidate gate must include:</p>
+<ul>
+<li>all repository check scripts except distribution/tag-only checks when not in
+  release context,</li>
+<li><code>ruff check src/ tests/ scripts/</code>,</li>
+<li><code>ruff format --check src/ tests/ scripts/</code>,</li>
+<li><code>mypy src/ --strict</code>,</li>
+<li>full pytest with coverage,</li>
+<li>per-module coverage threshold check,</li>
+<li>strict docs build,</li>
+<li>public branding check over generated docs,</li>
+<li>wheel/sdist build,</li>
+<li>distribution artifact check,</li>
+<li><code>twine check</code>,</li>
+<li>release-context evidence smoke with <code>python scripts/install_toolchain.py
+  release</code> available,</li>
+<li>isolated temporary virtual environment for the release-context evidence smoke,</li>
+<li>forced no-index/no-dependency install from the built wheel before release
+  evidence generation,</li>
+<li>SBOM JSON and XML generation for the built wheel,</li>
+<li><code>SHA256SUMS</code> generation for wheel, source archive, SBOM JSON, and SBOM XML,</li>
+<li><code>python scripts/check_release_evidence.py dist</code> over the completed evidence
+  directory.</li>
+</ul>
+<h2 id="gono-go-matrix">Go/No-Go Matrix<a class="headerlink" href="#gono-go-matrix" title="Permanent link">&para;</a></h2>
+<p>No-go conditions:</p>
+<ul>
+<li>Any P0 pilot incident.</li>
+<li>Any unresolved P1 issue.</li>
+<li>Remote CI red on release commit.</li>
+<li>Public branding violation.</li>
+<li>Public API guard failure.</li>
+<li>Security high or critical finding without explicit mitigation.</li>
+<li>Missing rollback path.</li>
+<li>Missing release artifacts, SBOM, or <code>SHA256SUMS</code>.</li>
+</ul>
+<p>Conditional go:</p>
+<ul>
+<li>P2 issues with documented workaround.</li>
+<li>Minor docs-only defects with patch planned.</li>
+<li>Non-critical false-positive guardrails with tuning plan.</li>
+</ul>
+<p>Go:</p>
+<ul>
+<li>All gates pass.</li>
+<li>Pilot success criteria are met.</li>
+<li>Operators can monitor and roll back.</li>
+<li>Release artifacts are verified and archived.</li>
+</ul>
+<h2 id="explicit-non-goals-for-030">Explicit Non-Goals For <code>0.3.0</code><a class="headerlink" href="#explicit-non-goals-for-030" title="Permanent link">&para;</a></h2>
+<ul>
+<li>No hosted API service.</li>
+<li>No new auth service.</li>
+<li>No database migration framework beyond the existing SQLite reference stores.</li>
+<li>No additional required runtime dependency.</li>
+<li>No breaking namespace change.</li>
+<li>No public package index release unless approved after RC pilot.</li>
+</ul>
+        
+      </main>
+    </div>
+    <footer class="site-footer">
+      <span>Copyright 2026 Techrevati doo</span>
+    </footer>
+  </body>
+</html>

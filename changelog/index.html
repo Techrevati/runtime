@@ -1,2995 +1,668 @@
 
 <!doctype html>
-<html lang="en" class="no-js">
+<html lang="en">
   <head>
-    
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width,initial-scale=1">
-      
-        <meta name="description" content="Runtime primitives for multi-step LLM agent loops (beta)">
-      
-      
-      
-        <link rel="canonical" href="https://Techrevati.github.io/runtime/changelog/">
-      
-      
-        <link rel="prev" href="../api/otel/">
-      
-      
-      
-        
-      
-      
-      <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
-    
-    
-      
-        <title>Changelog - techrevati-runtime</title>
-      
-    
-    
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
-      
-        
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
-      
-      
-
-
-    
-    
-      
-    
-    
-      
-        
-        
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
-        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
-      
-    
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Changelog - Runtime</title>
+    <link rel="stylesheet" href="../styles/runtime.css">
     
       <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
-    
-      
-
-    
-    
   </head>
-  
-  
-    
-    
+  <body>
+    <header class="site-header">
       
-    
-    
-    
-    
-    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
-  
-    
-    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
-    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
-    <label class="md-overlay" for="__drawer"></label>
-    <div data-md-component="skip">
+        <a class="brand" href="..">Runtime</a>
       
+    </header>
+    <div class="layout">
+      <nav class="site-nav" aria-label="Primary navigation">
+        <ul class="nav-list">
+    
+      <li class="nav-item">
         
-        <a href="#changelog" class="md-skip">
-          Skip to content
-        </a>
-      
-    </div>
-    <div data-md-component="announce">
-      
-    </div>
-    
-    
-      
-
-<header class="md-header" data-md-component="header">
-  <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="techrevati-runtime" class="md-header__button md-logo" aria-label="techrevati-runtime" data-md-component="logo">
-      
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
-
-    </a>
-    <label class="md-header__button md-icon" for="__drawer">
-      
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
-    </label>
-    <div class="md-header__title" data-md-component="header-title">
-      <div class="md-header__ellipsis">
-        <div class="md-header__topic">
-          <span class="md-ellipsis">
-            techrevati-runtime
-          </span>
-        </div>
-        <div class="md-header__topic" data-md-component="header-topic">
-          <span class="md-ellipsis">
-            
-              Changelog
-            
-          </span>
-        </div>
-      </div>
-    </div>
-    
-      
-        <form class="md-header__option" data-md-component="palette">
-  
-    
-    
-    
-    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
-    
-  
-</form>
-      
-    
-    
-      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
-    
-    
-    
-      
-      
-        <label class="md-header__button md-icon" for="__search">
-          
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
-        </label>
-        <div class="md-search" data-md-component="search" role="dialog">
-  <label class="md-search__overlay" for="__search"></label>
-  <div class="md-search__inner" role="search">
-    <form class="md-search__form" name="search">
-      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
-      <label class="md-search__icon md-icon" for="__search">
+          <span>Home</span>
         
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
         
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
-      </label>
-      <nav class="md-search__options" aria-label="Search">
-        
-        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
-          
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-        </button>
-      </nav>
-      
-    </form>
-    <div class="md-search__output">
-      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
-        <div class="md-search-result" data-md-component="search-result">
-          <div class="md-search-result__meta">
-            Initializing search
-          </div>
-          <ol class="md-search-result__list" role="presentation"></ol>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-      
-    
-    
-      <div class="md-header__source">
-        <a href="https://github.com/Techrevati/runtime" title="Go to repository" class="md-source" data-md-component="source">
-  <div class="md-source__icon md-icon">
-    
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
-  </div>
-  <div class="md-source__repository">
-    Techrevati/runtime
-  </div>
-</a>
-      </div>
-    
-  </nav>
-  
-</header>
-    
-    <div class="md-container" data-md-component="container">
-      
-      
-        
-          
-            
-<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
-  <div class="md-grid">
-    <ul class="md-tabs__list">
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href=".." class="md-tabs__link">
-        
-  
-  
-    
-  
-  Home
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../getting-started/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Getting Started
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../tutorials/end-to-end/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  End-to-End Tutorial
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../migrating-from-0.0.x/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Migrating from 0.0.x
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../migrating-from-0.1.x/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Migrating from 0.1.x
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    
-    
-      <li class="md-tabs__item">
-        <a href="../patterns/orchestrator/" class="md-tabs__link">
-          
-  
-  
-  Patterns
-
-        </a>
       </li>
     
-  
-
-      
+      <li class="nav-item">
         
-  
-  
-  
-  
-    
-    
-      <li class="md-tabs__item">
-        <a href="../api/orchestrator/" class="md-tabs__link">
-          
-  
-  
-  API Reference
-
-        </a>
+          <a href="../getting-started/">Getting Started</a>
+        
+        
       </li>
     
-  
-
-      
-        
-  
-  
-  
-    
-  
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="./" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Changelog
-
-      </a>
-    </li>
-  
-
-      
-    </ul>
-  </div>
-</nav>
-          
-        
-      
-      <main class="md-main" data-md-component="main">
-        <div class="md-main__inner md-grid">
-          
-            
-              
-              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
-                <div class="md-sidebar__scrollwrap">
-                  <div class="md-sidebar__inner">
-                    
-
-
-  
-
-
-<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
-  <label class="md-nav__title" for="__drawer">
-    <a href=".." title="techrevati-runtime" class="md-nav__button md-logo" aria-label="techrevati-runtime" data-md-component="logo">
-      
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
-
-    </a>
-    techrevati-runtime
-  </label>
-  
-    <div class="md-nav__source">
-      <a href="https://github.com/Techrevati/runtime" title="Go to repository" class="md-source" data-md-component="source">
-  <div class="md-source__icon md-icon">
-    
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
-  </div>
-  <div class="md-source__repository">
-    Techrevati/runtime
-  </div>
-</a>
-    </div>
-  
-  <ul class="md-nav__list" data-md-scrollfix>
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Home
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../getting-started/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Getting Started
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../tutorials/end-to-end/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    End-to-End Tutorial
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../migrating-from-0.0.x/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Migrating from 0.0.x
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../migrating-from-0.1.x/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Migrating from 0.1.x
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-      
-      
+      <li class="nav-item">
         
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
+          <a href="../tutorials/end-to-end/">End-to-End Tutorial</a>
         
         
-          
+      </li>
+    
+      <li class="nav-item">
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+          <a href="../migrating-from-0.0.x/">Migrating from 0.0.x</a>
         
-          
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Patterns
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Patterns
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../patterns/orchestrator/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Orchestrator
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../patterns/retry/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Retry Policy
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../patterns/circuit-breaker/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Circuit Breaker
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../patterns/durability/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Durability
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../patterns/rate-limiting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Rate Limiting
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../patterns/routing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Routing
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../patterns/quality-gate/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Quality Gate
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../patterns/lifecycle/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Agent Lifecycle
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../patterns/agent-events/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Agent Events
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../patterns/permissions/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Permissions
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../patterns/policy/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Policy Engine
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../patterns/usage-tracking/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Usage Tracking
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../patterns/governance/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Governance Plane
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../patterns/streaming/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Streaming
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../patterns/hooks/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Hooks
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-      
-      
         
-      
+      </li>
     
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
+      <li class="nav-item">
         
-          
+          <a href="../migrating-from-0.1.x/">Migrating from 0.1.x</a>
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
         
-          
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    API Reference
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    API Reference
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../api/orchestrator/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Orchestrator
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../api/circuit_breaker/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Circuit Breaker
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../api/checkpoint/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Checkpoint
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../api/rate_limit/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
+      </li>
     
-  
-    Rate Limit
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../api/routing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Routing
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../api/retry_policy/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Retry Policy
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../api/usage_tracking/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Usage Tracking
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../api/guardrails/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Guardrails
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../api/governance/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Governance
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../api/handoffs/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Handoffs
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../api/hooks/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
+      <li class="nav-item">
+        
+          <a href="../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
     
-  
-    Hooks
-  
-
+      <li class="nav-item">
+        
+          <span>Compliance</span>
+        
+        
+          <ul class="nav-list">
     
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../api/streaming/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
+      <li class="nav-item">
+        
+          <a href="../compliance/">Compliance Mapping</a>
+        
+        
+      </li>
     
-  
-    Streaming
-  
-
+      <li class="nav-item">
+        
+          <a href="../compliance/production-readiness/">Production Readiness</a>
+        
+        
+      </li>
     
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../api/sinks/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
+      <li class="nav-item">
+        
+          <a href="../compliance/rc-readiness-summary/">RC Readiness Summary</a>
+        
+        
+      </li>
     
-  
-    Sinks
-  
-
+      <li class="nav-item">
+        
+          <a href="../compliance/stable-promotion/">Stable Promotion</a>
+        
+        
+      </li>
     
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../api/persistence/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
+      <li class="nav-item">
+        
+          <a href="../compliance/remote-ci-validation/">Remote CI Validation</a>
+        
+        
+      </li>
     
-  
-    Persistence
-  
-
+      <li class="nav-item">
+        
+          <a href="../compliance/final-diff-review/">Final Diff Review</a>
+        
+        
+      </li>
     
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../api/scheduler/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
+      <li class="nav-item">
+        
+          <a href="../compliance/rc-review-handoff/">RC Review Handoff</a>
+        
+        
+      </li>
     
-  
-    Scheduler
-  
-
+      <li class="nav-item">
+        
+          <a href="../compliance/staging-manifest/">Staging Manifest</a>
+        
+        
+      </li>
     
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../api/otel/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
+      <li class="nav-item">
+        
+          <a href="../compliance/guard-calibration/">Guard Calibration</a>
+        
+        
+      </li>
     
-  
-    OpenTelemetry
-  
-
+      <li class="nav-item">
+        
+          <a href="../compliance/security-review/">Security Review</a>
+        
+        
+      </li>
     
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
+      <li class="nav-item">
+        
+          <a href="../compliance/private-rc-publication/">Private RC Publication</a>
+        
+        
+      </li>
     
-      
-      
-  
-  
+      <li class="nav-item">
+        
+          <a href="../compliance/pilot-operations-runbook/">Pilot Operations Runbook</a>
+        
+        
+      </li>
     
-  
-  
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
+      <li class="nav-item">
+        
+          <a href="../compliance/pilot-execution/">Pilot Execution Checklist</a>
+        
+        
+      </li>
     
-  
-    Changelog
-  
-
+      <li class="nav-item">
+        
+          <a href="../compliance/pilot-dry-run/">Pilot Dry-Run</a>
+        
+        
+      </li>
     
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
-        
-  
-  
-  <span class="md-ellipsis">
+      <li class="nav-item">
+        
+          <a href="../compliance/pilot-evidence-template/">Controlled RC Pilot Evidence</a>
+        
+        
+      </li>
     
-  
-    Changelog
-  
-
+      <li class="nav-item">
+        
+          <a href="../compliance/rollback-execution/">Rollback Execution Checklist</a>
+        
+        
+      </li>
     
-  </span>
-  
-  
-
-      </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
+      <li class="nav-item">
+        
+          <a href="../compliance/rollback-proof-checklist/">Rollback Proof Checklist</a>
+        
+        
+      </li>
     
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#030dev1-2026-05-22" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        [0.3.0.dev1] — 2026-05-22
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="[0.3.0.dev1] — 2026-05-22">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#added-sprint-3-streaming-lifecycle-hooks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Added — Sprint 3 (streaming + lifecycle hooks)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#added-sprint-2-governance-plane-async-guardrails" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Added — Sprint 2 (governance plane + async guardrails)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#021-2026-05-20" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        [0.2.1] — 2026-05-20
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="[0.2.1] — 2026-05-20">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#fixed" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fixed
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#added" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Added
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#changed" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Changed
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#020-2026-05-20" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        [0.2.0] — 2026-05-20
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="[0.2.0] — 2026-05-20">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#added-sprint-6-supply-chain-release-polish" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Added — Sprint 6 (supply chain + release polish)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#added-sprint-5-usage-limits-prompt-caching-ttl-scheduler-async-policy-persistent-sinks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Added — Sprint 5 (usage limits, prompt caching TTL, scheduler, async policy, persistent sinks)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#changed-sprint-4-otel-nesting-agentsession-rename" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Changed — Sprint 4 (OTel nesting + AgentSession rename)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#added-sprint-3-rate-limiting-routing-structured-concurrency" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Added — Sprint 3 (rate limiting + routing + structured concurrency)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#added-sprint-2-durable-execution" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Added — Sprint 2 (durable execution)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#fixed-sprint-0-code-quality-bug-fixes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fixed — Sprint 0 (code-quality + bug fixes)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#fixed-sprint-1-docs-trust" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fixed — Sprint 1 (docs trust)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#pre-020-sprint-6-testing-rigor" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        [Pre-0.2.0] — Sprint 6 (testing rigor)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="[Pre-0.2.0] — Sprint 6 (testing rigor)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#added_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Added
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#changed_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Changed
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#010-2026-05-20" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        0.1.0 — 2026-05-20
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="0.1.0 — 2026-05-20">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#added-async-path" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Added — Async path
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#added-industry-primitive-parity" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Added — Industry primitive parity
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#added-observability" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Added — Observability
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#added-docs-and-dx" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Added — Docs and DX
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#changed_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Changed
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#notes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Notes
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#001-2026-05-20" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        0.0.1 — 2026-05-20
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="0.0.1 — 2026-05-20">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#fixed_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fixed
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#added_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Added
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#changed_3" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Changed
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#000-2026-05-20" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        0.0.0 — 2026-05-20
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
-    </li>
-  
-
+      <li class="nav-item">
+        
+          <a href="../compliance/rc-inventory/">Release Candidate Inventory</a>
+        
+        
+      </li>
     
   </ul>
-</nav>
-                  </div>
-                </div>
-              </div>
-            
-            
-              
-              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
-                <div class="md-sidebar__scrollwrap">
-                  <div class="md-sidebar__inner">
-                    
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
+        
+      </li>
     
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#030dev1-2026-05-22" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        [0.3.0.dev1] — 2026-05-22
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="[0.3.0.dev1] — 2026-05-22">
-      <ul class="md-nav__list">
+      <li class="nav-item">
         
-          <li class="md-nav__item">
-  <a href="#added-sprint-3-streaming-lifecycle-hooks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Added — Sprint 3 (streaming + lifecycle hooks)
-      
-    </span>
-  </a>
-  
-</li>
+          <span>Patterns</span>
         
-          <li class="md-nav__item">
-  <a href="#added-sprint-2-governance-plane-async-guardrails" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Added — Sprint 2 (governance plane + async guardrails)
-      
-    </span>
-  </a>
-  
-</li>
         
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#021-2026-05-20" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        [0.2.1] — 2026-05-20
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="[0.2.1] — 2026-05-20">
-      <ul class="md-nav__list">
+          <ul class="nav-list">
+    
+      <li class="nav-item">
         
-          <li class="md-nav__item">
-  <a href="#fixed" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fixed
-      
-    </span>
-  </a>
-  
-</li>
+          <a href="../patterns/orchestrator/">Orchestrator</a>
         
-          <li class="md-nav__item">
-  <a href="#added" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Added
-      
-    </span>
-  </a>
-  
-</li>
         
-          <li class="md-nav__item">
-  <a href="#changed" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Changed
-      
-    </span>
-  </a>
-  
-</li>
+      </li>
+    
+      <li class="nav-item">
         
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#020-2026-05-20" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        [0.2.0] — 2026-05-20
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="[0.2.0] — 2026-05-20">
-      <ul class="md-nav__list">
+          <a href="../patterns/retry/">Retry Policy</a>
         
-          <li class="md-nav__item">
-  <a href="#added-sprint-6-supply-chain-release-polish" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Added — Sprint 6 (supply chain + release polish)
-      
-    </span>
-  </a>
-  
-</li>
         
-          <li class="md-nav__item">
-  <a href="#added-sprint-5-usage-limits-prompt-caching-ttl-scheduler-async-policy-persistent-sinks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Added — Sprint 5 (usage limits, prompt caching TTL, scheduler, async policy, persistent sinks)
-      
-    </span>
-  </a>
-  
-</li>
+      </li>
+    
+      <li class="nav-item">
         
-          <li class="md-nav__item">
-  <a href="#changed-sprint-4-otel-nesting-agentsession-rename" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Changed — Sprint 4 (OTel nesting + AgentSession rename)
-      
-    </span>
-  </a>
-  
-</li>
+          <a href="../patterns/circuit-breaker/">Circuit Breaker</a>
         
-          <li class="md-nav__item">
-  <a href="#added-sprint-3-rate-limiting-routing-structured-concurrency" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Added — Sprint 3 (rate limiting + routing + structured concurrency)
-      
-    </span>
-  </a>
-  
-</li>
         
-          <li class="md-nav__item">
-  <a href="#added-sprint-2-durable-execution" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Added — Sprint 2 (durable execution)
-      
-    </span>
-  </a>
-  
-</li>
+      </li>
+    
+      <li class="nav-item">
         
-          <li class="md-nav__item">
-  <a href="#fixed-sprint-0-code-quality-bug-fixes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fixed — Sprint 0 (code-quality + bug fixes)
-      
-    </span>
-  </a>
-  
-</li>
+          <a href="../patterns/durability/">Durability</a>
         
-          <li class="md-nav__item">
-  <a href="#fixed-sprint-1-docs-trust" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fixed — Sprint 1 (docs trust)
-      
-    </span>
-  </a>
-  
-</li>
         
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#pre-020-sprint-6-testing-rigor" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        [Pre-0.2.0] — Sprint 6 (testing rigor)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="[Pre-0.2.0] — Sprint 6 (testing rigor)">
-      <ul class="md-nav__list">
+      </li>
+    
+      <li class="nav-item">
         
-          <li class="md-nav__item">
-  <a href="#added_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Added
-      
-    </span>
-  </a>
-  
-</li>
+          <a href="../patterns/rate-limiting/">Rate Limiting</a>
         
-          <li class="md-nav__item">
-  <a href="#changed_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Changed
-      
-    </span>
-  </a>
-  
-</li>
         
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#010-2026-05-20" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        0.1.0 — 2026-05-20
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="0.1.0 — 2026-05-20">
-      <ul class="md-nav__list">
+      </li>
+    
+      <li class="nav-item">
         
-          <li class="md-nav__item">
-  <a href="#added-async-path" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Added — Async path
-      
-    </span>
-  </a>
-  
-</li>
+          <a href="../patterns/routing/">Routing</a>
         
-          <li class="md-nav__item">
-  <a href="#added-industry-primitive-parity" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Added — Industry primitive parity
-      
-    </span>
-  </a>
-  
-</li>
         
-          <li class="md-nav__item">
-  <a href="#added-observability" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Added — Observability
-      
-    </span>
-  </a>
-  
-</li>
+      </li>
+    
+      <li class="nav-item">
         
-          <li class="md-nav__item">
-  <a href="#added-docs-and-dx" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Added — Docs and DX
-      
-    </span>
-  </a>
-  
-</li>
+          <a href="../patterns/quality-gate/">Quality Gate</a>
         
-          <li class="md-nav__item">
-  <a href="#changed_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Changed
-      
-    </span>
-  </a>
-  
-</li>
         
-          <li class="md-nav__item">
-  <a href="#notes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Notes
-      
-    </span>
-  </a>
-  
-</li>
+      </li>
+    
+      <li class="nav-item">
         
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#001-2026-05-20" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        0.0.1 — 2026-05-20
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="0.0.1 — 2026-05-20">
-      <ul class="md-nav__list">
+          <a href="../patterns/lifecycle/">Agent Lifecycle</a>
         
-          <li class="md-nav__item">
-  <a href="#fixed_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fixed
-      
-    </span>
-  </a>
-  
-</li>
         
-          <li class="md-nav__item">
-  <a href="#added_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Added
-      
-    </span>
-  </a>
-  
-</li>
+      </li>
+    
+      <li class="nav-item">
         
-          <li class="md-nav__item">
-  <a href="#changed_3" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Changed
-      
-    </span>
-  </a>
-  
-</li>
+          <a href="../patterns/agent-events/">Agent Events</a>
         
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#000-2026-05-20" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        0.0.0 — 2026-05-20
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-                  </div>
-                </div>
-              </div>
-            
-          
-          
-            <div class="md-content" data-md-component="content">
-              
-              <article class="md-content__inner md-typeset">
-                
-                  
-
-
-  
-  
-
-
-<h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
-<p>All notable changes to <code>techrevati-runtime</code> are documented here. The format
-follows <a href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>; the project
-follows <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>, with the
-caveat that 0.x APIs are explicitly unstable.</p>
-<h2 id="030dev1-2026-05-22">[0.3.0.dev1] — 2026-05-22<a class="headerlink" href="#030dev1-2026-05-22" title="Permanent link">&para;</a></h2>
-<p>First preview of the 0.3.0 milestone (EU AI Act compliance release).
-Bundles Sprint 2 (governance plane + async guardrails) and Sprint 3
-(streaming + mutating hook chain) plus all the 0.2.1 sharp-edges
-fixes — 0.2.1 itself was committed but never tagged for PyPI, so its
-fixes ride into 0.3.0 instead. Install with
-<code>pip install --pre techrevati-runtime</code> to try the preview; the stable
-channel still resolves to 0.2.0.</p>
-<p>This is a <strong>dev release</strong> (PEP 440 <code>.dev1</code>). API surface is
-forward-compatible with planned 0.3.0 features but may shift before the
-final cut; pin to <code>==0.3.0.dev1</code> if you depend on the exact surface.</p>
-<h3 id="added-sprint-3-streaming-lifecycle-hooks">Added — Sprint 3 (streaming + lifecycle hooks)<a class="headerlink" href="#added-sprint-3-streaming-lifecycle-hooks" title="Permanent link">&para;</a></h3>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/policy/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/usage-tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/governance/">Governance Plane</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/pilot-profile/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>API Reference</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../api/orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/agent_events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/agent_lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/circuit_breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/checkpoint/">Checkpoint</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/policy_engine/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/quality_gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/rate_limit/">Rate Limit</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/retry_policy/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/usage_tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/guardrails/">Guardrails</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/governance/">Governance</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/handoffs/">Handoffs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/sinks/">Sinks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/persistence/">Persistence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/scheduler/">Scheduler</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/otel/">Telemetry</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/pilot/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item is-active">
+        
+          <a href="./">Changelog</a>
+        
+        
+      </li>
+    
+  </ul>
+      </nav>
+      <main class="content" id="content">
+        
+          <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
+<p>Author: Techrevati doo</p>
+<h2 id="030rc1-2026-05-31">0.3.0rc1 - 2026-05-31<a class="headerlink" href="#030rc1-2026-05-31" title="Permanent link">&para;</a></h2>
+<p>Release candidate for the 0.3.0 line.</p>
+<p>Added:</p>
 <ul>
-<li><strong><code>AsyncOrchestrationSession.arun_turn_stream</code></strong> — structured
-  <code>StreamEvent</code> generator that reemits caller-produced text chunks and
-  terminates with a <code>final</code> event carrying the resolved usage snapshot.
-  Participates in the full session bookkeeping (iteration cap,
-  governance plane, rate limiter, usage tracker) exactly like
-  <code>arun_turn</code>. Cancellation is consumer-driven: wrap with
-  <code>contextlib.aclosing</code> to get deterministic cleanup of the upstream
-  generator; <code>session._last_stream_cancelled</code> flips to <code>True</code> on the
-  cancelled path.</li>
-<li><strong><code>StreamEvent</code></strong> frozen dataclass + classmethod constructors
-  (<code>text</code>, <code>tool_call</code>, <code>tool_result</code>, <code>handoff</code>, <code>final</code>, <code>error</code>),
-  <code>to_dict()</code> / <code>to_json()</code> for wire serialization. <code>StreamEventType</code>
-  and <code>StreamFinalStatus</code> type aliases exported for consumer typing.</li>
-<li><strong><code>Hook</code> + <code>AsyncHook</code> Protocols</strong> — interceptor chain that <em>mutates</em>
-  data, in contrast to the observe-only <code>EventSink</code>. Methods are
-  optional via <code>hasattr</code> dispatch; implement only what you need.</li>
-<li><strong><code>HookContext</code></strong> — mutable dataclass shared across the hook chain.
-  Fields: <code>role</code>, <code>phase</code>, <code>model</code>, <code>prompt</code>, <code>tool</code>, <code>args</code>, <code>extra</code>.
-  Pass via <code>hook_ctx=</code> on <code>run_turn</code> / <code>arun_turn</code> / <code>run_tool</code> /
-  <code>arun_tool</code> / <code>arun_turn_stream</code>.</li>
-<li><strong><code>AgentSession(hooks=[...])</code></strong> — hook chain wired through every
-  sync + async session. Chain runs left-to-right; later hooks see
-  earlier mutations.</li>
-<li><strong>Built-in hooks:</strong> <code>RedactPIIHook</code> (best-effort PII scrubbing for
-  strings, dicts, OpenAI-style message lists; runs <code>before_model</code> and
-  <code>after_model</code>), <code>LogModelIOHook</code> (stdlib logger emits model input +
-  output with truncation), <code>TokenBudgetCheckHook</code> (pre-flight token
-  budget guard that raises <code>HookBudgetExceededError</code>).</li>
-<li><strong>Docs:</strong> <code>docs/patterns/streaming.md</code>, <code>docs/patterns/hooks.md</code>,
-  plus API reference stubs <code>docs/api/streaming.md</code>,
-  <code>docs/api/hooks.md</code>; mkdocs nav updated.</li>
+<li>Governance plane with hard-stop and alert-only limits.</li>
+<li>Async guardrails.</li>
+<li>Streaming turn support through <code>arun_turn_stream</code>.</li>
+<li>Mutating hook chain for model and tool inputs/outputs.</li>
+<li>Built-in hooks for redaction, model I/O logging, and token-budget checks.</li>
+<li>Pattern and API documentation for governance, streaming, and hooks.</li>
+<li>Release, documentation, workflow, package, public API, and security guard
+  scripts for repeatable release-candidate validation.</li>
+<li>Explicit pilot profile helper for controlled release-candidate workflows.</li>
+<li>Public <code>resolve_pricing(model)</code> helper (exact-then-longest-prefix model
+  pricing lookup, zero-fallback) so callers no longer reach into a private
+  symbol.</li>
+<li>Fan-out event and usage sinks for combining durable local evidence with
+  telemetry exporters.</li>
+<li>Pilot operations runbook and guard for required signals, alerts, retention,
+  rollback, shutdown, and diagnostic bundle collection.</li>
+<li>Controlled RC pilot evidence and rollback proof templates, with a guard that
+  keeps required scenarios, signals, no-go conditions, and success criteria
+  present before stable release.</li>
+<li>Local pilot dry-run guard that exercises pilot wiring for success, guardrail,
+  permission, governance, provider-failover, checkpoint, sink-failure, and
+  rollback-readiness scenarios.</li>
+<li>RC readiness summary and guard that keep private-RC and stable-release
+  decision boundaries explicit before tagging or promotion.</li>
+<li>Final diff review checklist and guard that keep subsystem review scope,
+  no-go rules, and sign-off evidence explicit for the release candidate.</li>
+<li>Guard calibration checklist and guard that keep release guard inventory,
+  CI/release wiring, and false-positive handling explicit before stable
+  promotion.</li>
+<li>Private RC publication checklist, workflow controls, and guard to keep
+  release-candidate package publication limited to the configured private
+  channel before pilot approval.</li>
+<li>Security review checklist and guard covering runtime boundaries,
+  supply-chain evidence, secret/data exposure, workflow release controls, pilot
+  controls, and no-go rules.</li>
+<li>Remote CI validation checklist and guard to keep same-commit hosted workflow
+  evidence separate from local/server gate evidence before tagging.</li>
+<li>RC reviewer handoff checklist and guard that collect release evidence,
+  remaining external blockers, and no-go rules before stage, tag, or publish.</li>
+<li>Staging manifest checklist and guard that classify untracked RC assets and
+  keep generated files out before stage, tag, or publish.</li>
+<li>Pilot execution checklist and guard that keep local dry-run output separate
+  from real downstream pilot evidence before stable promotion.</li>
+<li>Rollback execution checklist and guard that keep command-shape rollback
+  checks separate from real downstream rollback evidence.</li>
+<li>Stable promotion checklist and guard that keep stable <code>0.3.0</code> verification
+  blocked until external evidence is complete, fresh, and approved.</li>
+<li>Release checksum manifest attached as <code>SHA256SUMS</code> so wheel, source archive,
+  and SBOM evidence can be verified before pilot or stable promotion.</li>
+<li>Release evidence verifier for wheel, source archive, SBOM files, and
+  checksum manifest integrity.</li>
+<li>Production gate documentation now keeps release evidence smoke parity with
+  the release workflow.</li>
+<li>Release evidence install smoke now force-reinstalls from the built wheel so
+  an already installed package cannot hide a broken artifact.</li>
+<li>Local/server release-evidence smoke is documented to use an isolated
+  temporary virtual environment so the editable test environment stays intact.</li>
 </ul>
-<h3 id="added-sprint-2-governance-plane-async-guardrails">Added — Sprint 2 (governance plane + async guardrails)<a class="headerlink" href="#added-sprint-2-governance-plane-async-guardrails" title="Permanent link">&para;</a></h3>
+<p>Changed:</p>
 <ul>
-<li><strong><code>GovernancePlane</code></strong> primitive — hard-stop limit enforcement
-  <em>outside</em> agent code, terminal on breach (does NOT route through
-  recovery). Built-in limits: <code>MaxIterationsLimit</code>, <code>MaxBudgetLimit</code>,
-  <code>MaxConsecutiveFailuresLimit</code>, <code>MaxToolCallsLimit</code>. Each carries a
-  <code>value</code>, <code>scope</code> (<code>session</code> for now), and <code>on_breach</code> mode
-  (<code>terminate</code> raises <code>GovernanceBreachError</code>; <code>alert</code> emits
-  <code>governance.alert</code> events and continues).</li>
-<li><strong><code>AgentSession(governance=...)</code></strong> wired through both sync and async
-  sessions. The plane ticks turn counter pre-turn, tool counter
-  pre-tool, and cost / success-streak post-turn.</li>
-<li><strong><code>AsyncGuardrail</code></strong> Protocol (<code>acheck_pre</code> / <code>acheck_post</code>) for
-  guardrails that need I/O. Mixed sync + async guardrail lists
-  supported on async sessions.</li>
-<li><strong><code>PatternGuardrail</code></strong> (regex deny-list, one compiled alternation
-  per instance) and <strong><code>PromptInjectionGuardrail</code></strong> (subclass with 11
-  canonical injection signatures: instruction override, role hijack,
-  delimiter abuse, base64 blob, system-prompt extraction).</li>
-<li><strong><code>governance.breach</code></strong> + <strong><code>governance.alert</code></strong> event names in
-  <code>AgentEventName</code> — emitted via <code>EventSink</code> before the breach
-  exception raises so audit logs catch them even when the exception
-  propagates past handlers.</li>
-<li><strong>Docs:</strong> <code>docs/patterns/governance.md</code> + <code>docs/api/governance.md</code>.</li>
+<li><code>AgentSession</code> is the canonical session factory name; <code>Orchestrator</code> remains
+  available as a deprecated compatibility alias.</li>
+<li>Public documentation and package-level exports are frozen for the release
+  candidate.</li>
+<li>Release artifacts now require verified wheel/sdist metadata and SBOM output.</li>
+<li>Release verification documentation now uses <code>dist/</code>-relative artifact paths
+  so repository-root copy/paste checks verify the intended evidence set.</li>
+<li>Private RC publication now requires a signed security review before the RC
+  tag or private publish step.</li>
+<li>Release evidence verification now parses SBOM JSON and XML and rejects
+  non-CycloneDX or malformed SBOM files.</li>
+<li>Release evidence verification now rejects mismatched wheel/source archive
+  package identity or version before private publication.</li>
+<li>Release evidence verification now reads wheel and source archive metadata so
+  renamed artifacts with stale internal metadata are rejected.</li>
+<li>Release workflow now verifies staged private package upload artifacts before
+  publishing to the private package channel.</li>
+<li>Security pattern checks now scan <code>src</code>, <code>scripts</code>, and <code>tests</code> by default,
+  rejecting disabled TLS verification, literal truthy subprocess shell
+  bypasses, missing subprocess timeouts, implicit <code>subprocess.run</code> check
+  semantics, direct <code>subprocess.Popen</code> usage, raw logging tracebacks, missing
+  HTTP client timeouts, raw exception text in logging/observability payloads,
+  and unsafe PyYAML loading helpers.</li>
+<li>Source hygiene checks now scan <code>src</code>, <code>scripts</code>, and <code>tests</code> by default,
+  skipping generated/cache directories and allowing intentional CLI script
+  output while still rejecting debug
+  breakpoints, <code>pdb</code>, bare exceptions, <code>NotImplementedError</code> runtime stubs,
+  implicit text-file encodings, and stale markers.</li>
+<li>Handoff hooks now run before target worker registration, and async sessions
+  expose <code>ahandoff_to</code> for async handoff hooks.</li>
+<li>Governance limit scopes now fail closed to supported <code>session</code> scope instead
+  of accepting future <code>thread</code> or <code>project</code> scopes without cross-session
+  enforcement.</li>
+<li><code>PermissionPolicy</code> now accepts <code>default_allow_unknown_roles</code>; the base default
+  remains compatibility-first, while the pilot profile uses fail-closed
+  unknown-role behavior.</li>
+<li><code>AgentSession</code> now gives each sync and async session a fresh governance state
+  so session-scoped counters cannot leak across sessions from the same factory.</li>
+<li>Governance hard-stops now use a dedicated <code>governance_breach</code> failure class
+  instead of being reported as dependency failures.</li>
+<li>Permission denials and guardrail blocks now use dedicated terminal failure
+  classes instead of falling through generic exception classification.</li>
+<li>Validation errors, prompt/content-policy rejections, runtime rate-limit
+  stops, max-iterations stops, and caller-driven cancellations now use explicit
+  terminal failure classes instead of being grouped into generic model or
+  unknown failures.</li>
+<li>Caller-driven cancellation remains visible in OTel telemetry without setting
+  <code>error.type</code> or <code>StatusCode.ERROR</code>, preventing intentional stops from
+  inflating operational error-rate alerts.</li>
+<li>Built-in model I/O logging and OTel event detail export are metadata-only by
+  default unless callers explicitly opt in to sensitive detail capture.</li>
 </ul>
-<h2 id="021-2026-05-20">[0.2.1] — 2026-05-20<a class="headerlink" href="#021-2026-05-20" title="Permanent link">&para;</a></h2>
-<p>Sharp-edges patch landed the same day as 0.2.0 to close silent footguns
-identified in the 0.3.0 migration audit. No new primitives; one
-intentional soft-breaking semantic change to <code>GuardrailViolatedError</code>
-(callers reading the legacy single-violation fields still work — see
-"Changed" below).</p>
-<h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
+<p>Fixed:</p>
 <ul>
-<li><strong><code>RecoveryRecipe.step_retries</code> is now honored</strong> by <code>attempt_recovery</code>
-  and <code>aattempt_recovery</code>. Previously the field existed on the dataclass
-  but the recovery executors did not consume it — a recipe that set
-  <code>step_retries={RecoveryStep.RETRY_WITH_BACKOFF: 3}</code> silently ran the
-  step exactly once. Now the executor retries the step up to the
-  budgeted count before moving to the next step. Missing keys default
-  to a single attempt, preserving 0.2.0 behavior.</li>
-<li><strong><code>OpenTelemetrySink</code> cleans up orphan parent spans on interpreter
-  exit.</strong> If a process died between <code>AGENT_STARTED</code> / <code>PHASE_STARTED</code>
-  and the matching <code>AGENT_COMPLETED</code> / <code>AGENT_FAILED</code> / <code>PHASE_COMPLETED</code>,
-  the parent span previously stayed open in the exporter buffer and
-  corrupted the APM trace tree. An <code>atexit</code> hook now marks every
-  still-open parent with <code>error.type=abrupt_termination</code> and an <code>ERROR</code>
-  status before ending it. The hook is no-op on the clean-exit path.</li>
+<li>Hardened runtime validation and copy semantics across events, hooks,
+  guardrails, governance, routing, rate limiting, retry, persistence,
+  telemetry, streaming, and usage tracking.</li>
+<li>Removed non-author public branding from the package, documentation, and
+  release metadata.</li>
 </ul>
-<h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
+<h2 id="021-2026-05-20">0.2.1 - 2026-05-20<a class="headerlink" href="#021-2026-05-20" title="Permanent link">&para;</a></h2>
+<p>Patch release for recovery, telemetry cleanup, pricing registration, and
+guardrail reporting.</p>
+<p>Fixed:</p>
 <ul>
-<li><strong><code>register_pricing(model, pricing, *, on_conflict="overwrite")</code></strong> — explicit
-  merge semantics. <code>"overwrite"</code> (default) preserves 0.2.0 behavior;
-  <code>"error"</code> raises <code>PricingAlreadyRegisteredError</code> on re-registration;
-  <code>"keep"</code> retains the existing entry and drops the new pricing silently.
-  Useful for "register defaults if not present" startup patterns.</li>
-<li><strong><code>PricingAlreadyRegisteredError</code></strong> — exported from
-  <code>techrevati.runtime</code>. Subclass of <code>ValueError</code>, carries <code>.model</code>.</li>
-<li><strong><code>GuardrailViolation</code></strong> dataclass — one entry in the new
-  <code>GuardrailViolatedError.violations</code> tuple. Carries <code>outcome</code>,
-  <code>guardrail</code> (name), <code>stage</code> (<code>"pre"</code> / <code>"post"</code>). Has <code>to_dict()</code> for
-  audit-log serialization.</li>
-<li><strong><code>DeprecationWarning</code> on <code>Orchestrator(...)</code> instantiation</strong> — emitted
-  once per process. <code>AgentSession</code> has been the canonical class name
-  since 0.2.0; the alias remains for a deprecation window and will be
-  removed in 0.3.0. Silent in import — only the first construction
-  warns.</li>
+<li>Recovery recipes now honor per-step retry counts.</li>
+<li>Parent telemetry spans are closed on abrupt interpreter exit.</li>
 </ul>
-<h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
+<p>Added:</p>
 <ul>
-<li><strong><code>GuardrailViolatedError.violations</code></strong> — every guardrail that fires
-  at the same stage is now collected and surfaced as a tuple on the
-  raised error, instead of short-circuiting on the first violation.
-  Required for EU AI Act Article 12 record-keeping (audit logs must
-  reflect the full set of guardrails that fired). Legacy callers that
-  read <code>error.outcome</code> / <code>error.guardrail</code> / <code>error.stage</code> still work —
-  those attributes mirror the first violation. The orchestrator now
-  runs every pre-check and post-check before raising; tests that
-  asserted short-circuit behavior have been updated.</li>
+<li><code>register_pricing(..., on_conflict=...)</code>.</li>
+<li><code>PricingAlreadyRegisteredError</code>.</li>
+<li><code>GuardrailViolation</code>.</li>
+<li>Multi-violation reporting on <code>GuardrailViolatedError</code>.</li>
+<li>Deprecation warning for the compatibility <code>Orchestrator</code> alias.</li>
 </ul>
-<h2 id="020-2026-05-20">[0.2.0] — 2026-05-20<a class="headerlink" href="#020-2026-05-20" title="Permanent link">&para;</a></h2>
-<p>Durable execution, token-aware rate limiting, OTel agent-level span
-nesting, granular usage limits, supply-chain hardening. Zero new
-runtime dependencies. Two soft-breaking changes: OTel sink wire format
-(one-shot → nested) and <code>UsageLimitExceededError</code> for non-cost
-overruns (see <a href="../migrating-from-0.1.x/">Migrating from 0.1.x</a>).</p>
-<h3 id="added-sprint-6-supply-chain-release-polish">Added — Sprint 6 (supply chain + release polish)<a class="headerlink" href="#added-sprint-6-supply-chain-release-polish" title="Permanent link">&para;</a></h3>
+<h2 id="020-2026-05-20">0.2.0 - 2026-05-20<a class="headerlink" href="#020-2026-05-20" title="Permanent link">&para;</a></h2>
+<p>Beta release with durable execution, rate limiting, routing, usage limits,
+checkpointing, persistent sinks, and release hardening.</p>
+<p>Added:</p>
 <ul>
-<li><strong>CycloneDX SBOM in <code>release.yml</code></strong> — generated via <code>cyclonedx-bom</code>
-  (dev-only) before publish and attached to the GitHub Release as
-  both JSON and XML. PyPI Trusted Publishing already attaches a
-  Sigstore-backed attestation to each artifact; <code>SECURITY.md</code> now
-  documents the <code>gh attestation verify</code> command callers should run
-  before installing.</li>
-<li><strong><code>.github/workflows/codeql.yml</code></strong> — Python <code>security-and-quality</code>
-  CodeQL scan on every push, PR, and weekly cron. Findings go to the
-  repo's Security tab.</li>
-<li><strong>Zero-deps smoke job in <code>ci.yml</code></strong> — installs the built wheel into
-  a fresh venv with no <code>[dev]</code> or <code>[otel]</code> extras and imports the
-  full public surface on Python 3.11 / 3.12 / 3.13. Guards the
-  zero-runtime-dependency promise against accidental optional-deps
-  leakage in <code>__init__</code>.</li>
-<li><strong><code>examples/durable_agent.py</code></strong> — full SqliteSaver + thread_id +
-  idempotency_key + ProviderRouter + RateLimiter demo. Runs twice in
-  a row to show resume-from-checkpoint replay.</li>
-<li><strong><code>examples/parallel_tools.py</code></strong> — <code>arun_parallel_tools</code> under
-  <code>asyncio.TaskGroup</code> with input-order results.</li>
-<li><strong><code>examples/pricing.json</code> populated</strong> — six representative 2025-Q4
-  entries (premium / mid / mini tiers) with <code>_verified_on</code> timestamp
-  and a demonstration of the new 5-min / 1-hour ephemeral
-  cache-write tiers. Model identifiers are intentionally generic so
-  callers can drop in their own provider names without diff noise.</li>
+<li><code>CheckpointSaver</code>, <code>InMemorySaver</code>, and <code>SqliteSaver</code>.</li>
+<li>Token-aware rate limiting.</li>
+<li>Provider routing.</li>
+<li><code>UsageLimits</code> and usage-limit exceptions.</li>
+<li>Persistent SQLite event and usage sinks.</li>
+<li>Async policy evaluation.</li>
+<li><code>AgentSession</code> as the canonical session factory name.</li>
 </ul>
-<h3 id="added-sprint-5-usage-limits-prompt-caching-ttl-scheduler-async-policy-persistent-sinks">Added — Sprint 5 (usage limits, prompt caching TTL, scheduler, async policy, persistent sinks)<a class="headerlink" href="#added-sprint-5-usage-limits-prompt-caching-ttl-scheduler-async-policy-persistent-sinks" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong><code>UsageLimits</code></strong> — per-session token / tool-call / cost caps with
-  Pydantic-AI-compatible field names (<code>request_tokens_max</code>,
-  <code>response_tokens_max</code>, <code>total_tokens_max</code>, <code>tool_calls_max</code>,
-  <code>cost_usd_max</code>). Wired into <code>AgentSession(usage_limits=...)</code>; each
-  turn calls <code>tracker.check_limits</code> post-record.</li>
-<li><strong><code>UsageLimitExceededError</code></strong> — distinct from <code>BudgetExceededError</code>.
-  Both share the new <code>UsageBoundExceededError</code> base class so callers
-  can choose to handle them together or separately.</li>
-<li><strong><code>UsageSnapshot.cache_ttl</code></strong> and <strong><code>UsageSnapshot.tool_calls</code></strong> —
-  optional ephemeral-cache TTL hint (<code>"5m"</code> / <code>"1h"</code> / <code>None</code>) and a
-  per-turn tool-call counter for <code>tool_calls_max</code> accounting.</li>
-<li><strong><code>ModelPricing.cache_write_5min_per_million</code> /
-  <code>cache_write_1h_per_million</code></strong> — 2026 ephemeral prompt-caching tiers.
-  <code>UsageTracker.cost_for_turn</code> picks the rate via
-  <code>ModelPricing.write_rate_for_ttl</code>; unknown TTL falls back to the
-  legacy single-tier <code>cache_write_per_million</code>.</li>
-<li><strong><code>scheduler.py</code></strong> — <code>Clock</code> protocol, <code>SystemClock</code> (default
-  production), <code>ManualClock</code> (canonical deterministic test double,
-  promoted from <code>tests/conftest.py</code> with new <code>tick</code>, <code>now_utc</code>,
-  <code>sleep_async</code> helpers).</li>
-<li><strong><code>persistence.py</code></strong> — <code>SqliteEventSink</code> and <code>SqliteUsageSink</code>
-  satisfy the existing <code>EventSink</code> / <code>UsageSink</code> protocols, persist
-  to stdlib <code>sqlite3</code> in WAL mode, and survive process restart. Fills
-  the long-running-session gap that the in-memory ring buffers can't.</li>
-<li><strong><code>PolicyEngine.evaluate_async</code></strong> — awaits async <code>matches</code> while
-  running sync conditions in place. <code>AsyncOrchestrationSession</code>
-  callers can now plug coroutine-based policy rules in.</li>
-</ul>
-<h3 id="changed-sprint-4-otel-nesting-agentsession-rename">Changed — Sprint 4 (OTel nesting + <code>AgentSession</code> rename)<a class="headerlink" href="#changed-sprint-4-otel-nesting-agentsession-rename" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong><code>AgentSession</code> is the canonical class name</strong> (formerly
-  <code>Orchestrator</code>). The legacy <code>Orchestrator</code> symbol is now a bare
-  alias for the same class — same constructor, same identity. It will
-  be removed in 0.3.0; new code should import <code>AgentSession</code> directly.</li>
-<li><strong><code>OpenTelemetrySink</code> now emits nested spans</strong> instead of one-shot
-  events. <code>AGENT_STARTED</code> / <code>PHASE_STARTED</code> open a long-lived parent
-  span keyed by <code>(role, phase)</code>; subsequent events emit as children
-  of that parent via OTel context propagation; <code>AGENT_COMPLETED</code> /
-  <code>AGENT_FAILED</code> / <code>PHASE_COMPLETED</code> end it, copying the terminal
-  event's attributes (incl. <code>error.type</code> and an <code>ERROR</code> status on
-  failure) onto the parent. APM dashboards now see real trace trees
-  per session instead of unrelated event roots. See
-  <a href="../migrating-from-0.1.x/">Migrating from 0.1.x</a>.</li>
-<li>New <code>docs/migrating-from-0.1.x.md</code> walks the rename + the OTel wire
-  format change.</li>
-</ul>
-<h3 id="added-sprint-3-rate-limiting-routing-structured-concurrency">Added — Sprint 3 (rate limiting + routing + structured concurrency)<a class="headerlink" href="#added-sprint-3-rate-limiting-routing-structured-concurrency" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong><code>TokenBucket</code> / <code>AsyncTokenBucket</code></strong> — classic token-bucket
-  limiters with injectable clock. Sync uses <code>threading.Lock</code>; async
-  uses <code>asyncio.Lock</code> + <code>asyncio.sleep</code> so waiting yields the event
-  loop. <code>RateLimiter</code> / <code>AsyncRateLimiter</code> compose three named buckets
-  (<code>rpm</code>, <code>input_tpm</code>, <code>output_tpm</code>) so typical LLM-provider limits
-  fit in one object. <code>RateLimitExceededError</code> raised on timeout.</li>
-<li><strong><code>Orchestrator(rate_limiter=...)</code> /
-  <code>Orchestrator(async_rate_limiter=...)</code></strong> — wired into <code>run_turn</code> and
-  <code>arun_turn</code>. RPM is spent before the call; input / output TPM after
-  the <code>UsageSnapshot</code> is known, matching how providers enforce limits.</li>
-<li><strong><code>ProviderRouter</code> protocol</strong> with three reference implementations:
-  <code>StaticProviderRouter</code> (wraps the existing <code>next_provider</code>),
-  <code>RoundRobinProviderRouter</code> (strict rotation), <code>WeightedProviderRouter</code>
-  (highest-weight non-excluded, ties to declaration order).
-  <code>Orchestrator(provider_router=...)</code> exposes it on sessions; caller
-  code consults it when a recovery step calls for a switch.</li>
-<li><strong><code>RecoveryRecipe.step_retries</code></strong> — optional per-step retry budget
-  the caller is expected to honor when executing a step. Default empty
-  mapping preserves the 0.1.0 single-attempt semantics.</li>
-<li><strong><code>AsyncOrchestrationSession.arun_parallel_tools(...)</code></strong> — runs a
-  sequence of tool coroutines concurrently under <code>asyncio.TaskGroup</code>.
-  Any child failure cancels its siblings and surfaces an
-  <code>ExceptionGroup</code>; a <code>timeout</code> argument applies to the whole group.</li>
-<li><strong><code>_ainvoke</code> migrated from <code>asyncio.wait_for</code> to <code>asyncio.timeout</code></strong> —
-  proper structured-concurrency cancellation semantics per PEP 789.
-  The inner task is cancelled exactly once; no resurrection.</li>
-<li><strong>Docs</strong>: <code>docs/patterns/rate-limiting.md</code>, <code>docs/patterns/routing.md</code>,
-  <code>docs/api/rate_limit.md</code>, <code>docs/api/routing.md</code>, all in the nav.</li>
-</ul>
-<h3 id="added-sprint-2-durable-execution">Added — Sprint 2 (durable execution)<a class="headerlink" href="#added-sprint-2-durable-execution" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong><code>CheckpointSaver</code> protocol</strong> — <code>get</code> / <code>put</code> / <code>list</code> / <code>delete</code>
-  shape that mirrors the LangGraph contract. Two reference impls ship:
-  <code>InMemorySaver</code> (process-local) and <code>SqliteSaver(path)</code> (durable via
-  stdlib <code>sqlite3</code>, no new runtime dependency). Both are thread-safe;
-  <code>SqliteSaver</code> uses WAL mode so concurrent readers don't block the
-  writer.</li>
-<li><strong><code>Orchestrator(saver=...)</code> + <code>session(thread_id=...)</code> /
-  <code>asession(thread_id=...)</code></strong> — pair the two to turn a session into a
-  restart-resumable workflow. Per-turn checkpoints are written
-  automatically when both are configured.</li>
-<li><strong><code>run_turn(..., idempotency_key=...)</code> /
-  <code>arun_turn(..., idempotency_key=...)</code></strong> — replay-safe turns. A
-  matching key on the same <code>thread_id</code> short-circuits the call and
-  returns the cached <code>(result, usage)</code> without invoking the model.</li>
-<li><strong><code>docs/patterns/durability.md</code> + <code>docs/api/checkpoint.md</code></strong> — when /
-  when-not / anti-patterns / tuning + mkdocstrings API reference.</li>
-</ul>
-<h3 id="fixed-sprint-0-code-quality-bug-fixes">Fixed — Sprint 0 (code-quality + bug fixes)<a class="headerlink" href="#fixed-sprint-0-code-quality-bug-fixes" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>Release pipeline gating</strong> — <code>.github/workflows/release.yml</code> now
-  runs <code>ruff</code> + <code>mypy --strict</code> + <code>pytest</code> + per-module coverage on
-  3.11/3.12/3.13 BEFORE the PyPI publish step. Pre-0.2.0 the publish
-  step could ship a wheel that failed CI on the underlying commit.</li>
-<li><strong><code>_resolve_pricing</code> read race</strong> — <code>usage_tracking._resolve_pricing</code>
-  now snapshots <code>PRICING_TABLE</code> under <code>_pricing_lock</code> before the
-  prefix-match loop, closing the <code>RuntimeError: dictionary changed
-  size during iteration</code> window that opened whenever a thread called
-  <code>register_pricing</code> while another resolved a model.</li>
-<li><strong>Hard turn timeout was blocking</strong> — <code>OrchestrationSession._invoke_fn</code>
-  no longer uses <code>with ThreadPoolExecutor(...) as ex:</code>, whose <code>__exit__</code>
-  calls <code>shutdown(wait=True)</code> and made <code>TurnTimeoutError</code> wait for the
-  slow worker thread to return. We now call <code>shutdown(wait=False,
-  cancel_futures=True)</code> in finally so the timeout propagates promptly.</li>
-<li><strong><code>classify_exception</code> walks the exception chain</strong> — wrapped errors
-  (<code>raise MyAppError() from ConnectionError(...)</code>) are now classified
-  by the original cause's type. Cyclic chains are detected and broken.
-  Type-based dispatch is consolidated into <code>_EXCEPTION_TYPE_MAPPING</code>.</li>
-<li><strong><code>RecoveryRecipe.steps</code> is now <code>tuple[RecoveryStep, ...]</code></strong> — frozen
-  dataclass contract is honored end-to-end. Construction from a <code>list</code>
-  is still accepted (auto-converted in <code>__post_init__</code>) for back-compat.</li>
-<li><strong><code>__version__</code> sourced from package metadata</strong> — single source of
-  truth in <code>pyproject.toml</code>; <code>importlib.metadata.version()</code> with a
-  local-checkout fallback so editable installs keep working.</li>
-<li><strong>CI build matrix</strong> — <code>.github/workflows/ci.yml</code> build job now runs
-  on Python 3.11/3.12/3.13 (was 3.11 only), matching the test matrix.</li>
-</ul>
-<h3 id="fixed-sprint-1-docs-trust">Fixed — Sprint 1 (docs trust)<a class="headerlink" href="#fixed-sprint-1-docs-trust" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong><code>mkdocs.yml</code> site description</strong> — "(alpha)" → "(beta)" to match the
-  pyproject.toml classifier, README, and CHANGELOG.</li>
-<li><strong><code>docs/index.md</code></strong> — added a <code>!!! warning "Beta"</code> admonition pointing
-  at the migration guide so the landing page no longer reads as
-  "Production".</li>
-<li><strong><code>.github/workflows/docs.yml</code></strong> — <code>mkdocs build</code> → <code>mkdocs build
-  --strict</code> so broken refs and unresolved nav entries fail the build
-  instead of silently degrading the published site.</li>
-<li><strong><code>CONTRIBUTING.md</code></strong> — new "Testing" section covering when to reach
-  for Hypothesis property tests and how to use the <code>ManualClock</code>
-  injection pattern from <code>tests/conftest.py</code>.</li>
-<li><strong><code>CODEOWNERS</code></strong> — added an inline note flagging that the
-  <code>@Techrevati/runtime-maintainers</code> team must exist on GitHub for
-  auto-review to actually trigger.</li>
-</ul>
-<h2 id="pre-020-sprint-6-testing-rigor">[Pre-0.2.0] — Sprint 6 (testing rigor)<a class="headerlink" href="#pre-020-sprint-6-testing-rigor" title="Permanent link">&para;</a></h2>
-<p>Hardening work between 0.1.0 and 0.2.0. Public API is unchanged; this is
-test-suite and CI-only.</p>
-<h3 id="added_1">Added<a class="headerlink" href="#added_1" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>Hypothesis</strong> as a dev dependency. Two new property test modules:
-  <code>tests/test_property_retry_policy.py</code> exercises <code>classify_exception</code> over
-  arbitrary strings and verifies <code>backoff_delay</code> invariants across all four
-  jitter modes; <code>tests/test_property_circuit_breaker.py</code> drives the
-  <code>CircuitBreaker</code> state machine through random op sequences with the
-  injectable <code>ManualClock</code> and asserts invariants the example-based tests
-  could not enumerate.</li>
-<li><strong>pytest-randomly</strong> as a dev dependency. The default test runner now
-  shuffles test order on every invocation, surfacing hidden order
-  dependencies. Suite passes deterministically under shuffled ordering.</li>
-<li><strong><code>ManualClock</code></strong> test double promoted from per-module duplication in
-  <code>test_circuit_breaker.py</code> / <code>test_async_circuit_breaker.py</code> to
-  <code>tests/conftest.py</code> as both an importable class and a <code>manual_clock</code>
-  fixture. Sprint 8 rate-limiter / scheduler primitives that accept an
-  injectable monotonic clock will plug into it without re-inventing the
-  type.</li>
-<li><strong><code>scripts/check_module_coverage.py</code></strong> — per-module coverage floor
-  checker. Wired into <code>.github/workflows/ci.yml</code> to fail builds when any
-  module in <code>src/techrevati/</code> drops below 85% statement coverage. The
-  global <code>--cov-fail-under=90</code> did not catch <code>permissions.py</code> slipping to
-  82% in 0.1.0; this closes that gap.</li>
-</ul>
-<h3 id="changed_1">Changed<a class="headerlink" href="#changed_1" title="Permanent link">&para;</a></h3>
-<ul>
-<li><code>tests/test_permissions.py</code> now covers <code>PermissionOutcome.to_dict()</code> for
-  both the minimal and fully-populated cases. <code>permissions.py</code> moves from
-  82% → 100% statement coverage; aggregate suite coverage 93.79% → 94.91%.</li>
-</ul>
-<h2 id="010-2026-05-20"><a href="https://github.com/Techrevati/runtime/releases/tag/v0.1.0">0.1.0</a> — 2026-05-20<a class="headerlink" href="#010-2026-05-20" title="Permanent link">&para;</a></h2>
-<p>First beta release. Closes the primitive-parity gap with 2026 agent
-SDKs and ships the async path the 0.0.x docstring had been falsely
-advertising. APIs in this release are intended to be stable; breaking
-changes between 0.1.x and 0.2.0 will be documented in
-<a href="https://github.com/Techrevati/runtime/blob/main/docs/migrating-from-0.0.x.md"><code>docs/migrating-from-0.0.x.md</code></a> and
-gated by deprecation warnings.</p>
-<p>Consolidates the work of pre-release tags <code>0.1.0.dev1</code>, <code>0.1.0.dev2</code>,
-<code>0.1.0.dev3</code>, and <code>0.1.0.rc1</code>. Per-sprint detail is in the git log.</p>
-<h3 id="added-async-path">Added — Async path<a class="headerlink" href="#added-async-path" title="Permanent link">&para;</a></h3>
-<ul>
-<li><code>AsyncCircuitBreaker</code> mirrors <code>CircuitBreaker</code> semantics with
-  <code>asyncio.Lock</code>, same <code>half_open_max_probes</code> serialization,
-  injectable monotonic <code>clock</code>. State independent of the sync
-  variant.</li>
-<li><code>Orchestrator.asession()</code> returns an <code>AsyncOrchestrationSession</code>.
-  <code>arun_turn</code> and <code>arun_tool</code> drive async coro factories; sync
-  helpers (<code>authorize</code>, <code>evaluate_policy</code>, <code>evaluate_gate</code>,
-  <code>summary</code>, lifecycle methods) shared with the sync session via
-  <code>_SessionBase</code>.</li>
-<li><code>aattempt_recovery(scenario, ctx, *, sleeper=asyncio.sleep)</code> async
-  sibling of <code>attempt_recovery</code> with injectable sleeper contract.</li>
-<li><code>arun_turn(timeout=...)</code> enforces deadlines with
-  <code>asyncio.wait_for</code>; sync <code>run_turn(timeout=...)</code> uses a one-shot
-  <code>ThreadPoolExecutor</code>. Both raise <code>TurnTimeoutError</code> for a single
-  catchable error class across code paths.</li>
-<li><code>AgentStatus.CANCELLED</code> terminal state. <code>asyncio.CancelledError</code>
-  out of <code>async with orch.asession()</code> transitions the worker to
-  CANCELLED and re-raises.</li>
-<li><code>AsyncOrchestrationSession.pause_for_input(prompt)</code> async
-  human-in-the-loop hook. Transitions worker to <code>WAITING_FOR_INPUT</code>;
-  resolve from elsewhere via <code>session.provide_input(value)</code>.</li>
-<li><code>RUNNING → WAITING_FOR_INPUT</code> is now a valid transition (was
-  missing in 0.0.x).</li>
-</ul>
-<h3 id="added-industry-primitive-parity">Added — Industry primitive parity<a class="headerlink" href="#added-industry-primitive-parity" title="Permanent link">&para;</a></h3>
-<ul>
-<li><code>MaxIterationsExceededError</code> + <code>Orchestrator(max_iterations=25)</code>
-  cap. Default matches OpenAI Agents SDK; counted across both
-  <code>run_turn</code> and <code>arun_turn</code>. Stopping conditions are an industry
-  production-readiness requirement.</li>
-<li><code>Handoff</code> immutable dataclass (<code>techrevati.runtime.handoffs</code>) +
-  <code>OrchestrationSession.handoff_to(target_role, reason, context)</code>.
-  Finalizes the source worker as COMPLETED, registers a fresh worker
-  for the target role under the same project_id, returns a Handoff
-  describing the delegation. Enables the orchestrator-workers
-  delegation pattern on top of our primitives.</li>
-<li><code>Guardrail</code> Protocol + <code>GuardrailOutcome</code> + <code>GuardrailViolatedError</code>
-  (<code>techrevati.runtime.guardrails</code>). <code>Orchestrator(guardrails=[...])</code>
-  auto-runs <code>check_pre</code> before and <code>check_post</code> after every
-  <code>run_tool</code> / <code>arun_tool</code> invocation; first violation raises with
-  guardrail name, stage, role, tool. Mirrors the OpenAI Agents SDK
-  guardrail model.</li>
-<li><code>AllowAllGuardrail</code> reference no-op implementation.</li>
-<li><code>AgentSession</code> alias for <code>Orchestrator</code>. The 0.2.0 rename will
-  promote <code>AgentSession</code> to the canonical name with <code>Orchestrator</code>
-  kept as a deprecation alias; adopting the new name now is
-  forward-compatible.</li>
-</ul>
-<h3 id="added-observability">Added — Observability<a class="headerlink" href="#added-observability" title="Permanent link">&para;</a></h3>
-<ul>
-<li><code>EventSink</code> and <code>UsageSink</code> Protocols (<code>techrevati.runtime.sinks</code>),
-  plus <code>NoopEventSink</code>, <code>NoopUsageSink</code>, <code>RingBufferEventSink</code>,
-  <code>RingBufferUsageSink</code> defaults. <code>RingBufferEventSink</code> enforces a
-  configurable capacity (default 1000) so long-running sessions
-  can't balloon memory — closes the unbounded-tracker gap from
-  0.0.x.</li>
-<li><code>Orchestrator(event_sink=..., usage_sink=...)</code> plumbs the
-  configured sinks through every session. Every <code>AgentEvent</code> the
-  session records is forwarded to the event sink; every recorded
-  turn is forwarded to the usage sink with its computed cost. A
-  misbehaving sink cannot tear down the session — emit failures
-  log and are swallowed.</li>
-<li><code>OpenTelemetrySink</code> and <code>OpenTelemetryUsageSink</code>
-  (<code>techrevati.runtime.otel</code>, available via the new <code>[otel]</code>
-  extra). Mirrors every event as a one-shot OTel span with
-  <code>gen_ai.operation.name</code>, <code>gen_ai.provider.name</code>,
-  <code>gen_ai.agent.name</code>, optional <code>gen_ai.agent.id</code>, and <code>error.type</code>
-  on failures. Records <code>gen_ai.client.token.usage</code> histogram (with
-  <code>gen_ai.token.type=input|output</code> discriminator) and a
-  <code>techrevati.cost.usd</code> counter. Span names follow the GenAI agent
-  spans convention (<code>create_agent</code> / <code>invoke_agent</code> /
-  <code>execute_tool</code> / <code>invoke_workflow</code>).</li>
-<li><code>[otel]</code> extra: <code>opentelemetry-api&gt;=1.27</code>,
-  <code>opentelemetry-sdk&gt;=1.27</code>,
-  <code>opentelemetry-semantic-conventions&gt;=0.48b0</code>.</li>
-<li>Structured <code>logger.info</code> calls at five decision points: recovery
-  attempted, session failed, quality gate failed, handoff issued,
-  budget exceeded. All with <code>extra={role, phase, project_id, ...}</code>
-  so log shippers can pivot by role.</li>
-</ul>
-<h3 id="added-docs-and-dx">Added — Docs and DX<a class="headerlink" href="#added-docs-and-dx" title="Permanent link">&para;</a></h3>
-<ul>
-<li><code>docs/tutorials/end-to-end.md</code> walks every primitive composed
-  together with sync, async, and OTel switchover.</li>
-<li><code>examples/tiny_agent.py</code> runnable companion (not bundled in
-  wheel). Smoke-tested end-to-end.</li>
-<li><code>examples/pricing.json</code> reference template with illustrative
-  vendor pricing (not normative).</li>
-<li><code>docs/api/*.md</code> eight <code>mkdocstrings</code>-backed API reference pages
-  via the Python handler.</li>
-<li><code>docs/patterns/orchestrator.md</code> rewritten with
-  When-to-use / Anti-patterns / Tuning template + a prominent
-  naming-disambiguation callout separating our <code>Orchestrator</code> from
-  the <em>orchestrator-workers</em> delegation pattern.</li>
-<li><code>CONTRIBUTING.md</code>, <code>SECURITY.md</code>, <code>CODEOWNERS</code>,
-  <code>.github/dependabot.yml</code>, <code>.github/ISSUE_TEMPLATE/{bug,feature}.md</code>.</li>
-</ul>
-<h3 id="changed_2">Changed<a class="headerlink" href="#changed_2" title="Permanent link">&para;</a></h3>
-<ul>
-<li><code>evaluate_policy(elapsed_seconds=...)</code> is now <code>float | None</code>
-  (default <code>None</code>). When omitted, elapsed is auto-computed from
-  session start so <code>TimedOut</code> conditions finally fire. Callers
-  passing explicit <code>0.0</code> previously must migrate to pass the value
-  they actually want.</li>
-<li><code>AgentRegistry</code> and <code>_SessionBase</code> record session start time on
-  construction.</li>
-<li>README revised end-to-end. Headline pitch matches what the
-  package now does (sync <strong>and</strong> async, four standard primitives,
-  OTel GenAI semconv). New <em>"Why not LangGraph / OpenAI Agents
-  SDK?"</em> positioning section. Classifier bumped from <code>3 - Alpha</code>
-  to <code>4 - Beta</code>.</li>
-<li>README tagline reflects beta status.</li>
-</ul>
-<h3 id="notes">Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Tool input gating is pre-call site (role + tool name) gating +
-  post-call value gating. True input-value gating arrives when we
-  have a typed tool input model (post-0.2.0).</li>
-<li>Guardrail violations are not retried automatically — they raise.</li>
-<li>Span nesting (parent/child relationships across agent/turn/tool)
-  is not yet emitted — discrete spans + <code>gen_ai.agent.id</code> give
-  correlation. Nesting is targeted for 0.2.0.</li>
-<li>The <code>[dev]</code> extra now installs OpenTelemetry SDK packages so the
-  optional <code>otel</code> module type-checks and tests run under
-  <code>mypy --strict</code>.</li>
-</ul>
-<h2 id="001-2026-05-20"><a href="https://github.com/Techrevati/runtime/releases/tag/v0.0.1">0.0.1</a> — 2026-05-20<a class="headerlink" href="#001-2026-05-20" title="Permanent link">&para;</a></h2>
-<h3 id="fixed_1">Fixed<a class="headerlink" href="#fixed_1" title="Permanent link">&para;</a></h3>
-<ul>
-<li><code>mypy --strict</code> now passes. Added <code>src/techrevati/__init__.py</code> namespace
-  marker (PEP 420) so the wheel layout no longer double-maps modules. Removed
-  <code>continue-on-error: true</code> from the CI mypy step, which had been silently
-  swallowing failures since 0.0.0.</li>
-<li><code>CircuitBreaker</code> uses <code>time.monotonic</code> instead of <code>time.time</code> for duration
-  checks. NTP/clock jumps no longer stick the breaker open or close it early.</li>
-<li>Removed inaccurate <code>"Production async runtime"</code> claim from the package
-  docstring. Async support is targeted for 0.1.0; this version is sync only.</li>
-</ul>
-<h3 id="added_2">Added<a class="headerlink" href="#added_2" title="Permanent link">&para;</a></h3>
-<ul>
-<li><code>BudgetExceededError</code> plus <code>Orchestrator(enforce_budget=True)</code> flag. When
-  enabled, <code>run_turn</code> raises after the cumulative cost exceeds <code>budget_usd</code>.
-  The default remains backwards-compatible (records an event, returns
-  normally) so existing callers see no behavior change unless they opt in.</li>
-<li><code>has_pricing(model)</code> helper. <code>UsageTracker.record_turn</code> now emits a one-time
-  <code>WARNING</code> per process per model when pricing has not been registered. This
-  closes the silent-$0 footgun where unregistered models produced no cost
-  signal.</li>
-<li><code>CircuitBreaker.half_open_max_probes</code> (default <code>1</code>). Concurrent half-open
-  probes are now serialized; previously the lock was released before <code>fn()</code>
-  ran, letting unbounded threads stampede a recovering service. Probe in-flight
-  counting is tracked under the same lock as state transitions. Conforms to
-  the Polly default; raise to N for Resilience4j-style behavior.</li>
-<li><code>CircuitBreaker.clock</code> parameter accepting a <code>Callable[[], float]</code>. Defaults
-  to <code>time.monotonic</code>. Test code injects a manual clock to make recovery-window
-  tests deterministic; <code>time.sleep</code> is no longer used in the test suite.</li>
-<li><code>backoff_delay(jitter=...)</code> accepts <code>"none"</code>, <code>"full"</code>, <code>"equal"</code>, or
-  <code>"decorrelated"</code> mode strings. Bool values are still accepted for backward
-  compatibility (<code>True</code> maps to <code>"full"</code>, <code>False</code> to <code>"none"</code>). New <code>cap</code> and
-  <code>prev_delay</code> parameters support standard AWS Architecture Blog formulas
-  (Marc Brooker, exponential backoff &amp; jitter).</li>
-<li>README "Limitations" section documenting sync-only constraint, in-memory
-  tracker growth, pricing-not-bundled default, advisory permissions, lack of
-  durable execution, and lack of OTel integration.</li>
-</ul>
-<h3 id="changed_3">Changed<a class="headerlink" href="#changed_3" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>Default jitter algorithm is now decorrelated</strong> (was full-additive 25%
-  jitter). Per AWS Builders' Library, decorrelated is the fastest of the four
-  documented algorithms. The change affects code calling <code>backoff_delay()</code>
-  with default jitter; pass <code>jitter="equal"</code> for behavior closest to the
-  previous default.</li>
-<li>README tagline reflects alpha status until 0.2.0 (was "Production runtime
-  primitives ...").</li>
-<li><code>[project.optional-dependencies] dev</code> now pins <code>pytest</code>, <code>pytest-cov</code>,
-  <code>mypy</code>, and <code>ruff</code> to exact versions matching <code>.pre-commit-config.yaml</code>.
-  Local lint and CI lint can no longer disagree.</li>
-<li>CI now installs the package with <code>pip install -e ".[dev]"</code> instead of
-  unpinned <code>pip install pytest pytest-cov ruff mypy</code>. <code>actions/setup-python</code>
-  bumped from v4 to v5 with pip caching. <code>codecov/codecov-action</code> bumped from
-  v3 to v4. The <code>PYTHONPATH=src</code> workaround in pytest is gone (now resolved
-  by the namespace marker).</li>
-</ul>
-<h2 id="000-2026-05-20"><a href="https://github.com/Techrevati/runtime/releases/tag/v0.0.0">0.0.0</a> — 2026-05-20<a class="headerlink" href="#000-2026-05-20" title="Permanent link">&para;</a></h2>
-<p>Initial public release under the <code>techrevati-runtime</code> namespace.</p>
-<p>Provides the foundational primitives for orchestrating multi-step LLM agent
-loops with reliability and cost visibility:</p>
-<ul>
-<li><code>Orchestrator</code> + <code>OrchestrationSession</code> — single-loop wiring of lifecycle,
-  usage, retry classification, circuit breaker, permissions, and policy.</li>
-<li><code>CircuitBreaker</code> — three-state fault-tolerant execution wrapper.</li>
-<li><code>RecoveryContext</code> + <code>attempt_recovery</code> + <code>classify_exception</code> — failure
-  classification and recipe lookup.</li>
-<li><code>UsageTracker</code> + <code>register_pricing</code> + <code>load_pricing_from_file</code> — per-model
-  cost tracking with caller-provided pricing (no bundled pricing data).</li>
-<li><code>QualityGate</code> + <code>QualityLevel</code> — graduated pass/fail evaluation.</li>
-<li><code>AgentRegistry</code> + <code>AgentWorker</code> — validated lifecycle state machine.</li>
-<li><code>AgentEvent</code> — typed lifecycle events with an OpenTelemetry attribute bridge.</li>
-<li><code>PermissionPolicy</code> + <code>PermissionEnforcer</code> — deny-first role × tool gating.</li>
-<li><code>PolicyEngine</code> + composable conditions — declarative rule evaluator.</li>
-</ul>
-
-
-
-
-
-
-
-
-
-
-
-
-                
-              </article>
-            </div>
-          
-          
-<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
-        </div>
+<h2 id="earlier-releases">Earlier Releases<a class="headerlink" href="#earlier-releases" title="Permanent link">&para;</a></h2>
+<p>Earlier <code>0.0.x</code> and <code>0.1.x</code> releases introduced the initial runtime primitives:
+orchestrator sessions, retry policy, circuit breakers, usage tracking, quality
+gate, lifecycle events, permissions, guardrails, handoffs, sinks, and optional
+telemetry integration.</p>
         
       </main>
-      
-        <footer class="md-footer">
-  
-  <div class="md-footer-meta md-typeset">
-    <div class="md-footer-meta__inner md-grid">
-      <div class="md-copyright">
-  
-    <div class="md-copyright__highlight">
-      Copyright &copy; 2026 TechRevati doo
     </div>
-  
-  
-    Made with
-    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
-      Material for MkDocs
-    </a>
-  
-</div>
-      
-    </div>
-  </div>
-</footer>
-      
-    </div>
-    <div class="md-dialog" data-md-component="dialog">
-      <div class="md-dialog__inner md-typeset"></div>
-    </div>
-    
-    
-    
-      
-      
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
-    
-    
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
-      
-    
+    <footer class="site-footer">
+      <span>Copyright 2026 Techrevati doo</span>
+    </footer>
   </body>
 </html>

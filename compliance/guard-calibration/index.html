@@ -1,0 +1,856 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Guard Calibration - Runtime</title>
+    <link rel="stylesheet" href="../../styles/runtime.css">
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+  </head>
+  <body>
+    <header class="site-header">
+      
+        <a class="brand" href="../..">Runtime</a>
+      
+    </header>
+    <div class="layout">
+      <nav class="site-nav" aria-label="Primary navigation">
+        <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <span>Home</span>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../getting-started/">Getting Started</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../tutorials/end-to-end/">End-to-End Tutorial</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../migrating-from-0.0.x/">Migrating from 0.0.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../migrating-from-0.1.x/">Migrating from 0.1.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item is-active">
+        
+          <span>Compliance</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../">Compliance Mapping</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../production-readiness/">Production Readiness</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rc-readiness-summary/">RC Readiness Summary</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../stable-promotion/">Stable Promotion</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../remote-ci-validation/">Remote CI Validation</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../final-diff-review/">Final Diff Review</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rc-review-handoff/">RC Review Handoff</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../staging-manifest/">Staging Manifest</a>
+        
+        
+      </li>
+    
+      <li class="nav-item is-active">
+        
+          <a href="./">Guard Calibration</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../security-review/">Security Review</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../private-rc-publication/">Private RC Publication</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-operations-runbook/">Pilot Operations Runbook</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-execution/">Pilot Execution Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-dry-run/">Pilot Dry-Run</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-evidence-template/">Controlled RC Pilot Evidence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rollback-execution/">Rollback Execution Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rollback-proof-checklist/">Rollback Proof Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rc-inventory/">Release Candidate Inventory</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>Patterns</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/retry/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/circuit-breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/durability/">Durability</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/rate-limiting/">Rate Limiting</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/quality-gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/agent-events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/policy/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/usage-tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/governance/">Governance Plane</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/pilot-profile/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>API Reference</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../../api/orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/agent_events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/agent_lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/circuit_breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/checkpoint/">Checkpoint</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/policy_engine/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/quality_gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/rate_limit/">Rate Limit</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/retry_policy/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/usage_tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/guardrails/">Guardrails</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/governance/">Governance</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/handoffs/">Handoffs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/sinks/">Sinks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/persistence/">Persistence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/scheduler/">Scheduler</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/otel/">Telemetry</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/pilot/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../changelog/">Changelog</a>
+        
+        
+      </li>
+    
+  </ul>
+      </nav>
+      <main class="content" id="content">
+        
+          <h1 id="guard-calibration">Guard Calibration<a class="headerlink" href="#guard-calibration" title="Permanent link">&para;</a></h1>
+<p>Author: Techrevati doo</p>
+<p>Guard calibration status: Pending until remote CI false-positive review is
+complete.</p>
+<p>This checklist keeps the release-candidate guard stack strict without making a
+stable release depend on unexplained false positives. It does not replace the
+full production gate, remote CI, final diff review, controlled pilot, or
+rollback proof.</p>
+<h2 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h2>
+<p>The release candidate now has many small guard scripts. Each guard is useful
+only if it is consistently wired, reviewed for false positives, and kept honest
+about the risk it owns.</p>
+<p>Guard calibration has three goals:</p>
+<ul>
+<li>every <code>scripts/check_*.py</code> file is visible in this inventory,</li>
+<li>every verify-time guard runs in both CI and release verification where
+  applicable,</li>
+<li>every false positive is triaged before stable release instead of hidden by
+  weakening a guard.</li>
+</ul>
+<h2 id="guard-inventory">Guard Inventory<a class="headerlink" href="#guard-inventory" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Guard</th>
+<th>Scope</th>
+<th>False-positive review</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>check_changelog.py</code></td>
+<td>Release notes and version entry policy</td>
+<td>Confirm date/version wording before RC and stable tags</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_ci_guardrails.py</code></td>
+<td>Workflow guard classification and CI parity</td>
+<td>Confirm new guards are either verify-time or explicitly special-case</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_dependency_vulnerabilities.py</code></td>
+<td>Dev, docs, build, release, and OTel dependency audits</td>
+<td>Confirm scanner findings are real, fixed, or explicitly downgraded with evidence</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_distribution.py</code></td>
+<td>Wheel and source distribution contents</td>
+<td>Confirm artifact failures are package defects, not local build leftovers</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_docs_public_api.py</code></td>
+<td>Documented package-level imports</td>
+<td>Confirm docs mirror the frozen public API without accidental examples</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_docs_publication.py</code></td>
+<td>Strict docs publication contract</td>
+<td>Confirm docs nav, theme, and branding failures are real publication risks</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_final_diff_review.py</code></td>
+<td>Final RC diff review completeness</td>
+<td>Confirm review remains pending until a reviewer signs off</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_guard_calibration.py</code></td>
+<td>Guard inventory, false-positive process, and workflow wiring</td>
+<td>Confirm this inventory matches the actual guard stack</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_maintenance.py</code></td>
+<td>Maintenance automation and stale policy checks</td>
+<td>Confirm schedule and ownership checks match current maintenance practice</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_module_coverage.py</code></td>
+<td>Per-module coverage floor</td>
+<td>Confirm uncovered lines are real runtime risk, not generated or impossible code</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_operations_runbook.py</code></td>
+<td>Pilot operations runbook completeness</td>
+<td>Confirm alert, rollback, shutdown, and diagnostic guidance is actionable</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_package_policy.py</code></td>
+<td>Package metadata and runtime dependency policy</td>
+<td>Confirm package metadata failures are release blockers</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_pilot_dry_run.py</code></td>
+<td>Local controlled scenario dry-run wiring</td>
+<td>Confirm dry-run failures map to pilot setup defects</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_pilot_evidence.py</code></td>
+<td>Pilot evidence and rollback proof templates</td>
+<td>Confirm template failures are real missing go/no-go evidence</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_pilot_execution.py</code></td>
+<td>Real controlled pilot execution boundary</td>
+<td>Confirm local dry-run output cannot replace downstream pilot evidence</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_precommit_config.py</code></td>
+<td>Developer pre-commit parity</td>
+<td>Confirm local hooks match CI-required checks</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_private_rc_publication.py</code></td>
+<td>Private RC publication controls</td>
+<td>Confirm release workflow cannot fall back to public package publication</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_public_api.py</code></td>
+<td>Frozen package public API</td>
+<td>Confirm API changes are intentional and documented before any update</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_public_branding.py</code></td>
+<td>Public branding restriction to Techrevati doo</td>
+<td>No bypass; public branding violations must be fixed</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_python_support.py</code></td>
+<td>Supported Python version policy</td>
+<td>Confirm support matrix matches CI and package metadata</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_rc_readiness.py</code></td>
+<td>RC and stable release decision boundaries</td>
+<td>Confirm stable blockers stay explicit until real evidence exists</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_rc_review_handoff.py</code></td>
+<td>Final reviewer handoff packet</td>
+<td>Confirm review evidence, blockers, and no-go rules stay in one pending checklist</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_remote_ci_validation.py</code></td>
+<td>Remote CI commit-parity and evidence checklist</td>
+<td>Confirm local/server gate is not mistaken for remote CI evidence</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_release_evidence.py</code></td>
+<td>Release evidence artifact metadata, SBOM format, and checksum verification</td>
+<td>Confirm wheel, sdist, SBOM, and checksum evidence remain complete, version-matched, parsable, and untampered</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_release_tag.py</code></td>
+<td>Release tag and package version consistency</td>
+<td>Confirm tag failures block publication</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_release_workflow.py</code></td>
+<td>Release workflow safety</td>
+<td>Confirm publish, artifact, SBOM, and tag checks are enforced</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_rollback_execution.py</code></td>
+<td>Real rollback proof boundary</td>
+<td>Confirm command-shape checks cannot replace downstream rollback evidence</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_stable_promotion.py</code></td>
+<td>Stable promotion evidence boundary</td>
+<td>Confirm stable release cannot bypass external evidence approval</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_staging_manifest.py</code></td>
+<td>Staging manifest and untracked release-asset classification</td>
+<td>Confirm all untracked RC assets are intentional and generated artifacts stay excluded</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_repo_hygiene.py</code></td>
+<td>Repository cleanliness and ignored artifacts</td>
+<td>Confirm generated files or caches are not entering the release diff</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_secret_leaks.py</code></td>
+<td>Repository-wide secret leakage patterns</td>
+<td>No bypass; possible secrets must be rotated or proven benign</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_security_patterns.py</code></td>
+<td>Source, script, and test security-sensitive coding patterns; literal truthy subprocess shell bypasses; missing subprocess timeouts; implicit <code>subprocess.run</code> check semantics; direct <code>subprocess.Popen</code>; missing HTTP client timeouts; disabled TLS verification; raw logging tracebacks; raw exception text in logging/observability payloads; unsafe YAML loading</td>
+<td>Confirm failures are fixed or documented as intentional safe patterns</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_security_review.py</code></td>
+<td>Security review evidence and no-go rules</td>
+<td>Confirm reviewer sign-off stays pending until actual review evidence exists</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_source_hygiene.py</code></td>
+<td>Source, script, and test hygiene; stale markers; CLI-script debug leftovers; generated/cache directory skips; <code>NotImplementedError</code> runtime stubs; implicit text-file encodings</td>
+<td>Confirm failures are real maintainability risk or documented exceptions</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_toolchain_pins.py</code></td>
+<td>Toolchain pinning for build, docs, audit, and release</td>
+<td>Confirm pins are current and deterministic</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_version_consistency.py</code></td>
+<td>Package, runtime, docs, and changelog version consistency</td>
+<td>Confirm all version surfaces agree before tagging</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_workflow_hardening.py</code></td>
+<td>Workflow permissions, credentials, and shell hardening</td>
+<td>Confirm failures are release blockers unless workflow is removed</td>
+<td>Pending remote CI</td>
+</tr>
+<tr>
+<td><code>check_workflow_pinning.py</code></td>
+<td>Workflow action SHA pinning</td>
+<td>No bypass; unpinned actions must be pinned before release</td>
+<td>Pending remote CI</td>
+</tr>
+</tbody>
+</table>
+<h2 id="false-positive-handling">False-Positive Handling<a class="headerlink" href="#false-positive-handling" title="Permanent link">&para;</a></h2>
+<p>Do not weaken a guard only to make CI green.</p>
+<p>Every apparent false positive must be classified as one of:</p>
+<ul>
+<li>bug in guard,</li>
+<li>bug in repository,</li>
+<li>intentional policy exception.</li>
+</ul>
+<p>Policy exceptions require a written reason in the changelog, compliance docs, or
+release-candidate inventory before the exception is accepted. Security,
+branding, public API, release workflow, and workflow pinning guards are
+high-risk controls and must not be bypassed to publish a release candidate.</p>
+<h2 id="ci-parity">CI Parity<a class="headerlink" href="#ci-parity" title="Permanent link">&para;</a></h2>
+<p>Every verify-time guard must run in both the CI test job and the release
+verification job. Guards that only make sense in a special context, such as
+distribution artifacts, release tags, or coverage reports, must be explicitly
+classified outside the verify-time guard list.</p>
+<p><code>scripts/check_ci_guardrails.py</code> enforces the verify-time and special-case
+classification. <code>scripts/check_guard_calibration.py</code> enforces this calibration
+document, the documentation nav entry, and CI/release workflow wiring.</p>
+<h2 id="calibration-procedure">Calibration Procedure<a class="headerlink" href="#calibration-procedure" title="Permanent link">&para;</a></h2>
+<p>Run this procedure before tagging <code>v0.3.0rc1</code> and again before promoting
+stable <code>0.3.0</code>:</p>
+<ol>
+<li>Run the full local/server production gate.</li>
+<li>Run remote CI on the exact release candidate commit.</li>
+<li>For each failing guard, classify the failure as guard bug, repository bug,
+   or intentional policy exception.</li>
+<li>Fix guard bugs with focused tests.</li>
+<li>Fix repository bugs in the owning subsystem with regression coverage.</li>
+<li>Record any accepted policy exception in release evidence before continuing.</li>
+<li>Re-run the focused guard, the affected tests, and the full gate.</li>
+<li>Keep this document pending until remote CI has been reviewed for false
+   positives.</li>
+</ol>
+<h2 id="no-go-rules">No-Go Rules<a class="headerlink" href="#no-go-rules" title="Permanent link">&para;</a></h2>
+<p>Do not tag, publish, or promote the release when any of these are true:</p>
+<ul>
+<li>a guard failure is dismissed as a false positive without written triage,</li>
+<li>a new guard is skipped without owner, scope, and workflow classification,</li>
+<li>a guard passes locally but fails remote CI without triage,</li>
+<li>a high or critical dependency finding is unresolved,</li>
+<li>a possible secret leak is unresolved,</li>
+<li>public branding contains anything other than Techrevati doo,</li>
+<li>the frozen public API changes without documented approval,</li>
+<li>a release or workflow pinning guard is bypassed.</li>
+</ul>
+<h2 id="sign-off-template">Sign-Off Template<a class="headerlink" href="#sign-off-template" title="Permanent link">&para;</a></h2>
+<p>Use this template during release-candidate review:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Reviewer</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Remote CI run</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>False positives found</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Accepted exceptions</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Fixed guard bugs</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Fixed repository bugs</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Decision</td>
+<td>Pending / Approved / Changes required</td>
+</tr>
+</tbody>
+</table>
+        
+      </main>
+    </div>
+    <footer class="site-footer">
+      <span>Copyright 2026 Techrevati doo</span>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,697 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Rollback Proof Checklist - Runtime</title>
+    <link rel="stylesheet" href="../../styles/runtime.css">
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+  </head>
+  <body>
+    <header class="site-header">
+      
+        <a class="brand" href="../..">Runtime</a>
+      
+    </header>
+    <div class="layout">
+      <nav class="site-nav" aria-label="Primary navigation">
+        <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <span>Home</span>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../getting-started/">Getting Started</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../tutorials/end-to-end/">End-to-End Tutorial</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../migrating-from-0.0.x/">Migrating from 0.0.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../migrating-from-0.1.x/">Migrating from 0.1.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item is-active">
+        
+          <span>Compliance</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../">Compliance Mapping</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../production-readiness/">Production Readiness</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rc-readiness-summary/">RC Readiness Summary</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../stable-promotion/">Stable Promotion</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../remote-ci-validation/">Remote CI Validation</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../final-diff-review/">Final Diff Review</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rc-review-handoff/">RC Review Handoff</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../staging-manifest/">Staging Manifest</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../guard-calibration/">Guard Calibration</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../security-review/">Security Review</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../private-rc-publication/">Private RC Publication</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-operations-runbook/">Pilot Operations Runbook</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-execution/">Pilot Execution Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-dry-run/">Pilot Dry-Run</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-evidence-template/">Controlled RC Pilot Evidence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rollback-execution/">Rollback Execution Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item is-active">
+        
+          <a href="./">Rollback Proof Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rc-inventory/">Release Candidate Inventory</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>Patterns</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/retry/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/circuit-breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/durability/">Durability</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/rate-limiting/">Rate Limiting</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/quality-gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/agent-events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/policy/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/usage-tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/governance/">Governance Plane</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/pilot-profile/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>API Reference</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../../api/orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/agent_events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/agent_lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/circuit_breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/checkpoint/">Checkpoint</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/policy_engine/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/quality_gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/rate_limit/">Rate Limit</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/retry_policy/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/usage_tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/guardrails/">Guardrails</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/governance/">Governance</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/handoffs/">Handoffs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/sinks/">Sinks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/persistence/">Persistence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/scheduler/">Scheduler</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/otel/">Telemetry</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/pilot/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../changelog/">Changelog</a>
+        
+        
+      </li>
+    
+  </ul>
+      </nav>
+      <main class="content" id="content">
+        
+          <h1 id="rollback-proof-checklist">Rollback Proof Checklist<a class="headerlink" href="#rollback-proof-checklist" title="Permanent link">&para;</a></h1>
+<p>Author: Techrevati doo</p>
+<p>Use this checklist to prove that a <code>techrevati-runtime</code> release candidate can
+be rolled back in the downstream pilot environment. A stable release cannot
+proceed until rollback has been tested and documented.</p>
+<p>Use <code>docs/compliance/rollback-execution.md</code> for the real rollback execution
+record. This checklist is complete only when real rollback execution evidence is
+attached from the pilot environment.</p>
+<h2 id="rollback-scope">Rollback Scope<a class="headerlink" href="#rollback-scope" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pilot workflow</td>
+<td></td>
+</tr>
+<tr>
+<td>Current package version</td>
+<td><code>0.3.0rc1</code></td>
+</tr>
+<tr>
+<td>Current commit SHA</td>
+<td></td>
+</tr>
+<tr>
+<td>Previous known-good version</td>
+<td></td>
+</tr>
+<tr>
+<td>Previous known-good artifact source</td>
+<td></td>
+</tr>
+<tr>
+<td>Rollback operator</td>
+<td></td>
+</tr>
+<tr>
+<td>Rollback start time</td>
+<td></td>
+</tr>
+<tr>
+<td>Rollback end time</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="preconditions">Preconditions<a class="headerlink" href="#preconditions" title="Permanent link">&para;</a></h2>
+<ul>
+<li>[ ] Previous known-good version is approved for the pilot workflow.</li>
+<li>[ ] Previous known-good wheel and sdist are available from a private registry
+  or controlled artifact channel.</li>
+<li>[ ] Current <code>events.db</code>, <code>usage.db</code>, <code>checkpoints.db</code>, and process logs are
+  preserved before rollback.</li>
+<li>[ ] The downstream worker can be stopped or drained.</li>
+<li>[ ] A smoke test exists for the downstream workflow.</li>
+<li>[ ] The pilot owner has approved the rollback window.</li>
+</ul>
+<h2 id="evidence-preservation">Evidence Preservation<a class="headerlink" href="#evidence-preservation" title="Permanent link">&para;</a></h2>
+<p>Before changing the package version, preserve:</p>
+<ul>
+<li>package version and commit SHA,</li>
+<li>production gate evidence,</li>
+<li>remote CI status,</li>
+<li><code>events.db</code>,</li>
+<li><code>usage.db</code>,</li>
+<li><code>checkpoints.db</code> or relevant checkpoint IDs,</li>
+<li>process logs for the incident or proof window,</li>
+<li>OTel trace or metric export for the proof window,</li>
+<li>configured pilot profile values.</li>
+</ul>
+<p>Do not attach prompts, tool arguments, tool outputs, raw secrets, credentials,
+or unredacted customer data to public records.</p>
+<h2 id="rollback-command">Rollback Command<a class="headerlink" href="#rollback-command" title="Permanent link">&para;</a></h2>
+<p>Record the exact command used:</p>
+<pre><code class="language-bash">python -m pip install --no-index --no-deps --find-links &quot;$RUNTIME_ARTIFACT_DIR&quot; \
+  &quot;techrevati-runtime==$TECHREVATI_RUNTIME_ROLLBACK_VERSION&quot;
+</code></pre>
+<h2 id="version-proof">Version Proof<a class="headerlink" href="#version-proof" title="Permanent link">&para;</a></h2>
+<p>After rollback, record command output:</p>
+<pre><code class="language-bash">python -c &quot;import importlib.metadata; print(importlib.metadata.version('techrevati-runtime'))&quot;
+</code></pre>
+<p>Expected output: the previous known-good version.</p>
+<h2 id="smoke-test">Smoke Test<a class="headerlink" href="#smoke-test" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Result</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Downstream worker starts</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Package version matches rollback target</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>One successful session completes</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Event sink writes a new event</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Usage sink writes a new usage record</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Checkpoint saver can write</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>No public branding regression appears</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>No secret appears in logs</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="resume-and-checkpoint-proof">Resume And Checkpoint Proof<a class="headerlink" href="#resume-and-checkpoint-proof" title="Permanent link">&para;</a></h2>
+<p>If the downstream workflow uses checkpoints, prove one of these:</p>
+<ul>
+<li>[ ] A session can resume from a checkpoint created before rollback.</li>
+<li>[ ] A session can start cleanly after rollback when resume is intentionally
+  disabled.</li>
+</ul>
+<p>Record the <code>thread_id</code>, checkpoint ID, and smoke result:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Thread ID</td>
+<td></td>
+</tr>
+<tr>
+<td>Checkpoint ID</td>
+<td></td>
+</tr>
+<tr>
+<td>Resume mode</td>
+<td></td>
+</tr>
+<tr>
+<td>Result</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="acceptance-criteria">Acceptance Criteria<a class="headerlink" href="#acceptance-criteria" title="Permanent link">&para;</a></h2>
+<ul>
+<li>[ ] Previous known-good package version is installed.</li>
+<li>[ ] Downstream smoke test passes.</li>
+<li>[ ] New sessions run on the rollback version.</li>
+<li>[ ] Durable event and usage records still work.</li>
+<li>[ ] Checkpoint behavior is understood and documented.</li>
+<li>[ ] Rollback evidence is linked from the controlled RC pilot evidence note.</li>
+</ul>
+<h2 id="rollback-decision">Rollback Decision<a class="headerlink" href="#rollback-decision" title="Permanent link">&para;</a></h2>
+<p>Rollback proven: <code>yes</code> / <code>no</code></p>
+<p>Reason:</p>
+<p>Open issues:</p>
+<p>Operator:</p>
+<p>Approval:</p>
+<p>Date:</p>
+        
+      </main>
+    </div>
+    <footer class="site-footer">
+      <span>Copyright 2026 Techrevati doo</span>
+    </footer>
+  </body>
+</html>

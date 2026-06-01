@@ -1,0 +1,913 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pilot Operations Runbook - Runtime</title>
+    <link rel="stylesheet" href="../../styles/runtime.css">
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+  </head>
+  <body>
+    <header class="site-header">
+      
+        <a class="brand" href="../..">Runtime</a>
+      
+    </header>
+    <div class="layout">
+      <nav class="site-nav" aria-label="Primary navigation">
+        <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <span>Home</span>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../getting-started/">Getting Started</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../tutorials/end-to-end/">End-to-End Tutorial</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../migrating-from-0.0.x/">Migrating from 0.0.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../migrating-from-0.1.x/">Migrating from 0.1.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item is-active">
+        
+          <span>Compliance</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../">Compliance Mapping</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../production-readiness/">Production Readiness</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rc-readiness-summary/">RC Readiness Summary</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../stable-promotion/">Stable Promotion</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../remote-ci-validation/">Remote CI Validation</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../final-diff-review/">Final Diff Review</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rc-review-handoff/">RC Review Handoff</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../staging-manifest/">Staging Manifest</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../guard-calibration/">Guard Calibration</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../security-review/">Security Review</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../private-rc-publication/">Private RC Publication</a>
+        
+        
+      </li>
+    
+      <li class="nav-item is-active">
+        
+          <a href="./">Pilot Operations Runbook</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-execution/">Pilot Execution Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-dry-run/">Pilot Dry-Run</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-evidence-template/">Controlled RC Pilot Evidence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rollback-execution/">Rollback Execution Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rollback-proof-checklist/">Rollback Proof Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rc-inventory/">Release Candidate Inventory</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>Patterns</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/retry/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/circuit-breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/durability/">Durability</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/rate-limiting/">Rate Limiting</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/quality-gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/agent-events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/policy/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/usage-tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/governance/">Governance Plane</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/pilot-profile/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>API Reference</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../../api/orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/agent_events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/agent_lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/circuit_breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/checkpoint/">Checkpoint</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/policy_engine/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/quality_gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/rate_limit/">Rate Limit</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/retry_policy/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/usage_tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/guardrails/">Guardrails</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/governance/">Governance</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/handoffs/">Handoffs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/sinks/">Sinks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/persistence/">Persistence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/scheduler/">Scheduler</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/otel/">Telemetry</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/pilot/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../changelog/">Changelog</a>
+        
+        
+      </li>
+    
+  </ul>
+      </nav>
+      <main class="content" id="content">
+        
+          <h1 id="pilot-operations-runbook">Pilot Operations Runbook<a class="headerlink" href="#pilot-operations-runbook" title="Permanent link">&para;</a></h1>
+<p>Author: Techrevati doo</p>
+<p>This runbook defines the minimum operating model for a controlled
+<code>techrevati-runtime</code> release candidate pilot. It is scoped to a Python runtime
+package embedded in one downstream workflow; it is not a hosted-service runbook.</p>
+<h2 id="scope">Scope<a class="headerlink" href="#scope" title="Permanent link">&para;</a></h2>
+<p>Use this runbook for <code>0.3.0rc1</code> pilots that run a limited internal support or
+back-office workflow. The pilot must have bounded users, bounded volume,
+non-destructive tool permissions by default, and a documented rollback target.</p>
+<p>The pilot cannot start until the current commit has a green production gate,
+remote CI has passed, and the package is available from a private registry or a
+controlled artifact channel.</p>
+<h2 id="required-runtime-wiring">Required Runtime Wiring<a class="headerlink" href="#required-runtime-wiring" title="Permanent link">&para;</a></h2>
+<p>The pilot application should wire durable local records and telemetry at the
+same time. Use durable SQLite sinks for audit and incident review. Add OTel
+only after the deployment environment has an approved collector/exporter and
+retention policy.</p>
+<pre><code class="language-python">from pathlib import Path
+
+from techrevati.runtime import AgentSession, PermissionMode, SqliteSaver
+from techrevati.runtime.persistence import SqliteEventSink, SqliteUsageSink
+from techrevati.runtime.pilot import build_pilot_profile
+from techrevati.runtime.sinks import FanoutEventSink, FanoutUsageSink
+
+try:
+    from techrevati.runtime.otel import OpenTelemetrySink, OpenTelemetryUsageSink
+except ImportError:
+    OpenTelemetrySink = None
+    OpenTelemetryUsageSink = None
+
+state_dir = Path(&quot;/var/lib/techrevati-runtime/pilot&quot;)
+state_dir.mkdir(parents=True, exist_ok=True)
+
+event_sinks = [SqliteEventSink(state_dir / &quot;events.db&quot;)]
+usage_sinks = [SqliteUsageSink(state_dir / &quot;usage.db&quot;)]
+if OpenTelemetrySink is not None and OpenTelemetryUsageSink is not None:
+    event_sinks.append(OpenTelemetrySink())
+    usage_sinks.append(OpenTelemetryUsageSink())
+
+profile = build_pilot_profile(
+    role=&quot;support_agent&quot;,
+    allowed_tools=(&quot;lookup_case&quot;, &quot;summarize_case&quot;),
+    budget_usd=5.00,
+    permission_mode=PermissionMode.READ_ONLY,
+    max_iterations=25,
+    max_tool_calls=100,
+    max_consecutive_failures=3,
+)
+
+agent = AgentSession(
+    role=&quot;support_agent&quot;,
+    phase=&quot;pilot&quot;,
+    budget_usd=5.00,
+    enforce_budget=True,
+    event_sink=FanoutEventSink(tuple(event_sinks)),
+    usage_sink=FanoutUsageSink(tuple(usage_sinks)),
+    saver=SqliteSaver(state_dir / &quot;checkpoints.db&quot;),
+    **profile.agent_session_kwargs(),
+)
+
+with agent.session(thread_id=&quot;pilot-session-001&quot;) as session:
+    session.run_turn(
+        lambda: &quot;ok&quot;,
+        model=&quot;pilot-model&quot;,
+        idempotency_key=&quot;turn-001&quot;,
+    )
+</code></pre>
+<p>The default fan-out behavior attempts every sink and then re-raises the first
+sink error. <code>AgentSession</code> catches sink errors and keeps the session alive, so
+the pilot keeps running while local diagnostics and logs still expose the
+failure. Set <code>suppress_errors=True</code> only for a sink path that is already
+monitored elsewhere.</p>
+<h2 id="minimal-otel-collector">Minimal OTel Collector<a class="headerlink" href="#minimal-otel-collector" title="Permanent link">&para;</a></h2>
+<p>Use one collector per pilot environment. Export outside the host only through an
+approved backend.</p>
+<pre><code class="language-yaml">receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+processors:
+  batch:
+
+exporters:
+  logging:
+    verbosity: basic
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging]
+</code></pre>
+<p>Do not enable <code>OpenTelemetrySink(include_event_detail=True)</code> unless event
+details have been reviewed for sensitive data and telemetry retention has been
+approved.</p>
+<h2 id="signal-map">Signal Map<a class="headerlink" href="#signal-map" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Signal</th>
+<th>Source</th>
+<th>Query or metric</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Session count</td>
+<td><code>agent_events</code></td>
+<td>Count <code>agent.started</code> rows</td>
+</tr>
+<tr>
+<td>Success rate</td>
+<td><code>agent_events</code></td>
+<td><code>agent.completed</code> divided by started sessions</td>
+</tr>
+<tr>
+<td>Failure rate</td>
+<td><code>agent_events</code></td>
+<td><code>agent.failed</code> divided by started sessions</td>
+</tr>
+<tr>
+<td>Failure-class distribution</td>
+<td><code>agent_events</code></td>
+<td>Group terminal <code>agent.failed</code> rows by <code>failure_class</code></td>
+</tr>
+<tr>
+<td>Guardrail blocks</td>
+<td><code>agent_events</code></td>
+<td><code>agent.blocked</code> with payload data kind <code>guardrail</code></td>
+</tr>
+<tr>
+<td>Permission denials</td>
+<td><code>agent_events</code></td>
+<td><code>agent.blocked</code> with payload data kind <code>permission</code></td>
+</tr>
+<tr>
+<td>Governance breaches</td>
+<td><code>agent_events</code></td>
+<td>Count <code>governance.breach</code> rows and terminal <code>failure_class=governance_breach</code></td>
+</tr>
+<tr>
+<td>Retry attempts</td>
+<td><code>agent_events</code></td>
+<td>Count <code>agent.recovery.attempted</code> rows</td>
+</tr>
+<tr>
+<td>Provider switches</td>
+<td><code>agent_events</code></td>
+<td>Count <code>agent.recovery.provider_switched</code> rows</td>
+</tr>
+<tr>
+<td>Token usage</td>
+<td><code>usage_records</code> and OTel</td>
+<td>Sum input, output, cache-write, and cache-read tokens</td>
+</tr>
+<tr>
+<td>Estimated cost</td>
+<td><code>usage_records</code> and OTel</td>
+<td>Sum <code>cost_usd</code></td>
+</tr>
+<tr>
+<td>Tool call count</td>
+<td><code>usage_records</code> and events</td>
+<td>Sum <code>total_tool_calls</code>; compare with <code>agent.tool_called</code></td>
+</tr>
+<tr>
+<td>Checkpoint writes</td>
+<td><code>checkpoints</code> table</td>
+<td>Count new checkpoint rows per hour</td>
+</tr>
+<tr>
+<td>Checkpoint replays</td>
+<td>application log</td>
+<td>Count idempotency-cache hits around <code>thread_id</code> and <code>idempotency_key</code></td>
+</tr>
+<tr>
+<td>Checkpoint persistence failures</td>
+<td><code>agent_events</code> and runtime log</td>
+<td>Investigate terminal <code>failure_class=dependency_failed</code> rows with persistence error types</td>
+</tr>
+<tr>
+<td>Event sink failures</td>
+<td>runtime log and local session events</td>
+<td>Search <code>event_sink failed; session continued</code></td>
+</tr>
+<tr>
+<td>Usage sink failures</td>
+<td><code>agent_events</code> and runtime log</td>
+<td>Search <code>usage_sink failed; session continued</code></td>
+</tr>
+<tr>
+<td>Turn latency</td>
+<td>OTel spans or wrapper metric</td>
+<td>Measure each <code>session.run_turn</code> or <code>session.arun_turn</code> call</td>
+</tr>
+<tr>
+<td>Tool-call latency</td>
+<td>OTel spans or wrapper metric</td>
+<td>Measure each <code>session.call_tool</code> or <code>session.acall_tool</code> call</td>
+</tr>
+</tbody>
+</table>
+<p>Turn latency and tool-call latency should be measured by the pilot wrapper if
+the deployment does not export OTel spans. Keep the metric labels to role,
+phase, tool, model, and outcome; do not attach prompts, tool arguments, or tool
+outputs.</p>
+<h2 id="alert-rules">Alert Rules<a class="headerlink" href="#alert-rules" title="Permanent link">&para;</a></h2>
+<p>Minimum pilot alerts:</p>
+<table>
+<thead>
+<tr>
+<th>Alert</th>
+<th>Threshold</th>
+<th>First action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Runtime exception spike</td>
+<td>More than 1 percent <code>agent.failed</code> over 15 minutes, or any P0 error</td>
+<td>Pause new sessions and inspect latest failures</td>
+</tr>
+<tr>
+<td>Governance terminate spike</td>
+<td>More than 3 <code>governance.breach</code> rows in 15 minutes</td>
+<td>Pause the affected role and inspect limits</td>
+</tr>
+<tr>
+<td>Cost threshold breach</td>
+<td>80 percent of pilot budget or any <code>BudgetExceededError</code></td>
+<td>Stop new sessions and review usage</td>
+</tr>
+<tr>
+<td>Provider failure spike</td>
+<td>More than 5 recovery attempts or provider switches in 15 minutes</td>
+<td>Switch to the fallback provider or pause the pilot</td>
+</tr>
+<tr>
+<td>Sink persistence failure</td>
+<td>Any event sink failures or usage sink failures</td>
+<td>Preserve process logs and verify SQLite write access</td>
+</tr>
+<tr>
+<td>Checkpoint persistence failure</td>
+<td>Any checkpoint write failure or unexpected persistence <code>dependency_failed</code> terminal event</td>
+<td>Pause restart-sensitive sessions and verify SQLite write access before continuing</td>
+</tr>
+<tr>
+<td>OTel export failure</td>
+<td>Any collector export failure for 10 minutes</td>
+<td>Keep SQLite evidence, restart collector, and avoid changing runtime code</td>
+</tr>
+</tbody>
+</table>
+<p>Any P0 incident or unresolved P1 incident is a no-go for stable <code>0.3.0</code>.</p>
+<h2 id="retention">Retention<a class="headerlink" href="#retention" title="Permanent link">&para;</a></h2>
+<p>Keep pilot evidence long enough to debug release-candidate behavior while
+avoiding unnecessary personal-data retention:</p>
+<table>
+<thead>
+<tr>
+<th>Record</th>
+<th>Retention</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>events.db</code></td>
+<td>90 days after pilot close</td>
+<td>Metadata-only event payloads; no prompts or tool outputs</td>
+</tr>
+<tr>
+<td><code>usage.db</code></td>
+<td>90 days after pilot close</td>
+<td>Token and cost aggregates only</td>
+</tr>
+<tr>
+<td><code>checkpoints.db</code></td>
+<td>30 days after pilot close</td>
+<td>May contain model results; review before sharing</td>
+</tr>
+<tr>
+<td>OTel traces and metrics</td>
+<td>14 days</td>
+<td>Keep detail fields disabled by default</td>
+</tr>
+<tr>
+<td>Diagnostic bundle</td>
+<td>Until go/no-go plus 30 days</td>
+<td>Store in restricted release evidence</td>
+</tr>
+</tbody>
+</table>
+<p>Delete or rotate local SQLite files after the retention window. Do not attach
+raw checkpoint payloads to public issues, changelogs, or package artifacts.</p>
+<h2 id="operator-procedures">Operator Procedures<a class="headerlink" href="#operator-procedures" title="Permanent link">&para;</a></h2>
+<h3 id="version-check">Version Check<a class="headerlink" href="#version-check" title="Permanent link">&para;</a></h3>
+<pre><code class="language-bash">python -c &quot;import importlib.metadata; print(importlib.metadata.version('techrevati-runtime'))&quot;
+</code></pre>
+<p>Expected pilot version: <code>0.3.0rc1</code>.</p>
+<h3 id="event-inspection">Event Inspection<a class="headerlink" href="#event-inspection" title="Permanent link">&para;</a></h3>
+<pre><code class="language-bash">sqlite3 &quot;$TECHREVATI_RUNTIME_EVENTS_DB&quot; \
+  &quot;SELECT event, COUNT(*) FROM agent_events GROUP BY event ORDER BY COUNT(*) DESC;&quot;
+</code></pre>
+<p>Inspect latest failures:</p>
+<pre><code class="language-bash">sqlite3 &quot;$TECHREVATI_RUNTIME_EVENTS_DB&quot; \
+  &quot;SELECT emitted_at, event, role, phase, payload FROM agent_events WHERE event IN ('agent.failed', 'governance.breach') ORDER BY id DESC LIMIT 20;&quot;
+</code></pre>
+<p>Summarize terminal failure classes:</p>
+<pre><code class="language-bash">sqlite3 &quot;$TECHREVATI_RUNTIME_EVENTS_DB&quot; \
+  &quot;SELECT json_extract(payload, '$.failure_class') AS failure_class, COUNT(*) FROM agent_events WHERE event = 'agent.failed' GROUP BY failure_class ORDER BY COUNT(*) DESC;&quot;
+</code></pre>
+<h3 id="usage-inspection">Usage Inspection<a class="headerlink" href="#usage-inspection" title="Permanent link">&para;</a></h3>
+<pre><code class="language-bash">sqlite3 &quot;$TECHREVATI_RUNTIME_USAGE_DB&quot; \
+  &quot;SELECT COUNT(*), ROUND(SUM(cost_usd), 6) FROM usage_records;&quot;
+</code></pre>
+<p>Token totals can be inspected with <code>SqliteUsageSink.totals()</code> from a restricted
+operator shell.</p>
+<h3 id="governance-breaches">Governance Breaches<a class="headerlink" href="#governance-breaches" title="Permanent link">&para;</a></h3>
+<pre><code class="language-bash">sqlite3 &quot;$TECHREVATI_RUNTIME_EVENTS_DB&quot; \
+  &quot;SELECT emitted_at, role, phase, payload FROM agent_events WHERE event = 'governance.breach' ORDER BY id DESC LIMIT 20;&quot;
+</code></pre>
+<p>If a breach repeats, stop the affected role, preserve the database files, and
+open an RC bug with the limit name, observed value, ceiling, and scope.</p>
+<h3 id="sink-failure-triage">Sink Failure Triage<a class="headerlink" href="#sink-failure-triage" title="Permanent link">&para;</a></h3>
+<p>Search process logs for:</p>
+<ul>
+<li><code>event_sink.emit raised; suppressing to keep session alive</code></li>
+<li><code>usage_sink.record raised; suppressing to keep session alive</code></li>
+<li><code>event fanout sink raised; continuing fanout</code></li>
+<li><code>usage fanout sink raised; continuing fanout</code></li>
+</ul>
+<p>Do not paste raw exception messages into public reports. Record only error
+type, component, role, phase, version, and timestamp.</p>
+<h2 id="rollback">Rollback<a class="headerlink" href="#rollback" title="Permanent link">&para;</a></h2>
+<p>Before pilot start, record the previous known-good package version and artifact
+location. The default rollback target is the last stable internal runtime build
+approved for the downstream workflow.</p>
+<p>Rollback steps:</p>
+<ol>
+<li>Stop new pilot sessions.</li>
+<li>Preserve <code>events.db</code>, <code>usage.db</code>, <code>checkpoints.db</code>, and process logs.</li>
+<li>Reinstall the previous known-good package from the private registry or
+   controlled artifact channel.</li>
+<li>Restart the downstream worker with the previous known-good configuration.</li>
+<li>Run the downstream smoke test.</li>
+<li>Record rollback evidence in the pilot go/no-go note.</li>
+</ol>
+<p>Example package rollback:</p>
+<pre><code class="language-bash">python -m pip install --no-index --no-deps --find-links &quot;$RUNTIME_ARTIFACT_DIR&quot; \
+  &quot;techrevati-runtime==$TECHREVATI_RUNTIME_ROLLBACK_VERSION&quot;
+</code></pre>
+<p>Rollback is considered proven only after the downstream smoke test has passed
+and new sessions are confirmed on the rollback version.</p>
+<h2 id="pilot-shutdown">Pilot Shutdown<a class="headerlink" href="#pilot-shutdown" title="Permanent link">&para;</a></h2>
+<p>Use pilot shutdown when any no-go condition appears, when cost reaches the
+approved ceiling, or when telemetry evidence is incomplete.</p>
+<p>Shutdown steps:</p>
+<ol>
+<li>Disable new pilot traffic.</li>
+<li>Let active sessions finish when safe; cancel them if a P0 is active.</li>
+<li>Close SQLite sinks and flush OTel exporter buffers.</li>
+<li>Collect the diagnostic bundle.</li>
+<li>Record a go/no-go decision.</li>
+<li>Open RC bugs for every stable-blocking issue.</li>
+</ol>
+<h2 id="diagnostic-bundle">Diagnostic Bundle<a class="headerlink" href="#diagnostic-bundle" title="Permanent link">&para;</a></h2>
+<p>For every incident or go/no-go review, collect:</p>
+<ul>
+<li>package version and commit SHA,</li>
+<li>production gate evidence,</li>
+<li>remote CI status,</li>
+<li><code>events.db</code>,</li>
+<li><code>usage.db</code>,</li>
+<li>relevant checkpoint IDs or a redacted <code>checkpoints.db</code>,</li>
+<li>process logs for the incident window,</li>
+<li>OTel trace or metric export for the incident window,</li>
+<li>configured pilot profile values,</li>
+<li>rollback target and rollback command.</li>
+</ul>
+<p>Do not include prompts, tool arguments, tool outputs, raw secrets, credentials,
+or unredacted customer data in the bundle.</p>
+<h2 id="acceptance-evidence">Acceptance Evidence<a class="headerlink" href="#acceptance-evidence" title="Permanent link">&para;</a></h2>
+<p>The pilot can move toward stable release only when:</p>
+<ul>
+<li>all minimum signals above are visible,</li>
+<li>alerts have been exercised or dry-run,</li>
+<li>rollback has been tested outside the production pilot,</li>
+<li>there are zero P0 incidents,</li>
+<li>there are zero unresolved P1 incidents,</li>
+<li>at least 99 percent of sessions complete without runtime crash,</li>
+<li>blocked, denied, breached, and recovered actions are audit-ready,</li>
+<li><code>permission_denied</code>, <code>guardrail_violation</code>, and <code>governance_breach</code>
+  classifications are visible for terminal policy and safety stops,</li>
+<li>usage and cost tracking are explainable,</li>
+<li>the go/no-go decision is recorded.</li>
+</ul>
+        
+      </main>
+    </div>
+    <footer class="site-footer">
+      <span>Copyright 2026 Techrevati doo</span>
+    </footer>
+  </body>
+</html>

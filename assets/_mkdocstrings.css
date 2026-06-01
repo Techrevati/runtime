@@ -9,8 +9,6 @@
 .doc-md-description>p:first-child {
   display: inline;
 }
-
-/* No text transformation from Material for MkDocs for H5 headings. */
 .md-typeset h5 .doc-object-name {
   text-transform: none;
 }

@@ -1,0 +1,670 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Remote CI Validation - Runtime</title>
+    <link rel="stylesheet" href="../../styles/runtime.css">
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+  </head>
+  <body>
+    <header class="site-header">
+      
+        <a class="brand" href="../..">Runtime</a>
+      
+    </header>
+    <div class="layout">
+      <nav class="site-nav" aria-label="Primary navigation">
+        <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <span>Home</span>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../getting-started/">Getting Started</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../tutorials/end-to-end/">End-to-End Tutorial</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../migrating-from-0.0.x/">Migrating from 0.0.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../migrating-from-0.1.x/">Migrating from 0.1.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item is-active">
+        
+          <span>Compliance</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../">Compliance Mapping</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../production-readiness/">Production Readiness</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rc-readiness-summary/">RC Readiness Summary</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../stable-promotion/">Stable Promotion</a>
+        
+        
+      </li>
+    
+      <li class="nav-item is-active">
+        
+          <a href="./">Remote CI Validation</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../final-diff-review/">Final Diff Review</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rc-review-handoff/">RC Review Handoff</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../staging-manifest/">Staging Manifest</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../guard-calibration/">Guard Calibration</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../security-review/">Security Review</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../private-rc-publication/">Private RC Publication</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-operations-runbook/">Pilot Operations Runbook</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-execution/">Pilot Execution Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-dry-run/">Pilot Dry-Run</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-evidence-template/">Controlled RC Pilot Evidence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rollback-execution/">Rollback Execution Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rollback-proof-checklist/">Rollback Proof Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rc-inventory/">Release Candidate Inventory</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>Patterns</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/retry/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/circuit-breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/durability/">Durability</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/rate-limiting/">Rate Limiting</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/quality-gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/agent-events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/policy/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/usage-tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/governance/">Governance Plane</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/pilot-profile/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>API Reference</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../../api/orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/agent_events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/agent_lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/circuit_breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/checkpoint/">Checkpoint</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/policy_engine/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/quality_gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/rate_limit/">Rate Limit</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/retry_policy/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/usage_tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/guardrails/">Guardrails</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/governance/">Governance</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/handoffs/">Handoffs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/sinks/">Sinks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/persistence/">Persistence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/scheduler/">Scheduler</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/otel/">Telemetry</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/pilot/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../changelog/">Changelog</a>
+        
+        
+      </li>
+    
+  </ul>
+      </nav>
+      <main class="content" id="content">
+        
+          <h1 id="remote-ci-validation">Remote CI Validation<a class="headerlink" href="#remote-ci-validation" title="Permanent link">&para;</a></h1>
+<p>Author: Techrevati doo</p>
+<p>Remote CI validation status: Pending until remote CI passes on the reviewed
+commit.</p>
+<p>This checklist records the remote CI evidence required before <code>0.3.0rc1</code> can be
+tagged or used for private RC publication. It keeps the local/server gate and
+remote CI gate separate so a green local run is not mistaken for release
+validation.</p>
+<h2 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h2>
+<p>Remote CI validation proves that the reviewed release-candidate commit passes
+in the clean hosted workflow environment. It must run after the final diff is
+ready and before the release tag is created.</p>
+<h2 id="preflight-snapshot">Preflight Snapshot<a class="headerlink" href="#preflight-snapshot" title="Permanent link">&para;</a></h2>
+<p>Latest preflight snapshot collected on 2026-06-01 before staging:</p>
+<ul>
+<li>branch: <code>production-rc-0.3.0</code>,</li>
+<li>base HEAD before staging: <code>1d57f9c33b6980321d21a20078f2a1ac9a7ed3da</code>,</li>
+<li>current working-tree release diff: 85 files changed, 8,859 insertions,
+  1,794 deletions,</li>
+<li>untracked release assets: 104 files, all classified by
+  <code>docs/compliance/staging-manifest.md</code>,</li>
+<li>local/server full production gate: 999 tests passed with 94.85 percent total
+  coverage,</li>
+<li>local workflow readiness checks: CI guardrail guard, release workflow guard,
+  workflow hardening guard, workflow action pinning guard, and remote CI
+  validation guard passed,</li>
+<li>remote CI validation status: Pending until remote CI passes on the reviewed
+  release-candidate commit.</li>
+</ul>
+<p>This is preflight evidence only. The current release set is still a working
+tree diff, so hosted CI cannot validate it until the reviewer-approved files
+are staged and committed. Before tagging <code>v0.3.0rc1</code>, record the reviewed
+commit SHA below and attach the remote workflow run URL for that exact commit.</p>
+<h2 id="commit-parity">Commit Parity<a class="headerlink" href="#commit-parity" title="Permanent link">&para;</a></h2>
+<p>Remote CI evidence is valid only when all of these match:</p>
+<ul>
+<li>reviewed commit SHA,</li>
+<li>release-candidate branch,</li>
+<li>package version <code>0.3.0rc1</code>,</li>
+<li>changelog entry for <code>0.3.0rc1</code>,</li>
+<li>local/server full production gate evidence,</li>
+<li>remote CI workflow run commit.</li>
+</ul>
+<p>If the branch changes after remote CI passes, the remote CI evidence is stale
+and must be collected again.</p>
+<h2 id="required-jobs">Required Jobs<a class="headerlink" href="#required-jobs" title="Permanent link">&para;</a></h2>
+<p>The remote CI run must include:</p>
+<ul>
+<li>test matrix for Python 3.11, 3.12, and 3.13,</li>
+<li>build matrix for Python 3.11, 3.12, and 3.13,</li>
+<li>zero-dependency wheel smoke for Python 3.11, 3.12, and 3.13,</li>
+<li>lint, format, strict typing, and full tests,</li>
+<li>total and per-module coverage gates,</li>
+<li>all verify-time guard scripts,</li>
+<li>distribution artifact checks,</li>
+<li>package metadata checks,</li>
+<li>no-dependency wheel install smoke,</li>
+<li>documentation build and public branding checks.</li>
+</ul>
+<p>The release verification workflow must run the same verify-time guard stack
+before any package publish step.</p>
+<h2 id="evidence-to-capture">Evidence To Capture<a class="headerlink" href="#evidence-to-capture" title="Permanent link">&para;</a></h2>
+<p>Record these fields before creating <code>v0.3.0rc1</code>:</p>
+<ul>
+<li>workflow name,</li>
+<li>run URL or immutable run identifier,</li>
+<li>commit SHA,</li>
+<li>branch name,</li>
+<li>run start and finish time,</li>
+<li>final result,</li>
+<li>Python matrix results,</li>
+<li>build artifact check result,</li>
+<li>zero-dependency smoke result,</li>
+<li>documentation build result,</li>
+<li>public branding result,</li>
+<li>failed job logs when any job is red,</li>
+<li>reviewer who compared the run to the local/server gate.</li>
+</ul>
+<h2 id="failure-triage">Failure Triage<a class="headerlink" href="#failure-triage" title="Permanent link">&para;</a></h2>
+<p>Every red remote CI result must be classified as one of:</p>
+<ul>
+<li>product defect,</li>
+<li>test defect,</li>
+<li>workflow defect,</li>
+<li>environment defect,</li>
+<li>dependency or toolchain outage.</li>
+</ul>
+<p>Do not tag, publish, or pilot from a commit with a red or unexplained remote CI
+run. If the failure is an environment defect or toolchain outage, rerun CI and
+record the passing run before continuing.</p>
+<h2 id="no-go-rules">No-Go Rules<a class="headerlink" href="#no-go-rules" title="Permanent link">&para;</a></h2>
+<p>Do not tag, publish, or promote when any of these are true:</p>
+<ul>
+<li>remote CI is missing,</li>
+<li>remote CI ran on a different commit,</li>
+<li>any required matrix job is missing,</li>
+<li>any required job is red,</li>
+<li>failed logs have not been triaged,</li>
+<li>local/server gate and remote CI use different package versions,</li>
+<li>release verification does not include the verify-time guard stack,</li>
+<li>documentation or public branding checks are absent from release evidence.</li>
+</ul>
+<h2 id="sign-off-template">Sign-Off Template<a class="headerlink" href="#sign-off-template" title="Permanent link">&para;</a></h2>
+<p>Use this template for the remote CI validation record:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Reviewer</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Commit SHA</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Branch</td>
+<td><code>production-rc-0.3.0</code></td>
+</tr>
+<tr>
+<td>Workflow name</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Run URL or identifier</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Result</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Python matrix complete</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Build matrix complete</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Zero-dependency smoke complete</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Docs and branding complete</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Failed jobs triaged</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Decision</td>
+<td>Pending / Approved / Changes required</td>
+</tr>
+</tbody>
+</table>
+        
+      </main>
+    </div>
+    <footer class="site-footer">
+      <span>Copyright 2026 Techrevati doo</span>
+    </footer>
+  </body>
+</html>

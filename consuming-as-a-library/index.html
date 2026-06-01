@@ -1,0 +1,573 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Consuming as a Library - Runtime</title>
+    <link rel="stylesheet" href="../styles/runtime.css">
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+  </head>
+  <body>
+    <header class="site-header">
+      
+        <a class="brand" href="..">Runtime</a>
+      
+    </header>
+    <div class="layout">
+      <nav class="site-nav" aria-label="Primary navigation">
+        <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <span>Home</span>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../getting-started/">Getting Started</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../tutorials/end-to-end/">End-to-End Tutorial</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../migrating-from-0.0.x/">Migrating from 0.0.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../migrating-from-0.1.x/">Migrating from 0.1.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item is-active">
+        
+          <a href="./">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>Compliance</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/">Compliance Mapping</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/production-readiness/">Production Readiness</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/rc-readiness-summary/">RC Readiness Summary</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/stable-promotion/">Stable Promotion</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/remote-ci-validation/">Remote CI Validation</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/final-diff-review/">Final Diff Review</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/rc-review-handoff/">RC Review Handoff</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/staging-manifest/">Staging Manifest</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/guard-calibration/">Guard Calibration</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/security-review/">Security Review</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/private-rc-publication/">Private RC Publication</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/pilot-operations-runbook/">Pilot Operations Runbook</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/pilot-execution/">Pilot Execution Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/pilot-dry-run/">Pilot Dry-Run</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/pilot-evidence-template/">Controlled RC Pilot Evidence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/rollback-execution/">Rollback Execution Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/rollback-proof-checklist/">Rollback Proof Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/rc-inventory/">Release Candidate Inventory</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>Patterns</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/retry/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/circuit-breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/durability/">Durability</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/rate-limiting/">Rate Limiting</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/quality-gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/agent-events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/policy/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/usage-tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/governance/">Governance Plane</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/pilot-profile/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>API Reference</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../api/orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/agent_events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/agent_lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/circuit_breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/checkpoint/">Checkpoint</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/policy_engine/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/quality_gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/rate_limit/">Rate Limit</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/retry_policy/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/usage_tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/guardrails/">Guardrails</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/governance/">Governance</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/handoffs/">Handoffs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/sinks/">Sinks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/persistence/">Persistence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/scheduler/">Scheduler</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/otel/">Telemetry</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/pilot/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../changelog/">Changelog</a>
+        
+        
+      </li>
+    
+  </ul>
+      </nav>
+      <main class="content" id="content">
+        
+          <h1 id="consuming-the-runtime-as-a-library">Consuming the runtime as a library<a class="headerlink" href="#consuming-the-runtime-as-a-library" title="Permanent link">&para;</a></h1>
+<p><code>techrevati-runtime</code> is a zero-dependency, importable library. It does not own
+your application's orchestration loop — you call its primitives from your own
+agent-execution code. This page covers two situations: adding the runtime to a
+fresh project, and migrating a project that already <strong>vendored a fork</strong> of these
+primitives.</p>
+<h2 id="adding-it-to-a-project">Adding it to a project<a class="headerlink" href="#adding-it-to-a-project" title="Permanent link">&para;</a></h2>
+<p>The runtime has no required runtime dependencies, so it composes with any async
+Python stack (Python 3.11+). Add it to your dependency set, pin a version, and
+import primitives directly:</p>
+<pre><code class="language-python">from techrevati.runtime import (
+    AgentSession, GovernancePlane, MaxBudgetLimit,
+    PermissionEnforcer, PermissionPolicy, RolePermissionConfig,
+    UsageTracker, resolve_pricing,
+    RecoveryContext, attempt_recovery, backoff_delay, classify_exception,
+)
+</code></pre>
+<p>Pin an exact version (<code>techrevati-runtime==X.Y.Z</code>); never float. The package
+ships <code>py.typed</code>, so <code>mypy --strict</code> sees full types.</p>
+<h2 id="migrating-from-a-vendored-fork">Migrating from a vendored fork<a class="headerlink" href="#migrating-from-a-vendored-fork" title="Permanent link">&para;</a></h2>
+<p>If your project carries an in-tree copy of these primitives (a vendored
+<code>agent_patterns</code>-style package that predates this library), do <strong>not</strong> copy the
+runtime in alongside it — that creates a third copy of the same code to
+maintain. Instead make the runtime the single source of truth and turn your
+vendored package's shared modules into thin <strong>re-export shims</strong>. Your existing
+import sites do not change.</p>
+<h3 id="the-re-export-shim-pattern">The re-export shim pattern<a class="headerlink" href="#the-re-export-shim-pattern" title="Permanent link">&para;</a></h3>
+<p>Replace the body of each vendored module that duplicates a runtime primitive
+with a re-export:</p>
+<pre><code class="language-python"># your_vendored_pkg/recovery_recipes.py  (renamed to retry_policy in the runtime)
+from techrevati.runtime import (  # noqa: F401
+    RecoveryContext, RecoveryResult, RecoveryStep,
+    attempt_recovery, backoff_delay, classify_exception, smaller_context_budget,
+)
+</code></pre>
+<p>Call sites keep doing <code>from your_vendored_pkg.recovery_recipes import ...</code> and
+resolve to the runtime symbols. Three kinds of gap need handling in the shim:</p>
+<ol>
+<li><strong>Renamed modules.</strong> The runtime exposes everything at the package top level
+   (e.g. recovery/retry symbols), so a renamed module just re-exports from
+   <code>techrevati.runtime</code>.</li>
+<li><strong>Project-specific helpers.</strong> Convenience functions and default config that
+   were never library concerns (e.g. a <code>get_default_enforcer()</code> built from your
+   own role map) stay local — define them in the shim using the runtime's public
+   classes (<code>PermissionEnforcer</code>, <code>PermissionPolicy</code>, <code>RolePermissionConfig</code>).</li>
+<li><strong>Private symbols.</strong> If your code imported a private helper, switch to the
+   public equivalent. For pricing, use the public <code>resolve_pricing(model)</code>
+   instead of reaching into an internal resolver.</li>
+</ol>
+<h3 id="behavior-differences-to-verify">Behavior differences to verify<a class="headerlink" href="#behavior-differences-to-verify" title="Permanent link">&para;</a></h3>
+<p>Re-exporting names is necessary but not sufficient — the runtime is the
+hardened, evolved version, so verify behavior, not just imports:</p>
+<ul>
+<li>Constructors validate more strictly; inputs a fork accepted loosely may now
+  raise. Audit call sites that pass empty or out-of-range values.</li>
+<li>Guardrail violations are collected (a tuple of all violations at a stage),
+  not first-only.</li>
+<li>Telemetry uses nested parent/child spans, not one-shot spans.</li>
+<li>Non-cost overruns raise <code>UsageLimitExceededError</code>; catch the
+  <code>UsageBoundExceededError</code> base to cover both cost and non-cost bounds.</li>
+</ul>
+<h3 id="roll-out-incrementally">Roll out incrementally<a class="headerlink" href="#roll-out-incrementally" title="Permanent link">&para;</a></h3>
+<p>Shim one module at a time, run your test suite after each, and delete the
+vendored real module once its shim is green. Keep only your project-specific
+modules as real code. Each step is a one-file revert, so a bad step is isolated.</p>
+        
+      </main>
+    </div>
+    <footer class="site-footer">
+      <span>Copyright 2026 Techrevati doo</span>
+    </footer>
+  </body>
+</html>

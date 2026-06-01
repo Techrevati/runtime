@@ -1,0 +1,993 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Release Candidate Inventory - Runtime</title>
+    <link rel="stylesheet" href="../../styles/runtime.css">
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+  </head>
+  <body>
+    <header class="site-header">
+      
+        <a class="brand" href="../..">Runtime</a>
+      
+    </header>
+    <div class="layout">
+      <nav class="site-nav" aria-label="Primary navigation">
+        <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <span>Home</span>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../getting-started/">Getting Started</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../tutorials/end-to-end/">End-to-End Tutorial</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../migrating-from-0.0.x/">Migrating from 0.0.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../migrating-from-0.1.x/">Migrating from 0.1.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item is-active">
+        
+          <span>Compliance</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../">Compliance Mapping</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../production-readiness/">Production Readiness</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rc-readiness-summary/">RC Readiness Summary</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../stable-promotion/">Stable Promotion</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../remote-ci-validation/">Remote CI Validation</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../final-diff-review/">Final Diff Review</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rc-review-handoff/">RC Review Handoff</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../staging-manifest/">Staging Manifest</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../guard-calibration/">Guard Calibration</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../security-review/">Security Review</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../private-rc-publication/">Private RC Publication</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-operations-runbook/">Pilot Operations Runbook</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-execution/">Pilot Execution Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-dry-run/">Pilot Dry-Run</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-evidence-template/">Controlled RC Pilot Evidence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rollback-execution/">Rollback Execution Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rollback-proof-checklist/">Rollback Proof Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item is-active">
+        
+          <a href="./">Release Candidate Inventory</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>Patterns</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/retry/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/circuit-breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/durability/">Durability</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/rate-limiting/">Rate Limiting</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/quality-gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/agent-events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/policy/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/usage-tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/governance/">Governance Plane</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/pilot-profile/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>API Reference</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../../api/orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/agent_events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/agent_lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/circuit_breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/checkpoint/">Checkpoint</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/policy_engine/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/quality_gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/rate_limit/">Rate Limit</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/retry_policy/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/usage_tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/guardrails/">Guardrails</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/governance/">Governance</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/handoffs/">Handoffs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/sinks/">Sinks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/persistence/">Persistence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/scheduler/">Scheduler</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/otel/">Telemetry</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/pilot/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../changelog/">Changelog</a>
+        
+        
+      </li>
+    
+  </ul>
+      </nav>
+      <main class="content" id="content">
+        
+          <h1 id="release-candidate-inventory">Release Candidate Inventory<a class="headerlink" href="#release-candidate-inventory" title="Permanent link">&para;</a></h1>
+<p>Author: Techrevati doo</p>
+<p>This inventory records the current <code>0.3.0rc1</code> preparation state. It is intended
+to make the release candidate reviewable as one coherent body of work instead
+of a long unstructured diff.</p>
+<h2 id="current-branch-and-target">Current Branch And Target<a class="headerlink" href="#current-branch-and-target" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Working branch: <code>production-rc-0.3.0</code>.</li>
+<li>Current package version: <code>0.3.0rc1</code>.</li>
+<li>Target release candidate: <code>0.3.0rc1</code>.</li>
+<li>Target stable release: <code>0.3.0</code>.</li>
+<li>Release shape: Python runtime package.</li>
+<li>First production channel: private package registry or controlled internal
+  artifact channel.</li>
+<li>Public package index publication: out of scope until the RC pilot succeeds.</li>
+<li>Hosted service wrapper: out of scope for <code>0.3.0</code>.</li>
+</ul>
+<h2 id="current-diff-shape">Current Diff Shape<a class="headerlink" href="#current-diff-shape" title="Permanent link">&para;</a></h2>
+<p>The tracked release candidate diff currently spans these groups:</p>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Purpose</th>
+<th>Review focus</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Workflows and automation</td>
+<td>CI, docs, release, code scanning, issue templates</td>
+<td>permissions, action pinning, tag gates, timeouts</td>
+</tr>
+<tr>
+<td>Package and policy metadata</td>
+<td>package metadata, changelog, ownership, security docs</td>
+<td>version consistency, authorship, support policy</td>
+</tr>
+<tr>
+<td>Runtime modules</td>
+<td>hardened primitives under <code>techrevati.runtime</code></td>
+<td>public API compatibility, validation, failure behavior</td>
+</tr>
+<tr>
+<td>Tests</td>
+<td>regression, integration, release, workflow, docs, package checks</td>
+<td>coverage quality, brittle assumptions</td>
+</tr>
+<tr>
+<td>Documentation</td>
+<td>getting started, patterns, API reference, compliance pages</td>
+<td>public branding, operator usefulness</td>
+</tr>
+<tr>
+<td>Scripts</td>
+<td>release, security, package, docs, source, workflow guard scripts</td>
+<td>false positives, CI parity, maintainability</td>
+</tr>
+</tbody>
+</table>
+<p>At the last inventory pass, the tracked diff contained 85 modified tracked files
+with approximately 8,859 insertions and 1,794 deletions. New untracked release
+assets include API reference pages, compliance pages, docs styling/theme files,
+guard scripts, and their tests. The untracked release asset count is currently
+104 files.</p>
+<h2 id="review-order">Review Order<a class="headerlink" href="#review-order" title="Permanent link">&para;</a></h2>
+<p>Review in this order to keep the risk low:</p>
+<ol>
+<li>Repository hygiene, generated files, docs theme, and ignored artifacts.</li>
+<li>Branding and authorship.</li>
+<li>Package metadata, changelog, version consistency, and release notes.</li>
+<li>Workflow security and release automation.</li>
+<li>Guard scripts and tests.</li>
+<li>Runtime public API and compatibility.</li>
+<li>Runtime hardening behavior by subsystem.</li>
+<li>Documentation accuracy and operator readiness.</li>
+<li>Full production gate evidence.</li>
+</ol>
+<h2 id="sprint-0-checklist">Sprint 0 Checklist<a class="headerlink" href="#sprint-0-checklist" title="Permanent link">&para;</a></h2>
+<ul>
+<li>[x] Create the release candidate branch.</li>
+<li>[x] Add a production readiness plan to public documentation.</li>
+<li>[x] Add this release candidate inventory.</li>
+<li>[x] Add a final diff review checklist and guard.</li>
+<li>[x] Add an RC reviewer handoff checklist and guard.</li>
+<li>[x] Add a staging manifest checklist and guard.</li>
+<li>[x] Confirm strict documentation build.</li>
+<li>[x] Confirm public branding guard.</li>
+<li>[x] Confirm docs publication guard.</li>
+<li>[x] Add a remote CI validation checklist and guard.</li>
+<li>[x] Run the full production gate after docs changes.</li>
+<li>[x] Review untracked files and confirm each belongs in the RC.</li>
+<li>[x] Confirm ignored build/cache artifacts are not part of the RC.</li>
+<li>[x] Split accidental or out-of-scope files out of the RC.</li>
+<li>[ ] Stage files only after the RC inventory review is complete.</li>
+</ul>
+<h2 id="sprint-1-checklist">Sprint 1 Checklist<a class="headerlink" href="#sprint-1-checklist" title="Permanent link">&para;</a></h2>
+<ul>
+<li>[x] Freeze the current package-level public export set.</li>
+<li>[x] Make the public API guard reject exports outside the frozen set.</li>
+<li>[x] Make the public API guard reject accidental export order changes.</li>
+<li>[x] Add regression tests for the frozen public API guard.</li>
+<li>[x] Verify deprecated compatibility surface tests still pass.</li>
+<li>[x] Review package-level documentation against the frozen API.</li>
+<li>[x] Add an automated guard for documented package-level imports.</li>
+<li>[x] Validate local dependency I/O failures classify as dependency failures
+  rather than model failures.</li>
+<li>[x] Validate fallback caller validation failures classify as validation
+  failures without masking context, dependency, timeout, or provider matches.</li>
+<li>[x] Validate provider/model prompt rejection failures classify as prompt
+  rejections rather than generic model failures.</li>
+<li>[x] Validate runtime rate-limiter hard-stops classify as rate-limit failures
+  rather than generic model failures.</li>
+<li>[x] Validate uncaught max-iterations hard-stops classify as governance
+  breaches rather than generic model failures.</li>
+<li>[x] Validate caller-driven cancellation classifies as cancellation rather
+  than an unknown failure.</li>
+<li>[x] Validate caller-driven cancellation remains typed in telemetry without
+  setting OTel error status.</li>
+<li>[x] Validate event schema rejects inconsistent cancellation status and
+  failure-class payloads.</li>
+<li>[x] Validate event schema rejects <code>agent.failed</code> payloads without
+  <code>failure_class</code>.</li>
+<li>[x] Confirm no release candidate change requires a breaking-change note.</li>
+</ul>
+<h2 id="sprint-2-checklist">Sprint 2 Checklist<a class="headerlink" href="#sprint-2-checklist" title="Permanent link">&para;</a></h2>
+<ul>
+<li>[x] Change package version from <code>0.3.0.dev1</code> to <code>0.3.0rc1</code>.</li>
+<li>[x] Add changelog entry for <code>0.3.0rc1</code>.</li>
+<li>[x] Allow tag-gated release validation for <code>v0.3.0rc1</code>.</li>
+<li>[x] Verify version consistency after reinstalling editable metadata.</li>
+<li>[x] Build wheel and sdist for <code>0.3.0rc1</code>.</li>
+<li>[x] Run distribution checks and metadata rendering checks.</li>
+<li>[x] Run zero-dependency wheel install smoke.</li>
+<li>[x] Run optional OTel import smoke.</li>
+<li>[x] Generate CycloneDX SBOM JSON and XML.</li>
+<li>[x] Confirm private registry publish steps are documented.</li>
+<li>[x] Add a private RC publication checklist and guard.</li>
+<li>[x] Add a release evidence verifier for checksum manifest integrity.</li>
+</ul>
+<h2 id="sprint-3-checklist">Sprint 3 Checklist<a class="headerlink" href="#sprint-3-checklist" title="Permanent link">&para;</a></h2>
+<ul>
+<li>[x] Add a repository-wide secret leak guard.</li>
+<li>[x] Wire the secret leak guard into CI and release verification jobs.</li>
+<li>[x] Add regression tests for secret leak detection.</li>
+<li>[x] Harden the security pattern guard against literal subprocess shell
+  bypasses, missing subprocess and HTTP client timeouts, implicit
+  <code>subprocess.run</code> check semantics, raw exception text leakage, disabled TLS
+  verification, and unsafe YAML loading.</li>
+<li>[x] Document deployment threat model and secret handling controls.</li>
+<li>[x] Add a pinned audit toolchain for dependency vulnerability scanning.</li>
+<li>[x] Wire dependency vulnerability scanning into CI and release verification.</li>
+<li>[x] Run dependency vulnerability scanning for all optional toolchains.</li>
+<li>[x] Make built-in model I/O logging metadata-only by default.</li>
+<li>[x] Make OTel event detail export opt-in.</li>
+<li>[x] Review logs, traces, diagnostics, and error handling for sensitive-data
+  exposure.</li>
+<li>[x] Add an explicit pilot profile for guardrails, permissions, and
+  governance.</li>
+<li>[x] Confirm guardrails, permissions, and governance defaults for pilot use.</li>
+<li>[x] Validate pilot profile denies unknown roles by default without changing
+  base <code>PermissionPolicy</code> compatibility behavior.</li>
+<li>[x] Add a security review checklist and guard.</li>
+</ul>
+<h2 id="sprint-4-checklist">Sprint 4 Checklist<a class="headerlink" href="#sprint-4-checklist" title="Permanent link">&para;</a></h2>
+<ul>
+<li>[x] Add a pilot operations runbook for version checks, event inspection,
+  usage inspection, governance breaches, rollback, pilot shutdown, and
+  diagnostic bundle collection.</li>
+<li>[x] Define required pilot signals, minimum alert rules, and retention policy.</li>
+<li>[x] Include terminal failure-class distribution in pilot signal review.</li>
+<li>[x] Add fan-out event and usage sinks so pilots can write durable local
+  evidence and telemetry in the same session.</li>
+<li>[x] Add an automated operations runbook guard.</li>
+<li>[x] Wire the operations runbook guard into CI and release verification jobs.</li>
+</ul>
+<h2 id="sprint-5-preparation-checklist">Sprint 5 Preparation Checklist<a class="headerlink" href="#sprint-5-preparation-checklist" title="Permanent link">&para;</a></h2>
+<ul>
+<li>[x] Add a controlled RC pilot evidence template for go/no-go review.</li>
+<li>[x] Add a rollback proof checklist for the downstream pilot environment.</li>
+<li>[x] Add a rollback execution checklist and guard.</li>
+<li>[x] Add a stable promotion checklist and guard.</li>
+<li>[x] Add a local pilot dry-run guard for the controlled scenario wiring.</li>
+<li>[x] Add a pilot execution checklist and guard.</li>
+<li>[x] Add an RC readiness summary and guard for release decision boundaries.</li>
+<li>[x] Cover required controlled scenarios, pilot signals, no-go conditions, and
+  stable-release success criteria in the evidence template.</li>
+<li>[x] Cover expected terminal failure classes for permission, guardrail, and
+  governance stops in pilot evidence.</li>
+<li>[x] Add an automated pilot evidence guard.</li>
+<li>[x] Wire the RC readiness, stable promotion, pilot dry-run, and pilot
+  evidence guards into CI and release verification jobs.</li>
+<li>[ ] Execute the real controlled RC pilot.</li>
+<li>[ ] Test rollback in the pilot environment.</li>
+</ul>
+<h2 id="known-release-candidate-risks">Known Release Candidate Risks<a class="headerlink" href="#known-release-candidate-risks" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Status</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Large diff is hard to review</td>
+<td>Mitigated</td>
+<td>Guarded final diff review checklist and subsystem review order</td>
+</tr>
+<tr>
+<td>Final reviewer handoff may miss blockers</td>
+<td>Mitigated</td>
+<td>Guarded reviewer handoff checklist with release evidence, external blockers, and no-go rules</td>
+</tr>
+<tr>
+<td>Untracked RC assets may be missed during staging</td>
+<td>Mitigated</td>
+<td>Guarded staging manifest categorizes untracked release assets before stage/tag</td>
+</tr>
+<tr>
+<td>New guard scripts may be too strict</td>
+<td>Mitigated</td>
+<td>Guard calibration checklist and false-positive procedure before stable</td>
+</tr>
+<tr>
+<td>Source hygiene may miss guard scripts or tests when run with default settings</td>
+<td>Mitigated</td>
+<td>Source hygiene scans <code>src</code>, <code>scripts</code>, and <code>tests</code> by default; skips generated/cache directories; allows <code>print()</code> only under <code>scripts/</code> while keeping debug breakpoints, <code>pdb</code>, bare exceptions, <code>NotImplementedError</code> runtime stubs, implicit text-file encodings, and stale markers blocked</td>
+</tr>
+<tr>
+<td>Public API may have accidental surface changes</td>
+<td>Mitigated</td>
+<td>Frozen API and documented import guards in Sprint 1</td>
+</tr>
+<tr>
+<td>Public handoff hooks may appear available without running</td>
+<td>Mitigated</td>
+<td><code>before_handoff</code> now runs before target worker registration, with sync and async regression tests</td>
+</tr>
+<tr>
+<td>Governance scope labels may imply unsupported cross-session enforcement</td>
+<td>Mitigated</td>
+<td>Governance limits now fail closed to <code>session</code> scope until thread/project enforcement exists</td>
+</tr>
+<tr>
+<td>Session-scoped governance counters may leak across sessions</td>
+<td>Mitigated</td>
+<td><code>AgentSession</code> now creates a fresh governance state for every sync and async session</td>
+</tr>
+<tr>
+<td>Governance hard-stops may be misclassified as dependency failures</td>
+<td>Mitigated</td>
+<td>Dedicated <code>governance_breach</code> failure class covers breach and terminal failure events</td>
+</tr>
+<tr>
+<td>Permission or guardrail terminal failures may be misclassified</td>
+<td>Mitigated</td>
+<td>Dedicated <code>permission_denied</code> and <code>guardrail_violation</code> failure classes cover policy blocks</td>
+</tr>
+<tr>
+<td>Local persistence or I/O failures may be misclassified as model failures</td>
+<td>Mitigated</td>
+<td><code>OSError</code>, database, SQLite, disk, and filesystem failures now classify through dependency failure paths with retry and checkpoint regression coverage</td>
+</tr>
+<tr>
+<td>Caller validation failures may be misclassified as model failures</td>
+<td>Mitigated</td>
+<td>Fallback <code>ValueError</code> and <code>TypeError</code> terminal failures now use <code>validation_error</code> after more specific classifier matches are checked</td>
+</tr>
+<tr>
+<td>Prompt/content-policy rejections may be misclassified as generic model failures</td>
+<td>Mitigated</td>
+<td>Prompt rejection markers now map terminal failures to <code>prompt_rejection</code> before validation fallback</td>
+</tr>
+<tr>
+<td>Runtime rate-limiter hard-stops may be misclassified as model failures</td>
+<td>Mitigated</td>
+<td><code>RateLimitExceededError</code> terminal failures now use <code>rate_limit</code> in sync and async session paths</td>
+</tr>
+<tr>
+<td>Max-iterations hard-stops may be misclassified as model failures</td>
+<td>Mitigated</td>
+<td>Uncaught <code>MaxIterationsExceededError</code> terminal failures now use <code>governance_breach</code> in sync and async session paths</td>
+</tr>
+<tr>
+<td>Caller-driven cancellation may be counted as unknown failure</td>
+<td>Mitigated</td>
+<td>Sync and async cancellation now use <code>cancelled</code> in terminal failure-class telemetry</td>
+</tr>
+<tr>
+<td>Caller-driven cancellation may inflate OTel error-rate alerts</td>
+<td>Mitigated</td>
+<td>Cancellation spans keep <code>techrevati.failure_class=cancelled</code> without <code>error.type</code> or <code>StatusCode.ERROR</code></td>
+</tr>
+<tr>
+<td>Cancellation payloads may disagree on status and failure class</td>
+<td>Mitigated</td>
+<td><code>AgentEvent</code> rejects inconsistent <code>agent.failed</code> cancellation status/failure-class combinations</td>
+</tr>
+<tr>
+<td>Failed audit payloads may omit failure taxonomy</td>
+<td>Mitigated</td>
+<td><code>AgentEvent</code> rejects <code>agent.failed</code> payloads without a valid <code>failure_class</code></td>
+</tr>
+<tr>
+<td>Production plan and pilot evidence may lag runtime audit semantics</td>
+<td>Mitigated</td>
+<td>Production readiness, security, pilot evidence, operations, and pattern docs now require terminal failure-class evidence and failure-class distribution review</td>
+</tr>
+<tr>
+<td>Committed secrets may leak through non-Python files</td>
+<td>Mitigated</td>
+<td>Repository-wide secret leak guard in Sprint 3</td>
+</tr>
+<tr>
+<td>Disabled TLS verification, subprocess shell bypasses, subprocess or HTTP client calls without timeouts, raw logging tracebacks, raw exception text, or unsafe YAML loading may enter source, scripts, or tests</td>
+<td>Mitigated</td>
+<td>Security pattern guard scans <code>src</code>, <code>scripts</code>, and <code>tests</code> by default and rejects <code>verify=False</code>, literal <code>verify=0</code>, literal truthy <code>shell=...</code>, missing subprocess timeouts, implicit <code>subprocess.run</code> check semantics, direct <code>subprocess.Popen</code>, missing HTTP client timeouts, literal <code>exc_info=True</code>/<code>stack_info=True</code>, raw exception text in logging/observability payloads, unsafe PyYAML helpers, and unsafe <code>yaml.load</code>/<code>yaml.load_all</code> usage</td>
+</tr>
+<tr>
+<td>Security review may miss runtime-specific risks</td>
+<td>Mitigated</td>
+<td>Guarded security review checklist for runtime, supply-chain, workflow, pilot, and rollback risks</td>
+</tr>
+<tr>
+<td>Pilot workflows may omit required safety primitives</td>
+<td>Mitigated</td>
+<td>Explicit pilot profile helper in Sprint 3</td>
+</tr>
+<tr>
+<td>Unknown pilot roles may bypass the allowed-tool policy</td>
+<td>Mitigated</td>
+<td><code>build_pilot_profile</code> sets <code>PermissionPolicy(default_allow_unknown_roles=False)</code> with regression coverage</td>
+</tr>
+<tr>
+<td>Pilot telemetry may be incomplete</td>
+<td>Mitigated</td>
+<td>Guarded operations runbook and fan-out sinks in Sprint 4</td>
+</tr>
+<tr>
+<td>Pilot go/no-go evidence may be incomplete</td>
+<td>Mitigated</td>
+<td>Guarded evidence template and rollback checklist in Sprint 5 prep</td>
+</tr>
+<tr>
+<td>Private RC publication may publish wrong artifacts or channel</td>
+<td>Mitigated</td>
+<td>Guarded private RC publication checklist, staged artifact verification, and private-channel workflow controls</td>
+</tr>
+<tr>
+<td>Local dry-run may be mistaken for real pilot evidence</td>
+<td>Mitigated</td>
+<td>Guarded pilot execution checklist keeps dry-run setup evidence separate from real downstream pilot evidence</td>
+</tr>
+<tr>
+<td>Green local/server gate may be mistaken for stable readiness</td>
+<td>Mitigated</td>
+<td>RC readiness summary and guard keep stable blockers explicit</td>
+</tr>
+<tr>
+<td>Stable promotion may start before external evidence is complete</td>
+<td>Mitigated</td>
+<td>Guarded stable promotion checklist requires fresh external evidence before <code>0.3.0</code></td>
+</tr>
+<tr>
+<td>Remote CI evidence may mismatch the reviewed commit</td>
+<td>Mitigated</td>
+<td>Guarded remote CI validation checklist for commit parity, required jobs, evidence, and triage</td>
+</tr>
+<tr>
+<td>RC has not run in a real pilot workflow</td>
+<td>Open</td>
+<td>Controlled pilot before <code>0.3.0</code></td>
+</tr>
+<tr>
+<td>Remote CI has not yet validated the final commit</td>
+<td>Open</td>
+<td>Require green remote CI before tagging</td>
+</tr>
+<tr>
+<td>Rollback is not yet proven in pilot environment</td>
+<td>Open</td>
+<td>Execute the guarded rollback execution checklist during Sprint 5</td>
+</tr>
+</tbody>
+</table>
+<h2 id="current-gate-evidence">Current Gate Evidence<a class="headerlink" href="#current-gate-evidence" title="Permanent link">&para;</a></h2>
+<p>The latest full production gate passed with:</p>
+<ul>
+<li>999 tests passed.</li>
+<li>Total coverage: 94.85 percent.</li>
+<li>Per-module coverage floor passed at 85 percent.</li>
+<li>Strict typing passed.</li>
+<li>Lint and format checks passed.</li>
+<li>Strict documentation build passed.</li>
+<li>Public branding guard passed.</li>
+<li>Final diff review guard passed.</li>
+<li>RC reviewer handoff guard passed.</li>
+<li>Staging manifest guard passed.</li>
+<li>Guard calibration guard passed.</li>
+<li>Source hygiene full-scope default, generated/cache directory skip,
+  abstract-method stub, text I/O encoding, and CLI-script output calibration
+  passed.</li>
+<li>Pilot execution guard passed. Branch, base HEAD, working-tree diff, and
+  untracked release-asset snapshot parity passed.</li>
+<li>Private RC publication guard passed.</li>
+<li>Staged private package artifact verification passed.</li>
+<li>Handoff hook wiring, mutation, blocking, and async dispatch tests passed.</li>
+<li>Governance scope fail-closed validation passed.</li>
+<li>Fresh per-session governance state validation passed.</li>
+<li>Pilot unknown-role fail-closed validation passed.</li>
+<li>Governance breach failure-class validation passed.</li>
+<li>Permission and guardrail terminal failure-class validation passed.</li>
+<li>Local dependency I/O and checkpoint persistence failure-class validation
+  passed.</li>
+<li>Caller validation failure-class validation passed.</li>
+<li>Prompt rejection failure-class validation passed.</li>
+<li>Runtime rate-limiter terminal failure-class validation passed.</li>
+<li>Max-iterations terminal failure-class validation passed.</li>
+<li>Cancellation terminal failure-class validation passed.</li>
+<li>Cancellation OTel non-error validation passed.</li>
+<li>Cancellation schema consistency validation passed.</li>
+<li>Failed-event failure-class schema validation passed.</li>
+<li>Production readiness, security, pilot evidence, operations, and pattern docs
+  align with the terminal failure taxonomy.</li>
+<li>Pilot and operations evidence now require failure-class distribution review.</li>
+<li>RC readiness guard passed.</li>
+<li>Stable promotion guard passed.</li>
+<li>Stable promotion guard rejects stable <code>0.3.0</code> without approved external
+  evidence.</li>
+<li>Release workflow checksum manifest guard passed.</li>
+<li>Release evidence verifier passed.</li>
+<li>Production gate release-evidence parity guard passed.</li>
+<li>Local release-evidence smoke isolation requirement passed.</li>
+<li>Remote CI validation guard passed.</li>
+<li>Rollback execution guard passed. Branch, base HEAD, working-tree diff, and
+  untracked release-asset snapshot parity passed.</li>
+<li>Secret leak guard passed.</li>
+<li>Security pattern guard full-scope default passed, including literal truthy
+  subprocess shell bypasses, missing subprocess timeouts, direct
+  <code>subprocess.Popen</code>, implicit <code>subprocess.run</code> check semantics, missing HTTP
+  client timeouts, disabled TLS verification, raw logging traceback checks, raw
+  exception text checks for logging/observability payloads, and unsafe YAML
+  loading checks.</li>
+<li>Security review guard passed.</li>
+<li>Dependency vulnerability guard passed for dev, docs, build, release, and OTel
+  dependency sets.</li>
+<li>Distribution build and metadata checks passed.</li>
+</ul>
+<p>The latest Sprint 2 artifact pass built and verified:</p>
+<ul>
+<li><code>techrevati_runtime-0.3.0rc1-py3-none-any.whl</code>.</li>
+<li><code>techrevati_runtime-0.3.0rc1.tar.gz</code>.</li>
+<li><code>sbom.cyclonedx.json</code>.</li>
+<li><code>sbom.cyclonedx.xml</code>.</li>
+<li>Clean wheel install with <code>--no-index --no-deps</code>.</li>
+<li>Optional OTel import smoke.</li>
+</ul>
+<p>This evidence is necessary but not sufficient for stable production readiness.
+The stable release still requires final diff review, remote CI, security review,
+private RC publication, pilot evidence, and rollback validation. It also
+requires stable promotion approval.</p>
+<h2 id="untracked-file-review">Untracked File Review<a class="headerlink" href="#untracked-file-review" title="Permanent link">&para;</a></h2>
+<p>The untracked files visible in the release candidate working tree are expected
+release assets:</p>
+<ul>
+<li>API reference pages for newly documented modules.</li>
+<li>Compliance pages, including this inventory and the production readiness plan.</li>
+<li>Documentation theme and style files.</li>
+<li>Guard scripts for changelog, CI, docs, package, release, repository, source,
+  security, workflow, and version policy checks.</li>
+<li>Tests for those new guards and release checks.</li>
+</ul>
+<p>Ignored local artifacts such as <code>dist</code>, <code>.venv</code>, <code>__pycache__</code>, and tool caches
+are covered by <code>.gitignore</code> and do not appear in <code>git status --short
+--untracked-files=all</code>. They must remain unstaged.</p>
+<h2 id="debt-payment-rule">Debt Payment Rule<a class="headerlink" href="#debt-payment-rule" title="Permanent link">&para;</a></h2>
+<p>Any issue found during inventory must be handled in one of three ways:</p>
+<ul>
+<li>fix it immediately with a regression test,</li>
+<li>document it as an explicit RC-blocking or non-blocking backlog item, or</li>
+<li>remove it from the release candidate scope.</li>
+</ul>
+<p>No hidden production risk should be carried forward from Sprint 0.</p>
+        
+      </main>
+    </div>
+    <footer class="site-footer">
+      <span>Copyright 2026 Techrevati doo</span>
+    </footer>
+  </body>
+</html>

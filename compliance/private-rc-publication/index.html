@@ -1,0 +1,732 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Private RC Publication - Runtime</title>
+    <link rel="stylesheet" href="../../styles/runtime.css">
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+  </head>
+  <body>
+    <header class="site-header">
+      
+        <a class="brand" href="../..">Runtime</a>
+      
+    </header>
+    <div class="layout">
+      <nav class="site-nav" aria-label="Primary navigation">
+        <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <span>Home</span>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../getting-started/">Getting Started</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../tutorials/end-to-end/">End-to-End Tutorial</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../migrating-from-0.0.x/">Migrating from 0.0.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../migrating-from-0.1.x/">Migrating from 0.1.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item is-active">
+        
+          <span>Compliance</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../">Compliance Mapping</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../production-readiness/">Production Readiness</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rc-readiness-summary/">RC Readiness Summary</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../stable-promotion/">Stable Promotion</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../remote-ci-validation/">Remote CI Validation</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../final-diff-review/">Final Diff Review</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rc-review-handoff/">RC Review Handoff</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../staging-manifest/">Staging Manifest</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../guard-calibration/">Guard Calibration</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../security-review/">Security Review</a>
+        
+        
+      </li>
+    
+      <li class="nav-item is-active">
+        
+          <a href="./">Private RC Publication</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-operations-runbook/">Pilot Operations Runbook</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-execution/">Pilot Execution Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-dry-run/">Pilot Dry-Run</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-evidence-template/">Controlled RC Pilot Evidence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rollback-execution/">Rollback Execution Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rollback-proof-checklist/">Rollback Proof Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rc-inventory/">Release Candidate Inventory</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>Patterns</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/retry/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/circuit-breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/durability/">Durability</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/rate-limiting/">Rate Limiting</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/quality-gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/agent-events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/policy/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/usage-tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/governance/">Governance Plane</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/pilot-profile/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>API Reference</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../../api/orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/agent_events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/agent_lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/circuit_breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/checkpoint/">Checkpoint</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/policy_engine/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/quality_gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/rate_limit/">Rate Limit</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/retry_policy/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/usage_tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/guardrails/">Guardrails</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/governance/">Governance</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/handoffs/">Handoffs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/sinks/">Sinks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/persistence/">Persistence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/scheduler/">Scheduler</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/otel/">Telemetry</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/pilot/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../changelog/">Changelog</a>
+        
+        
+      </li>
+    
+  </ul>
+      </nav>
+      <main class="content" id="content">
+        
+          <h1 id="private-rc-publication">Private RC Publication<a class="headerlink" href="#private-rc-publication" title="Permanent link">&para;</a></h1>
+<p>Author: Techrevati doo</p>
+<p>Private RC publication status: Pending until <code>0.3.0rc1</code> is published to the
+private channel.</p>
+<p>This checklist controls how <code>techrevati-runtime</code> may be published as a release
+candidate. It keeps the first production channel private, preserves artifact
+evidence, and prevents accidental publication to a public package index before
+pilot approval.</p>
+<h2 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h2>
+<p>The release candidate is ready for review only after the local/server gate and
+remote CI pass on the same commit. Publication is a separate production gate:
+it proves that the exact wheel and source archive can be distributed through a
+controlled channel without leaking credentials or bypassing artifact checks.</p>
+<h2 id="publication-preflight-snapshot">Publication Preflight Snapshot<a class="headerlink" href="#publication-preflight-snapshot" title="Permanent link">&para;</a></h2>
+<p>Latest private publication preflight snapshot collected on 2026-06-01 before
+tagging or publishing:</p>
+<ul>
+<li>branch: <code>production-rc-0.3.0</code>,</li>
+<li>base HEAD before staging: <code>1d57f9c33b6980321d21a20078f2a1ac9a7ed3da</code>,</li>
+<li>current working-tree release diff: 85 files changed, 8,859 insertions,
+  1,794 deletions,</li>
+<li>untracked release assets: 104 files, all classified by
+  <code>docs/compliance/staging-manifest.md</code>,</li>
+<li>local/server full production gate: 999 tests passed with 94.85 percent total
+  coverage,</li>
+<li>fresh wheel and source archive build for <code>0.3.0rc1</code>: passed,</li>
+<li>distribution artifact check against local <code>dist</code>: passed,</li>
+<li>package metadata rendering with explicit wheel and source archive
+  <code>twine check</code>: passed,</li>
+<li>local SBOM JSON, SBOM XML, and <code>SHA256SUMS</code> generation: passed,</li>
+<li>release evidence guard against local <code>dist</code>: passed,</li>
+<li>checksum verification with <code>(cd dist &amp;&amp; sha256sum -c SHA256SUMS)</code>: passed,</li>
+<li>temporary private-package upload staging with wheel and source archive only:
+  passed,</li>
+<li>private-package staged artifact distribution and metadata checks: passed,</li>
+<li>remote CI, security reviewer sign-off, private registry secret validation,
+  tag creation, repository release attachment, and private package publish:
+  Pending until the reviewed release-candidate commit is available and the
+  release workflow runs.</li>
+</ul>
+<p>This is preflight evidence only. It verifies the local package and publication
+shape, but it does not publish the release candidate or approve pilot use.</p>
+<h2 id="publication-boundary">Publication Boundary<a class="headerlink" href="#publication-boundary" title="Permanent link">&para;</a></h2>
+<p>For <code>0.3.0rc1</code>, publication is limited to:</p>
+<ul>
+<li>a private package registry or controlled internal artifact channel,</li>
+<li>repository release evidence containing wheel, source archive, SBOM JSON, SBOM
+  XML, and <code>SHA256SUMS</code>,</li>
+<li>internal pilot consumers approved for the controlled RC pilot.</li>
+</ul>
+<p>Public package index publication is out of scope until pilot approval is
+recorded.</p>
+<p><strong>Channel reality (this repository is public).</strong> The established controlled
+channel for pre-releases is a <strong>repository pre-release</strong> — the tag triggers
+<code>release.yml</code>, which marks <code>rc</code>/<code>dev</code> tags as a prerelease and attaches the
+wheel, source archive, SBOM (JSON + XML), and <code>SHA256SUMS</code>. The artifact is
+downloadable but deliberately <strong>not</strong> advertised on the stable package index
+(so <code>pip install techrevati-runtime</code> stays on the stable line); only consumers
+who fetch the prerelease by version receive it. A truly private package
+registry is an <strong>optional</strong> additional channel: the private publish step runs
+only when the <code>PRIVATE_PACKAGE_*</code> secrets are configured, and is skipped
+otherwise without blocking the repository pre-release.</p>
+<h2 id="required-inputs">Required Inputs<a class="headerlink" href="#required-inputs" title="Permanent link">&para;</a></h2>
+<p>Publication requires all of these inputs:</p>
+<ul>
+<li>reviewed release-candidate diff,</li>
+<li>green full local/server production gate,</li>
+<li>green remote CI on the same commit,</li>
+<li>approved security review with no unresolved high or critical findings,</li>
+<li>valid <code>v0.3.0rc1</code> tag,</li>
+<li>private package repository URL in the CI secret store,</li>
+<li>private package username in the CI secret store,</li>
+<li>private package password or token in the CI secret store,</li>
+<li>rollback target from the previous known-good runtime version.</li>
+</ul>
+<h2 id="artifact-verification">Artifact Verification<a class="headerlink" href="#artifact-verification" title="Permanent link">&para;</a></h2>
+<p>The release workflow must build and verify exactly these package artifacts:</p>
+<ul>
+<li><code>techrevati_runtime-0.3.0rc1-py3-none-any.whl</code>,</li>
+<li><code>techrevati_runtime-0.3.0rc1.tar.gz</code>,</li>
+<li><code>sbom.cyclonedx.json</code>,</li>
+<li><code>sbom.cyclonedx.xml</code>,</li>
+<li><code>SHA256SUMS</code>.</li>
+</ul>
+<p>Required verification commands include:</p>
+<pre><code class="language-bash">python scripts/check_distribution.py dist
+python scripts/check_release_evidence.py dist
+python -m twine check dist/*.whl dist/*.tar.gz
+python scripts/check_distribution.py private-package-dist
+python -m twine check private-package-dist/*.whl private-package-dist/*.tar.gz
+pip install --force-reinstall --no-index --no-deps --find-links dist techrevati-runtime
+(cd dist &amp;&amp; sha256sum -c SHA256SUMS)
+</code></pre>
+<p>The package upload directory must contain only wheel and source archive files.
+SBOM files and <code>SHA256SUMS</code> stay attached to repository release evidence and
+must not be uploaded as package artifacts. The release evidence verifier parses
+both SBOM files and rejects evidence unless the JSON and XML files are valid
+CycloneDX BOMs. It also verifies that package name and version match the
+reviewed project metadata by reading the wheel and source archive metadata when
+the verifier runs from the repository root.</p>
+<h2 id="private-channel-controls">Private Channel Controls<a class="headerlink" href="#private-channel-controls" title="Permanent link">&para;</a></h2>
+<p>The release workflow must publish to a configured private repository URL, not a
+default public package index. The private repository URL, username, and
+password/token must come from the CI secret store.</p>
+<p>The workflow must fail before publish when any private channel input is empty.
+It must not fall back to a default package index.</p>
+<h2 id="credential-handling">Credential Handling<a class="headerlink" href="#credential-handling" title="Permanent link">&para;</a></h2>
+<p>Private registry credentials must be short-lived where the provider supports
+that model. They must never be committed, printed in logs, stored in release
+artifacts, or copied into documentation examples.</p>
+<p>Credential rotation is required when:</p>
+<ul>
+<li>the private registry token is exposed,</li>
+<li>the CI secret store is changed by an unauthorized actor,</li>
+<li>a release run prints or uploads credential material,</li>
+<li>the RC publication channel changes.</li>
+</ul>
+<h2 id="publication-procedure">Publication Procedure<a class="headerlink" href="#publication-procedure" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Confirm final diff review is complete.</li>
+<li>Confirm the full local/server production gate is green.</li>
+<li>Confirm remote CI is green on the same commit.</li>
+<li>Confirm the security review is approved with no unresolved high or critical
+   findings.</li>
+<li>Confirm version surfaces all reference <code>0.3.0rc1</code>.</li>
+<li>Create the <code>v0.3.0rc1</code> tag only after review and CI are green.</li>
+<li>Let the release workflow build wheel, source archive, and SBOM files.</li>
+<li>Confirm distribution, metadata, and no-dependency install checks pass.</li>
+<li>Confirm private repository URL, username, and password/token are present in
+   the CI secret store.</li>
+<li>Publish only wheel and source archive files to the private channel.</li>
+<li>Attach wheel, source archive, SBOM JSON, SBOM XML, and <code>SHA256SUMS</code> to
+    repository release evidence.</li>
+<li>Record private RC publication evidence before starting the controlled pilot.</li>
+</ol>
+<h2 id="no-go-rules">No-Go Rules<a class="headerlink" href="#no-go-rules" title="Permanent link">&para;</a></h2>
+<p>Do not publish the release candidate when any of these are true:</p>
+<ul>
+<li>remote CI is missing or red on the reviewed commit,</li>
+<li>final diff review is incomplete,</li>
+<li>security review is unsigned,</li>
+<li>private package repository URL is empty,</li>
+<li>private package credentials are empty,</li>
+<li>workflow falls back to a default public package index,</li>
+<li>package upload includes SBOM files or local build leftovers,</li>
+<li>wheel or source archive fails distribution checks,</li>
+<li><code>twine check</code> fails,</li>
+<li>no-dependency wheel install fails,</li>
+<li>checksum verification fails,</li>
+<li>public branding guard fails,</li>
+<li>rollback target is not known.</li>
+</ul>
+<h2 id="evidence-template">Evidence Template<a class="headerlink" href="#evidence-template" title="Permanent link">&para;</a></h2>
+<p>Use this template for the private RC publication record:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Reviewer</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Commit</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Tag</td>
+<td><code>v0.3.0rc1</code></td>
+</tr>
+<tr>
+<td>Remote CI run</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Security review result</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Private package repository URL configured</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Wheel verified</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Source archive verified</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>SBOM JSON attached</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>SBOM XML attached</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>SHA256SUMS attached</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Checksum verification</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Private package publish result</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Rollback target</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Decision</td>
+<td>Pending / Approved / Changes required</td>
+</tr>
+</tbody>
+</table>
+        
+      </main>
+    </div>
+    <footer class="site-footer">
+      <span>Copyright 2026 Techrevati doo</span>
+    </footer>
+  </body>
+</html>

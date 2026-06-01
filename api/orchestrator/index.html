@@ -1,2104 +1,504 @@
 
 <!doctype html>
-<html lang="en" class="no-js">
+<html lang="en">
   <head>
-    
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width,initial-scale=1">
-      
-        <meta name="description" content="Runtime primitives for multi-step LLM agent loops (beta)">
-      
-      
-      
-        <link rel="canonical" href="https://Techrevati.github.io/runtime/api/orchestrator/">
-      
-      
-        <link rel="prev" href="../../patterns/hooks/">
-      
-      
-        <link rel="next" href="../circuit_breaker/">
-      
-      
-        
-      
-      
-      <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
-    
-    
-      
-        <title>Orchestrator - techrevati-runtime</title>
-      
-    
-    
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
-      
-        
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
-      
-      
-
-
-    
-    
-      
-    
-    
-      
-        
-        
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
-        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
-      
-    
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Orchestrator - Runtime</title>
+    <link rel="stylesheet" href="../../styles/runtime.css">
     
       <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
-    
-      
-
-    
-    
   </head>
-  
-  
-    
-    
+  <body>
+    <header class="site-header">
       
-    
-    
-    
-    
-    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
-  
-    
-    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
-    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
-    <label class="md-overlay" for="__drawer"></label>
-    <div data-md-component="skip">
+        <a class="brand" href="../..">Runtime</a>
       
+    </header>
+    <div class="layout">
+      <nav class="site-nav" aria-label="Primary navigation">
+        <ul class="nav-list">
+    
+      <li class="nav-item">
         
-        <a href="#orchestrator" class="md-skip">
-          Skip to content
-        </a>
-      
-    </div>
-    <div data-md-component="announce">
-      
-    </div>
-    
-    
-      
-
-<header class="md-header" data-md-component="header">
-  <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="techrevati-runtime" class="md-header__button md-logo" aria-label="techrevati-runtime" data-md-component="logo">
-      
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
-
-    </a>
-    <label class="md-header__button md-icon" for="__drawer">
-      
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
-    </label>
-    <div class="md-header__title" data-md-component="header-title">
-      <div class="md-header__ellipsis">
-        <div class="md-header__topic">
-          <span class="md-ellipsis">
-            techrevati-runtime
-          </span>
-        </div>
-        <div class="md-header__topic" data-md-component="header-topic">
-          <span class="md-ellipsis">
-            
-              Orchestrator
-            
-          </span>
-        </div>
-      </div>
-    </div>
-    
-      
-        <form class="md-header__option" data-md-component="palette">
-  
-    
-    
-    
-    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
-    
-  
-</form>
-      
-    
-    
-      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
-    
-    
-    
-      
-      
-        <label class="md-header__button md-icon" for="__search">
-          
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
-        </label>
-        <div class="md-search" data-md-component="search" role="dialog">
-  <label class="md-search__overlay" for="__search"></label>
-  <div class="md-search__inner" role="search">
-    <form class="md-search__form" name="search">
-      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
-      <label class="md-search__icon md-icon" for="__search">
+          <span>Home</span>
         
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
         
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
-      </label>
-      <nav class="md-search__options" aria-label="Search">
-        
-        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
-          
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-        </button>
-      </nav>
-      
-    </form>
-    <div class="md-search__output">
-      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
-        <div class="md-search-result" data-md-component="search-result">
-          <div class="md-search-result__meta">
-            Initializing search
-          </div>
-          <ol class="md-search-result__list" role="presentation"></ol>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-      
-    
-    
-      <div class="md-header__source">
-        <a href="https://github.com/Techrevati/runtime" title="Go to repository" class="md-source" data-md-component="source">
-  <div class="md-source__icon md-icon">
-    
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
-  </div>
-  <div class="md-source__repository">
-    Techrevati/runtime
-  </div>
-</a>
-      </div>
-    
-  </nav>
-  
-</header>
-    
-    <div class="md-container" data-md-component="container">
-      
-      
-        
-          
-            
-<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
-  <div class="md-grid">
-    <ul class="md-tabs__list">
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../.." class="md-tabs__link">
-        
-  
-  
-    
-  
-  Home
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../../getting-started/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Getting Started
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../../tutorials/end-to-end/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  End-to-End Tutorial
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../../migrating-from-0.0.x/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Migrating from 0.0.x
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../../migrating-from-0.1.x/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Migrating from 0.1.x
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    
-    
-      <li class="md-tabs__item">
-        <a href="../../patterns/orchestrator/" class="md-tabs__link">
-          
-  
-  
-  Patterns
-
-        </a>
       </li>
     
-  
-
-      
+      <li class="nav-item">
         
-  
-  
-  
-    
-  
-  
-    
-    
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
-          
-  
-  
-  API Reference
-
-        </a>
+          <a href="../../getting-started/">Getting Started</a>
+        
+        
       </li>
     
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../../changelog/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Changelog
-
-      </a>
-    </li>
-  
-
-      
-    </ul>
-  </div>
-</nav>
-          
-        
-      
-      <main class="md-main" data-md-component="main">
-        <div class="md-main__inner md-grid">
-          
-            
-              
-              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
-                <div class="md-sidebar__scrollwrap">
-                  <div class="md-sidebar__inner">
-                    
-
-
-  
-
-
-<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
-  <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="techrevati-runtime" class="md-nav__button md-logo" aria-label="techrevati-runtime" data-md-component="logo">
-      
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
-
-    </a>
-    techrevati-runtime
-  </label>
-  
-    <div class="md-nav__source">
-      <a href="https://github.com/Techrevati/runtime" title="Go to repository" class="md-source" data-md-component="source">
-  <div class="md-source__icon md-icon">
-    
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
-  </div>
-  <div class="md-source__repository">
-    Techrevati/runtime
-  </div>
-</a>
-    </div>
-  
-  <ul class="md-nav__list" data-md-scrollfix>
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Home
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../getting-started/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Getting Started
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../tutorials/end-to-end/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    End-to-End Tutorial
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../migrating-from-0.0.x/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Migrating from 0.0.x
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../migrating-from-0.1.x/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Migrating from 0.1.x
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-      
-      
+      <li class="nav-item">
         
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
+          <a href="../../tutorials/end-to-end/">End-to-End Tutorial</a>
         
         
-          
+      </li>
+    
+      <li class="nav-item">
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+          <a href="../../migrating-from-0.0.x/">Migrating from 0.0.x</a>
         
-          
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Patterns
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Patterns
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../patterns/orchestrator/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Orchestrator
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../patterns/retry/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Retry Policy
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../patterns/circuit-breaker/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Circuit Breaker
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../patterns/durability/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Durability
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../patterns/rate-limiting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Rate Limiting
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../patterns/routing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Routing
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../patterns/quality-gate/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Quality Gate
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../patterns/lifecycle/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Agent Lifecycle
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../patterns/agent-events/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Agent Events
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../patterns/permissions/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Permissions
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../patterns/policy/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Policy Engine
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../patterns/usage-tracking/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Usage Tracking
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../patterns/governance/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Governance Plane
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../patterns/streaming/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Streaming
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../patterns/hooks/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Hooks
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-    
-  
-  
-  
-    
-    
-    
+        
+      </li>
     
-      
+      <li class="nav-item">
         
+          <a href="../../migrating-from-0.1.x/">Migrating from 0.1.x</a>
         
-      
-      
         
-      
-    
+      </li>
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
-      
+      <li class="nav-item">
         
+          <a href="../../consuming-as-a-library/">Consuming as a Library</a>
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
         
-          
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    API Reference
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_7">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    API Reference
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-    
-  
-  
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Orchestrator
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Orchestrator
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
+      </li>
     
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        orchestrator
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="orchestrator">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.Orchestrator" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Orchestrator
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.OrchestrationSession" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        OrchestrationSession
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="OrchestrationSession">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.OrchestrationSession.run_tool" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        run_tool
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.OrchestrationSession.run_turn" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        run_turn
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AsyncOrchestrationSession
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="AsyncOrchestrationSession">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession.arun_tool" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        arun_tool
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession.arun_turn" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        arun_turn
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession.arun_turn_stream" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        arun_turn_stream
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession.arun_parallel_tools" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        arun_parallel_tools
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession.pause_for_input" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        pause_for_input
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession.provide_input" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        provide_input
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.AgentSession" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AgentSession
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="AgentSession">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.AgentSession.session" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        session
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.AgentSession.asession" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        asession
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.PermissionDeniedError" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        PermissionDeniedError
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.TurnTimeoutError" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        TurnTimeoutError
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.MaxIterationsExceededError" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        MaxIterationsExceededError
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../circuit_breaker/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Circuit Breaker
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../checkpoint/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Checkpoint
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../rate_limit/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Rate Limit
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../routing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Routing
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../retry_policy/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Retry Policy
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../usage_tracking/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Usage Tracking
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../guardrails/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Guardrails
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../governance/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Governance
-  
-
+      <li class="nav-item">
+        
+          <span>Compliance</span>
+        
+        
+          <ul class="nav-list">
     
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../handoffs/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
+      <li class="nav-item">
+        
+          <a href="../../compliance/">Compliance Mapping</a>
+        
+        
+      </li>
     
-  
-    Handoffs
-  
-
+      <li class="nav-item">
+        
+          <a href="../../compliance/production-readiness/">Production Readiness</a>
+        
+        
+      </li>
     
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../hooks/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
+      <li class="nav-item">
+        
+          <a href="../../compliance/rc-readiness-summary/">RC Readiness Summary</a>
+        
+        
+      </li>
     
-  
-    Hooks
-  
-
+      <li class="nav-item">
+        
+          <a href="../../compliance/stable-promotion/">Stable Promotion</a>
+        
+        
+      </li>
     
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../streaming/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
+      <li class="nav-item">
+        
+          <a href="../../compliance/remote-ci-validation/">Remote CI Validation</a>
+        
+        
+      </li>
     
-  
-    Streaming
-  
-
+      <li class="nav-item">
+        
+          <a href="../../compliance/final-diff-review/">Final Diff Review</a>
+        
+        
+      </li>
     
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../sinks/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
+      <li class="nav-item">
+        
+          <a href="../../compliance/rc-review-handoff/">RC Review Handoff</a>
+        
+        
+      </li>
     
-  
-    Sinks
-  
-
+      <li class="nav-item">
+        
+          <a href="../../compliance/staging-manifest/">Staging Manifest</a>
+        
+        
+      </li>
     
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../persistence/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
+      <li class="nav-item">
+        
+          <a href="../../compliance/guard-calibration/">Guard Calibration</a>
+        
+        
+      </li>
     
-  
-    Persistence
-  
-
+      <li class="nav-item">
+        
+          <a href="../../compliance/security-review/">Security Review</a>
+        
+        
+      </li>
     
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../scheduler/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
+      <li class="nav-item">
+        
+          <a href="../../compliance/private-rc-publication/">Private RC Publication</a>
+        
+        
+      </li>
     
-  
-    Scheduler
-  
-
+      <li class="nav-item">
+        
+          <a href="../../compliance/pilot-operations-runbook/">Pilot Operations Runbook</a>
+        
+        
+      </li>
     
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../otel/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
+      <li class="nav-item">
+        
+          <a href="../../compliance/pilot-execution/">Pilot Execution Checklist</a>
+        
+        
+      </li>
     
-  
-    OpenTelemetry
-  
-
+      <li class="nav-item">
+        
+          <a href="../../compliance/pilot-dry-run/">Pilot Dry-Run</a>
+        
+        
+      </li>
     
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
+      <li class="nav-item">
+        
+          <a href="../../compliance/pilot-evidence-template/">Controlled RC Pilot Evidence</a>
+        
+        
+      </li>
     
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../changelog/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
+      <li class="nav-item">
+        
+          <a href="../../compliance/rollback-execution/">Rollback Execution Checklist</a>
+        
+        
+      </li>
     
-  
-    Changelog
-  
-
+      <li class="nav-item">
+        
+          <a href="../../compliance/rollback-proof-checklist/">Rollback Proof Checklist</a>
+        
+        
+      </li>
     
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
+      <li class="nav-item">
+        
+          <a href="../../compliance/rc-inventory/">Release Candidate Inventory</a>
+        
+        
+      </li>
     
   </ul>
-</nav>
-                  </div>
-                </div>
-              </div>
-            
-            
-              
-              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
-                <div class="md-sidebar__scrollwrap">
-                  <div class="md-sidebar__inner">
-                    
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
+        
+      </li>
     
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        orchestrator
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="orchestrator">
-      <ul class="md-nav__list">
+      <li class="nav-item">
         
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.Orchestrator" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Orchestrator
-      
-    </span>
-  </a>
-  
-</li>
+          <span>Patterns</span>
         
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.OrchestrationSession" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        OrchestrationSession
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="OrchestrationSession">
-      <ul class="md-nav__list">
         
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.OrchestrationSession.run_tool" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        run_tool
-      
-    </span>
-  </a>
-  
-</li>
+          <ul class="nav-list">
+    
+      <li class="nav-item">
         
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.OrchestrationSession.run_turn" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        run_turn
-      
-    </span>
-  </a>
-  
-</li>
+          <a href="../../patterns/orchestrator/">Orchestrator</a>
         
-      </ul>
-    </nav>
-  
-</li>
         
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AsyncOrchestrationSession
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="AsyncOrchestrationSession">
-      <ul class="md-nav__list">
+      </li>
+    
+      <li class="nav-item">
         
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession.arun_tool" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        arun_tool
-      
-    </span>
-  </a>
-  
-</li>
+          <a href="../../patterns/retry/">Retry Policy</a>
         
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession.arun_turn" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        arun_turn
-      
-    </span>
-  </a>
-  
-</li>
         
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession.arun_turn_stream" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        arun_turn_stream
-      
-    </span>
-  </a>
-  
-</li>
+      </li>
+    
+      <li class="nav-item">
         
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession.arun_parallel_tools" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        arun_parallel_tools
-      
-    </span>
-  </a>
-  
-</li>
+          <a href="../../patterns/circuit-breaker/">Circuit Breaker</a>
         
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession.pause_for_input" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        pause_for_input
-      
-    </span>
-  </a>
-  
-</li>
         
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession.provide_input" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        provide_input
-      
-    </span>
-  </a>
-  
-</li>
+      </li>
+    
+      <li class="nav-item">
         
-      </ul>
-    </nav>
-  
-</li>
+          <a href="../../patterns/durability/">Durability</a>
         
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.AgentSession" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AgentSession
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="AgentSession">
-      <ul class="md-nav__list">
         
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.AgentSession.session" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        session
-      
-    </span>
-  </a>
-  
-</li>
+      </li>
+    
+      <li class="nav-item">
         
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.AgentSession.asession" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        asession
-      
-    </span>
-  </a>
-  
-</li>
+          <a href="../../patterns/rate-limiting/">Rate Limiting</a>
         
-      </ul>
-    </nav>
-  
-</li>
         
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.PermissionDeniedError" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        PermissionDeniedError
-      
-    </span>
-  </a>
-  
-</li>
+      </li>
+    
+      <li class="nav-item">
         
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.TurnTimeoutError" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        TurnTimeoutError
-      
-    </span>
-  </a>
-  
-</li>
+          <a href="../../patterns/routing/">Routing</a>
         
-          <li class="md-nav__item">
-  <a href="#techrevati.runtime.orchestrator.MaxIterationsExceededError" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        MaxIterationsExceededError
-      
-    </span>
-  </a>
-  
-</li>
         
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-                  </div>
-                </div>
-              </div>
-            
-          
-          
-            <div class="md-content" data-md-component="content">
-              
-              <article class="md-content__inner md-typeset">
-                
-                  
-
-
-  
-  
-
-
-<h1 id="orchestrator">Orchestrator<a class="headerlink" href="#orchestrator" title="Permanent link">&para;</a></h1>
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/quality-gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/agent-events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/policy/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/usage-tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/governance/">Governance Plane</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/pilot-profile/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item is-active">
+        
+          <span>API Reference</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item is-active">
+        
+          <a href="./">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../agent_events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../agent_lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../circuit_breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../checkpoint/">Checkpoint</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../policy_engine/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../quality_gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rate_limit/">Rate Limit</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../retry_policy/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../usage_tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../guardrails/">Guardrails</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../governance/">Governance</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../handoffs/">Handoffs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../sinks/">Sinks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../persistence/">Persistence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../scheduler/">Scheduler</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../otel/">Telemetry</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../changelog/">Changelog</a>
+        
+        
+      </li>
+    
+  </ul>
+      </nav>
+      <main class="content" id="content">
+        
+          <h1 id="orchestrator">Orchestrator<a class="headerlink" href="#orchestrator" title="Permanent link">&para;</a></h1>
 
 
 <div class="doc doc-object doc-module">
@@ -2117,21 +517,21 @@
 <p>Pairs an agent session with lifecycle tracking, usage accounting,
 circuit-breaker protection, automatic failure classification, permission
 gating, and policy evaluation. Use the primitives standalone or use
-<code>Orchestrator.session()</code> (sync) / <code>Orchestrator.asession()</code> (async)
+<code>AgentSession.session()</code> (sync) / <code>AgentSession.asession()</code> (async)
 to get all of them wired in.</p>
 <p>Example (sync):
-    from techrevati.runtime import Orchestrator, UsageSnapshot</p>
-<div class="highlight"><pre><span></span><code>orch = Orchestrator(role=&quot;writer&quot;, phase=&quot;draft&quot;, project_id=1)
-with orch.session() as session:
+    from techrevati.runtime import AgentSession, UsageSnapshot</p>
+<pre><code>agent = AgentSession(role="writer", phase="draft", project_id=1)
+with agent.session() as session:
     text, usage = session.run_turn(
         lambda: call_model(prompt),
-        model=&quot;model-a&quot;,
+        model="model-a",
         usage=UsageSnapshot(input_tokens=5000, output_tokens=1200),
     )
 print(session.summary())
-</code></pre></div>
+</code></pre>
 <p>Example (async):
-    async with orch.asession() as session:
+    async with agent.asession() as session:
         text, usage = await session.arun_turn(
             lambda: acall_model(prompt),
             model="model-a",
@@ -2166,8 +566,7 @@ print(session.summary())
 
 
 <a href="#techrevati.runtime.orchestrator.Orchestrator" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Orchestrator</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">Orchestrator(*args, **kwargs)</code></pre>
 
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
@@ -2180,7 +579,9 @@ print(session.summary())
 
 
 
-        <p>Deprecated alias for <code>AgentSession</code>. Removed in 0.3.0.</p>
+        <p>Deprecated compatibility alias for <code>AgentSession</code>.</p>
+<p>Kept through the 0.3.x line so existing callers can upgrade without
+a hard break. New code should construct <code>AgentSession</code> directly.</p>
 
 
 
@@ -2224,8 +625,33 @@ print(session.summary())
   </span>
 
 <a href="#techrevati.runtime.orchestrator.OrchestrationSession" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">OrchestrationSession</span><span class="p">(</span><span class="n">worker</span><span class="p">,</span> <span class="n">tracker</span><span class="p">,</span> <span class="n">recovery</span><span class="p">,</span> <span class="n">registry</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">role</span><span class="p">,</span> <span class="n">project_id</span><span class="p">,</span> <span class="n">permissions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">policy_engine</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">quality_gate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">budget_usd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enforce_budget</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_iterations</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">guardrails</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">event_sink</span><span class="o">=</span><span class="n">NoopEventSink</span><span class="p">(),</span> <span class="n">usage_sink</span><span class="o">=</span><span class="n">NoopUsageSink</span><span class="p">(),</span> <span class="n">events</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">thread_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">saver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">provider_router</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">usage_limits</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">governance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">hooks</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">circuit_breaker</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rate_limiter</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">OrchestrationSession(
+    worker,
+    tracker,
+    recovery,
+    registry,
+    phase,
+    role,
+    project_id,
+    permissions=None,
+    policy_engine=None,
+    quality_gate=None,
+    budget_usd=None,
+    enforce_budget=False,
+    max_iterations=25,
+    guardrails=list(),
+    event_sink=NoopEventSink(),
+    usage_sink=NoopUsageSink(),
+    events=list(),
+    thread_id=None,
+    saver=None,
+    provider_router=None,
+    usage_limits=None,
+    governance=None,
+    hooks=list(),
+    circuit_breaker=None,
+    rate_limiter=None,
+)</code></pre>
 
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
@@ -2233,7 +659,7 @@ print(session.summary())
 
 
 
-        <p>Single-agent sync execution context. Created by Orchestrator.session().</p>
+        <p>Single-agent sync execution context. Created by AgentSession.session().</p>
 
 
 
@@ -2264,8 +690,7 @@ print(session.summary())
 
 
 <a href="#techrevati.runtime.orchestrator.OrchestrationSession.run_tool" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">run_tool</span><span class="p">(</span><span class="n">tool_name</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">hook_ctx</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">run_tool(tool_name, fn, *, hook_ctx=None)</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -2292,8 +717,16 @@ tool inputs.</p>
 
 
 <a href="#techrevati.runtime.orchestrator.OrchestrationSession.run_turn" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">run_turn</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">usage</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">estimate_usage</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">idempotency_key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">hook_ctx</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">run_turn(
+    fn,
+    model="",
+    usage=None,
+    estimate_usage=None,
+    timeout=None,
+    idempotency_key=None,
+    *,
+    hook_ctx=None,
+)</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -2337,8 +770,33 @@ written so a restart can replay through it.</p>
   </span>
 
 <a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">AsyncOrchestrationSession</span><span class="p">(</span><span class="n">worker</span><span class="p">,</span> <span class="n">tracker</span><span class="p">,</span> <span class="n">recovery</span><span class="p">,</span> <span class="n">registry</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">role</span><span class="p">,</span> <span class="n">project_id</span><span class="p">,</span> <span class="n">permissions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">policy_engine</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">quality_gate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">budget_usd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enforce_budget</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_iterations</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">guardrails</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">event_sink</span><span class="o">=</span><span class="n">NoopEventSink</span><span class="p">(),</span> <span class="n">usage_sink</span><span class="o">=</span><span class="n">NoopUsageSink</span><span class="p">(),</span> <span class="n">events</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">thread_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">saver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">provider_router</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">usage_limits</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">governance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">hooks</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">circuit_breaker</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">async_rate_limiter</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">AsyncOrchestrationSession(
+    worker,
+    tracker,
+    recovery,
+    registry,
+    phase,
+    role,
+    project_id,
+    permissions=None,
+    policy_engine=None,
+    quality_gate=None,
+    budget_usd=None,
+    enforce_budget=False,
+    max_iterations=25,
+    guardrails=list(),
+    event_sink=NoopEventSink(),
+    usage_sink=NoopUsageSink(),
+    events=list(),
+    thread_id=None,
+    saver=None,
+    provider_router=None,
+    usage_limits=None,
+    governance=None,
+    hooks=list(),
+    circuit_breaker=None,
+    async_rate_limiter=None,
+)</code></pre>
 
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
@@ -2346,7 +804,7 @@ written so a restart can replay through it.</p>
 
 
 
-        <p>Single-agent async execution context. Created by Orchestrator.asession().</p>
+        <p>Single-agent async execution context. Created by AgentSession.asession().</p>
 <p>Sibling of OrchestrationSession. Sync helpers (authorize, evaluate_policy,
 evaluate_gate, summary, lifecycle methods) are inherited; only the
 execution path (<code>arun_turn</code> / <code>arun_tool</code>) and the human-in-the-loop
@@ -2376,6 +834,31 @@ pause are async.</p>
 <div class="doc doc-object doc-function">
 
 
+<h4 id="techrevati.runtime.orchestrator.AsyncOrchestrationSession.ahandoff_to" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">ahandoff_to</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession.ahandoff_to" class="headerlink" title="Permanent link">&para;</a></h4>
+<pre class="highlight"><code class="language-python doc-signature">ahandoff_to(
+    target_role, reason, context=None, *, hook_ctx=None
+)</code></pre>
+
+    <div class="doc doc-contents ">
+
+        <p>Async handoff helper that awaits async <code>before_handoff</code> hooks.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h4 id="techrevati.runtime.orchestrator.AsyncOrchestrationSession.arun_tool" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">arun_tool</span>
 
@@ -2385,8 +868,7 @@ pause are async.</p>
   </span>
 
 <a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession.arun_tool" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">arun_tool</span><span class="p">(</span><span class="n">tool_name</span><span class="p">,</span> <span class="n">coro_factory</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">hook_ctx</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">arun_tool(tool_name, coro_factory, *, hook_ctx=None)</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -2413,8 +895,16 @@ sync and async — see <code>hooks.py</code>.</p>
   </span>
 
 <a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession.arun_turn" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">arun_turn</span><span class="p">(</span><span class="n">coro_factory</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">usage</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">estimate_usage</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">idempotency_key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">hook_ctx</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">arun_turn(
+    coro_factory,
+    model="",
+    usage=None,
+    estimate_usage=None,
+    timeout=None,
+    idempotency_key=None,
+    *,
+    hook_ctx=None,
+)</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -2443,8 +933,15 @@ with the same key short-circuits the call.</p>
   </span>
 
 <a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession.arun_turn_stream" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">arun_turn_stream</span><span class="p">(</span><span class="n">chunk_factory</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">usage</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">estimate_usage</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">hook_ctx</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">arun_turn_stream(
+    chunk_factory,
+    *,
+    model="",
+    usage=None,
+    estimate_usage=None,
+    timeout=None,
+    hook_ctx=None,
+)</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -2483,8 +980,7 @@ yielded and the exception is re-raised so callers see it.</p>
   </span>
 
 <a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession.arun_parallel_tools" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">arun_parallel_tools</span><span class="p">(</span><span class="n">coro_factories</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">arun_parallel_tools(coro_factories, *, timeout=None)</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -2515,8 +1011,7 @@ can build the coroutine lazily inside the group.</p>
   </span>
 
 <a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession.pause_for_input" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">pause_for_input</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">pause_for_input(prompt)</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -2539,8 +1034,7 @@ without leaving the session machinery.</p>
 
 
 <a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession.provide_input" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">provide_input</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">provide_input(value)</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -2572,8 +1066,30 @@ without leaving the session machinery.</p>
   </span>
 
 <a href="#techrevati.runtime.orchestrator.AgentSession" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">AgentSession</span><span class="p">(</span><span class="n">role</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">project_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">registry</span><span class="o">=</span><span class="n">AgentRegistry</span><span class="p">(),</span> <span class="n">permissions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">circuit_breaker</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">async_circuit_breaker</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">policy_engine</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">quality_gate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">budget_usd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enforce_budget</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_iterations</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">guardrails</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span> <span class="n">event_sink</span><span class="o">=</span><span class="n">NoopEventSink</span><span class="p">(),</span> <span class="n">usage_sink</span><span class="o">=</span><span class="n">NoopUsageSink</span><span class="p">(),</span> <span class="n">saver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rate_limiter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">async_rate_limiter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">provider_router</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">usage_limits</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">governance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">hooks</span><span class="o">=</span><span class="nb">list</span><span class="p">())</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">AgentSession(
+    role,
+    phase,
+    project_id=None,
+    registry=AgentRegistry(),
+    permissions=None,
+    circuit_breaker=None,
+    async_circuit_breaker=None,
+    policy_engine=None,
+    quality_gate=None,
+    budget_usd=None,
+    enforce_budget=False,
+    max_iterations=25,
+    guardrails=list(),
+    event_sink=NoopEventSink(),
+    usage_sink=NoopUsageSink(),
+    saver=None,
+    rate_limiter=None,
+    async_rate_limiter=None,
+    provider_router=None,
+    usage_limits=None,
+    governance=None,
+    hooks=list(),
+)</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -2581,7 +1097,7 @@ without leaving the session machinery.</p>
 
         <p>Factory for sessions. Holds shared, long-lived components.</p>
 <p>Components are optional; the simplest invocation is
-<code>Orchestrator(role=..., phase=...)</code>. Provide <code>circuit_breaker</code>
+<code>AgentSession(role=..., phase=...)</code>. Provide <code>circuit_breaker</code>
 for sync sessions, <code>async_circuit_breaker</code> for async sessions, or
 both — they are independent.</p>
 <p>To make sessions restart-resumable, pass <code>saver</code> (any object that
@@ -2618,8 +1134,7 @@ handle a future process uses to pick up where this one left off.</p>
 
 
 <a href="#techrevati.runtime.orchestrator.AgentSession.session" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">session</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">thread_id</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">session(*, thread_id=None)</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -2647,8 +1162,7 @@ the session writes a checkpoint after each turn and an
   </span>
 
 <a href="#techrevati.runtime.orchestrator.AgentSession.asession" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">asession</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">thread_id</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">asession(*, thread_id=None)</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -2682,8 +1196,7 @@ replay-safe async turns.</p>
 
 
 <a href="#techrevati.runtime.orchestrator.PermissionDeniedError" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">PermissionDeniedError</span><span class="p">(</span><span class="n">outcome</span><span class="p">)</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">PermissionDeniedError(outcome)</code></pre>
 
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
@@ -2731,8 +1244,7 @@ replay-safe async turns.</p>
 
 
 <a href="#techrevati.runtime.orchestrator.TurnTimeoutError" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">TurnTimeoutError</span><span class="p">(</span><span class="n">timeout_seconds</span><span class="p">)</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">TurnTimeoutError(timeout_seconds)</code></pre>
 
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
@@ -2783,8 +1295,7 @@ as this type to give a single error class across both code paths.</p>
 
 
 <a href="#techrevati.runtime.orchestrator.MaxIterationsExceededError" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">MaxIterationsExceededError</span><span class="p">(</span><span class="n">max_iterations</span><span class="p">)</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">MaxIterationsExceededError(max_iterations)</code></pre>
 
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
@@ -2793,8 +1304,7 @@ as this type to give a single error class across both code paths.</p>
 
 
         <p>Raised when a session attempts more turns than <code>max_iterations</code> allows.</p>
-<p>Default cap of 25 matches the OpenAI Agents SDK convention and prevents
-runaway agent loops — stopping conditions are an industry
+<p>Default cap of 25 prevents runaway agent loops; stopping conditions are a
 production-readiness requirement.</p>
 
 
@@ -2834,64 +1344,11 @@ production-readiness requirement.</p>
     </div>
 
 </div>
-
-
-
-
-
-
-
-
-
-
-
-
-                
-              </article>
-            </div>
-          
-          
-<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
-        </div>
         
       </main>
-      
-        <footer class="md-footer">
-  
-  <div class="md-footer-meta md-typeset">
-    <div class="md-footer-meta__inner md-grid">
-      <div class="md-copyright">
-  
-    <div class="md-copyright__highlight">
-      Copyright &copy; 2026 TechRevati doo
     </div>
-  
-  
-    Made with
-    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
-      Material for MkDocs
-    </a>
-  
-</div>
-      
-    </div>
-  </div>
-</footer>
-      
-    </div>
-    <div class="md-dialog" data-md-component="dialog">
-      <div class="md-dialog__inner md-typeset"></div>
-    </div>
-    
-    
-    
-      
-      
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "search.highlight", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
-    
-    
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
-      
-    
+    <footer class="site-footer">
+      <span>Copyright 2026 Techrevati doo</span>
+    </footer>
   </body>
 </html>

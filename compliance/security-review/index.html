@@ -1,0 +1,759 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Security Review - Runtime</title>
+    <link rel="stylesheet" href="../../styles/runtime.css">
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+  </head>
+  <body>
+    <header class="site-header">
+      
+        <a class="brand" href="../..">Runtime</a>
+      
+    </header>
+    <div class="layout">
+      <nav class="site-nav" aria-label="Primary navigation">
+        <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <span>Home</span>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../getting-started/">Getting Started</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../tutorials/end-to-end/">End-to-End Tutorial</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../migrating-from-0.0.x/">Migrating from 0.0.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../migrating-from-0.1.x/">Migrating from 0.1.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item is-active">
+        
+          <span>Compliance</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../">Compliance Mapping</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../production-readiness/">Production Readiness</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rc-readiness-summary/">RC Readiness Summary</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../stable-promotion/">Stable Promotion</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../remote-ci-validation/">Remote CI Validation</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../final-diff-review/">Final Diff Review</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rc-review-handoff/">RC Review Handoff</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../staging-manifest/">Staging Manifest</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../guard-calibration/">Guard Calibration</a>
+        
+        
+      </li>
+    
+      <li class="nav-item is-active">
+        
+          <a href="./">Security Review</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../private-rc-publication/">Private RC Publication</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-operations-runbook/">Pilot Operations Runbook</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-execution/">Pilot Execution Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-dry-run/">Pilot Dry-Run</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-evidence-template/">Controlled RC Pilot Evidence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rollback-execution/">Rollback Execution Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rollback-proof-checklist/">Rollback Proof Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rc-inventory/">Release Candidate Inventory</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>Patterns</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/retry/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/circuit-breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/durability/">Durability</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/rate-limiting/">Rate Limiting</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/quality-gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/agent-events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/policy/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/usage-tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/governance/">Governance Plane</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/pilot-profile/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>API Reference</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../../api/orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/agent_events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/agent_lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/circuit_breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/checkpoint/">Checkpoint</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/policy_engine/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/quality_gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/rate_limit/">Rate Limit</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/retry_policy/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/usage_tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/guardrails/">Guardrails</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/governance/">Governance</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/handoffs/">Handoffs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/sinks/">Sinks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/persistence/">Persistence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/scheduler/">Scheduler</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/otel/">Telemetry</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/pilot/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../changelog/">Changelog</a>
+        
+        
+      </li>
+    
+  </ul>
+      </nav>
+      <main class="content" id="content">
+        
+          <h1 id="security-review">Security Review<a class="headerlink" href="#security-review" title="Permanent link">&para;</a></h1>
+<p>Author: Techrevati doo</p>
+<p>Security review status: Pending until reviewer signs off.</p>
+<p>This checklist records the security review required before <code>0.3.0rc1</code> private
+publication, before controlled pilot use, and before stable <code>0.3.0</code> promotion.
+It complements the automated security guards; it does not replace them.</p>
+<h2 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h2>
+<p>The runtime is a library, not a service. It runs as an in-process dependency
+with the caller's privileges. Security review must therefore focus on
+boundaries, defaults, release artifacts, and pilot controls rather than hosted
+service controls.</p>
+<h2 id="security-preflight-snapshot">Security Preflight Snapshot<a class="headerlink" href="#security-preflight-snapshot" title="Permanent link">&para;</a></h2>
+<p>Latest security preflight snapshot collected on 2026-06-01 before reviewer
+sign-off:</p>
+<ul>
+<li>branch: <code>production-rc-0.3.0</code>,</li>
+<li>base HEAD before staging: <code>e2e62235038f7d6880e210f65520bf6f8cc437bd</code>,</li>
+<li>current working-tree release diff: 190 files changed, 28,674 insertions,
+  1,807 deletions (committed branch delta vs <code>main</code>),</li>
+<li>untracked release assets: 0 files, all release assets are committed and
+  classified by <code>docs/compliance/staging-manifest.md</code>,</li>
+<li>local/server full production gate: 1,053 tests passed with 94.76 percent total
+  coverage,</li>
+<li>secret leak guard: passed,</li>
+<li>dependency vulnerability guard: passed for dev, docs, build, release, and
+  OTel dependency groups,</li>
+<li>security pattern guard: passed for source, release scripts, and tests,</li>
+<li>workflow action pinning guard: passed,</li>
+<li>workflow hardening guard: passed,</li>
+<li>release workflow guard: passed,</li>
+<li>private RC publication guard: passed,</li>
+<li>public branding guard: passed,</li>
+<li>fresh wheel and source archive build: passed,</li>
+<li>distribution artifact check: passed,</li>
+<li>package metadata rendering with <code>twine check</code>: passed,</li>
+<li>local SBOM JSON, SBOM XML, and <code>SHA256SUMS</code> generation: passed,</li>
+<li>release evidence guard against local <code>dist</code>: passed,</li>
+<li>remote CI and security reviewer sign-off: Pending until the reviewed
+  release-candidate commit is available and approved.</li>
+</ul>
+<p>This is preflight evidence only. It helps the reviewer confirm the current
+security posture, but it does not approve private publication, controlled pilot
+use, or stable promotion without remote CI, human security review, and the
+release workflow evidence for the same reviewed commit.</p>
+<h2 id="review-scope">Review Scope<a class="headerlink" href="#review-scope" title="Permanent link">&para;</a></h2>
+<p>Review these areas before private RC publication and pilot use:</p>
+<ul>
+<li>public API compatibility and unsafe accidental exports,</li>
+<li>permission enforcement and guardrail boundaries,</li>
+<li>governance limits and usage limits,</li>
+<li>terminal failure taxonomy for policy, safety, prompt rejection, validation,
+  runtime rate-limit, and persistence stops,</li>
+<li>logs, diagnostics, events, usage records, and telemetry,</li>
+<li>durable sinks and local persistence,</li>
+<li>release artifacts, SBOM files, and private package publication,</li>
+<li>workflow permissions, action pinning, and release gates,</li>
+<li>dependency vulnerability and secret leakage results,</li>
+<li>pilot configuration, rollback path, and incident response expectations.</li>
+</ul>
+<h2 id="required-evidence">Required Evidence<a class="headerlink" href="#required-evidence" title="Permanent link">&para;</a></h2>
+<p>Attach or reference all of this evidence:</p>
+<ul>
+<li>full local/server production gate output,</li>
+<li>remote CI result for the same commit,</li>
+<li>secret leak guard output,</li>
+<li>dependency vulnerability guard output,</li>
+<li>security pattern guard output for source, release scripts, and tests,
+  including literal truthy subprocess shell bypasses, missing subprocess
+  timeouts, implicit <code>subprocess.run</code> check semantics, direct
+  <code>subprocess.Popen</code>, missing HTTP client timeouts, disabled TLS verification,
+  raw logging traceback, raw exception text in logging/observability payloads,
+  and unsafe YAML loading checks,</li>
+<li>terminal failure-class regression output,</li>
+<li>runtime rate-limit failure-class regression output,</li>
+<li>max-iterations failure-class regression output,</li>
+<li>cancellation failure-class regression output,</li>
+<li>dependency I/O failure-class regression output,</li>
+<li>prompt rejection failure-class regression output,</li>
+<li>validation failure-class regression output,</li>
+<li>workflow action pinning guard output,</li>
+<li>workflow hardening guard output,</li>
+<li>release workflow guard output,</li>
+<li>private RC publication guard output,</li>
+<li>public branding guard output,</li>
+<li>distribution artifact check output,</li>
+<li><code>twine check</code> output,</li>
+<li>SBOM JSON and XML verification,</li>
+<li>controlled pilot profile review,</li>
+<li>rollback proof checklist status.</li>
+</ul>
+<h2 id="runtime-risk-review">Runtime Risk Review<a class="headerlink" href="#runtime-risk-review" title="Permanent link">&para;</a></h2>
+<p>Confirm these runtime-specific boundaries:</p>
+<ul>
+<li>model output is untrusted,</li>
+<li>tool input derived from model output is untrusted until approved,</li>
+<li>tool implementations run with caller process privileges,</li>
+<li><code>PermissionEnforcer</code> is a policy gate, not a sandbox,</li>
+<li>guardrails reduce risk but do not isolate tool bodies,</li>
+<li>governance limits stop sessions but do not contain already-running tool code,</li>
+<li>governance, permission, and guardrail stops use dedicated terminal failure
+  classes rather than dependency or model failure classes,</li>
+<li>controlled pilot permissions deny unknown roles by default while the base
+  permission policy keeps compatibility behavior unless callers opt in,</li>
+<li>local persistence, database, disk, and filesystem failures classify as
+  dependency failures rather than model failure classes,</li>
+<li>fallback caller validation failures classify as validation failures rather
+  than model failure classes,</li>
+<li>provider or model prompt/content-policy rejections classify as prompt
+  rejections rather than model failure classes,</li>
+<li>runtime rate-limiter hard-stops classify as rate-limit failures rather than
+  model failure classes,</li>
+<li>uncaught max-iterations hard-stops classify as governance breaches rather
+  than model failure classes,</li>
+<li>caller-driven cancellation classifies as cancellation rather than unknown
+  failure,</li>
+<li>caller-driven cancellation remains visible in telemetry without being marked
+  as an OTel error,</li>
+<li>event schema validation rejects inconsistent cancellation status and
+  failure-class payloads,</li>
+<li>event schema validation rejects <code>agent.failed</code> payloads without a
+  <code>failure_class</code>,</li>
+<li>usage limits depend on caller-provided usage snapshots,</li>
+<li>destructive or high-risk tools require process, network, or OS-level
+  isolation outside the runtime.</li>
+</ul>
+<h2 id="supply-chain-review">Supply Chain Review<a class="headerlink" href="#supply-chain-review" title="Permanent link">&para;</a></h2>
+<p>Confirm these supply-chain controls:</p>
+<ul>
+<li>runtime required dependency set remains empty,</li>
+<li>dev, docs, build, release, and OTel dependency audits have no unresolved high
+  or critical findings,</li>
+<li>security pattern guard rejects literal truthy subprocess shell bypasses,
+  missing subprocess timeouts, implicit <code>subprocess.run</code> check semantics,
+  direct <code>subprocess.Popen</code>, missing HTTP client timeouts, disabled TLS
+  verification, raw logging tracebacks, raw exception text in
+  logging/observability payloads, and unsafe YAML loading in source, release
+  scripts, and tests,</li>
+<li>release workflow builds wheel and source archive from the reviewed commit,</li>
+<li>release artifacts pass distribution checks and <code>twine check</code>,</li>
+<li>no-dependency wheel install smoke passes,</li>
+<li>SBOM JSON and XML are generated and attached as release evidence,</li>
+<li>package upload directory contains only wheel and source archive files.</li>
+</ul>
+<h2 id="secret-and-data-exposure-review">Secret And Data Exposure Review<a class="headerlink" href="#secret-and-data-exposure-review" title="Permanent link">&para;</a></h2>
+<p>Confirm these data-handling controls:</p>
+<ul>
+<li>no token, password, or private package credential is committed,</li>
+<li>private registry credentials come from the CI secret store,</li>
+<li>logs and diagnostics avoid raw secret values,</li>
+<li>built-in model I/O logging is metadata-only by default,</li>
+<li>OTel event detail export is opt-in,</li>
+<li>durable event and usage records have a documented retention policy,</li>
+<li>incident reports do not require public disclosure of sensitive details.</li>
+</ul>
+<h2 id="workflow-and-release-review">Workflow And Release Review<a class="headerlink" href="#workflow-and-release-review" title="Permanent link">&para;</a></h2>
+<p>Confirm these workflow controls:</p>
+<ul>
+<li>workflow permissions are minimal,</li>
+<li>checkout credentials are not persisted,</li>
+<li>workflow actions are SHA-pinned,</li>
+<li>release tags are validated before publish,</li>
+<li>release verification runs before publish,</li>
+<li>private RC publication uses configured private package repository settings,</li>
+<li>public package index publication is out of scope until pilot approval.</li>
+</ul>
+<h2 id="pilot-security-controls">Pilot Security Controls<a class="headerlink" href="#pilot-security-controls" title="Permanent link">&para;</a></h2>
+<p>Confirm the controlled pilot uses:</p>
+<ul>
+<li>pilot profile defaults for guardrails, permissions, and governance,</li>
+<li>fail-closed unknown-role permission behavior from the pilot profile helper,</li>
+<li>explicit permission approvals for destructive or high-risk tools,</li>
+<li>durable event and usage evidence,</li>
+<li>audit evidence for <code>governance_breach</code>, <code>permission_denied</code>, and
+  <code>guardrail_violation</code> failure classes,</li>
+<li>usage and cost monitoring,</li>
+<li>rollback target and rollback command,</li>
+<li>incident severity definitions,</li>
+<li>no widening of pilot traffic while a P0 or unresolved P1 issue exists.</li>
+</ul>
+<h2 id="no-go-rules">No-Go Rules<a class="headerlink" href="#no-go-rules" title="Permanent link">&para;</a></h2>
+<p>Do not publish, pilot, or promote when any of these are true:</p>
+<ul>
+<li>security review is unsigned,</li>
+<li>remote CI is missing or red on the reviewed commit,</li>
+<li>secret leak guard fails,</li>
+<li>dependency vulnerability guard has unresolved high or critical findings,</li>
+<li>security pattern guard fails,</li>
+<li>workflow action pinning guard fails,</li>
+<li>workflow hardening guard fails,</li>
+<li>private RC publication guard fails,</li>
+<li>public branding guard fails,</li>
+<li>release artifacts or SBOM files are missing,</li>
+<li>rollback target is unknown,</li>
+<li>pilot uses destructive tools without explicit permission policy.</li>
+</ul>
+<h2 id="reviewer-sign-off-template">Reviewer Sign-Off Template<a class="headerlink" href="#reviewer-sign-off-template" title="Permanent link">&para;</a></h2>
+<p>Use this template for the security review record:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Reviewer</td>
+<td>Automated multi-angle security review (Claude); pending human sign-off</td>
+</tr>
+<tr>
+<td>Commit</td>
+<td><code>e2e6223</code> (tip of <code>production-rc-0.3.0</code>)</td>
+</tr>
+<tr>
+<td>Remote CI run</td>
+<td>Green — 12/12 checks on <code>e2e6223</code></td>
+</tr>
+<tr>
+<td>Secret leak result</td>
+<td>Pass (guard green; regexes adversarially verified — no ReDoS, no bypass)</td>
+</tr>
+<tr>
+<td>Dependency vulnerability result</td>
+<td>Pass (zero required runtime dependencies)</td>
+</tr>
+<tr>
+<td>Security pattern result</td>
+<td>Pass (AST guard: no eval/exec/pickle/yaml.load/os.system/shell=True)</td>
+</tr>
+<tr>
+<td>Workflow review result</td>
+<td>Pass (pinned actions, minimal permissions, hardening guards green)</td>
+</tr>
+<tr>
+<td>Artifact/SBOM review result</td>
+<td>Pass (twine check + dist/release-evidence verified)</td>
+</tr>
+<tr>
+<td>Pilot security controls reviewed</td>
+<td>Yes (deny-first permissions, prompt-injection guardrails, hard-stop governance)</td>
+</tr>
+<tr>
+<td>Accepted security exceptions</td>
+<td>None — review found 0 vulnerabilities in the branch diff</td>
+</tr>
+<tr>
+<td>Decision</td>
+<td>Pending / Approved / Changes required</td>
+</tr>
+</tbody>
+</table>
+        
+      </main>
+    </div>
+    <footer class="site-footer">
+      <span>Copyright 2026 Techrevati doo</span>
+    </footer>
+  </body>
+</html>

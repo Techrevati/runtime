@@ -1,0 +1,785 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Final Diff Review - Runtime</title>
+    <link rel="stylesheet" href="../../styles/runtime.css">
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+  </head>
+  <body>
+    <header class="site-header">
+      
+        <a class="brand" href="../..">Runtime</a>
+      
+    </header>
+    <div class="layout">
+      <nav class="site-nav" aria-label="Primary navigation">
+        <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <span>Home</span>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../getting-started/">Getting Started</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../tutorials/end-to-end/">End-to-End Tutorial</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../migrating-from-0.0.x/">Migrating from 0.0.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../migrating-from-0.1.x/">Migrating from 0.1.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item is-active">
+        
+          <span>Compliance</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../">Compliance Mapping</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../production-readiness/">Production Readiness</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rc-readiness-summary/">RC Readiness Summary</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../stable-promotion/">Stable Promotion</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../remote-ci-validation/">Remote CI Validation</a>
+        
+        
+      </li>
+    
+      <li class="nav-item is-active">
+        
+          <a href="./">Final Diff Review</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rc-review-handoff/">RC Review Handoff</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../staging-manifest/">Staging Manifest</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../guard-calibration/">Guard Calibration</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../security-review/">Security Review</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../private-rc-publication/">Private RC Publication</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-operations-runbook/">Pilot Operations Runbook</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-execution/">Pilot Execution Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-dry-run/">Pilot Dry-Run</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-evidence-template/">Controlled RC Pilot Evidence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rollback-execution/">Rollback Execution Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rollback-proof-checklist/">Rollback Proof Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rc-inventory/">Release Candidate Inventory</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>Patterns</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/retry/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/circuit-breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/durability/">Durability</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/rate-limiting/">Rate Limiting</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/quality-gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/agent-events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/policy/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/usage-tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/governance/">Governance Plane</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/pilot-profile/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>API Reference</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../../api/orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/agent_events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/agent_lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/circuit_breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/checkpoint/">Checkpoint</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/policy_engine/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/quality_gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/rate_limit/">Rate Limit</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/retry_policy/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/usage_tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/guardrails/">Guardrails</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/governance/">Governance</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/handoffs/">Handoffs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/sinks/">Sinks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/persistence/">Persistence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/scheduler/">Scheduler</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/otel/">Telemetry</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/pilot/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../changelog/">Changelog</a>
+        
+        
+      </li>
+    
+  </ul>
+      </nav>
+      <main class="content" id="content">
+        
+          <h1 id="final-diff-review-checklist">Final Diff Review Checklist<a class="headerlink" href="#final-diff-review-checklist" title="Permanent link">&para;</a></h1>
+<p>Author: Techrevati doo</p>
+<p>This checklist is the review contract for the <code>0.3.0rc1</code> release-candidate
+diff. It does not mark the review complete.</p>
+<p>Final diff review status: Pending until reviewer signs off.</p>
+<p>Use <code>docs/compliance/rc-review-handoff.md</code> as the reviewer handoff packet that
+links this checklist to gate evidence and remaining release blockers.
+Use <code>docs/compliance/staging-manifest.md</code> to classify untracked release assets
+before any stage, tag, or publish step.</p>
+<h2 id="review-purpose">Review Purpose<a class="headerlink" href="#review-purpose" title="Permanent link">&para;</a></h2>
+<p>The release candidate is a large hardening diff. Review it by subsystem instead
+of reading it as one undifferentiated patch. Every finding must be fixed,
+documented as a stable-release blocker, or explicitly accepted as non-blocking
+release-candidate risk.</p>
+<h2 id="review-scope">Review Scope<a class="headerlink" href="#review-scope" title="Permanent link">&para;</a></h2>
+<p>Review these change groups:</p>
+<ul>
+<li>repository hygiene and generated-file exclusion,</li>
+<li>branding and authorship,</li>
+<li>package metadata, changelog, and release notes,</li>
+<li>workflow security and release automation,</li>
+<li>guard scripts and guard tests,</li>
+<li>runtime public API compatibility,</li>
+<li>runtime behavior by subsystem,</li>
+<li>documentation accuracy and operator readiness,</li>
+<li>examples and migration guidance.</li>
+</ul>
+<p>Do not include ignored local artifacts such as <code>.venv</code>, <code>dist</code>, <code>__pycache__</code>,
+tool caches, or local temporary evidence bundles.
+Confirm <code>git ls-files --others --exclude-standard</code> contains only release assets
+allowed by the staging manifest before staging.</p>
+<h2 id="review-order">Review Order<a class="headerlink" href="#review-order" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Repository hygiene, generated files, docs theme, and ignored artifacts.</li>
+<li>Branding and authorship.</li>
+<li>Package metadata, changelog, version consistency, and release notes.</li>
+<li>Workflow security and release automation.</li>
+<li>Guard scripts and tests.</li>
+<li>Runtime public API and compatibility.</li>
+<li>Runtime hardening behavior by subsystem.</li>
+<li>Documentation accuracy and operator readiness.</li>
+<li>Full production gate evidence.</li>
+</ol>
+<h2 id="current-pre-review-evidence-snapshot">Current Pre-Review Evidence Snapshot<a class="headerlink" href="#current-pre-review-evidence-snapshot" title="Permanent link">&para;</a></h2>
+<p>Latest local/server evidence collected on 2026-06-01. The release candidate now
+lives as committed history on <code>production-rc-0.3.0</code>, so the snapshot measures the
+committed branch delta <code>main...HEAD</code> rather than an uncommitted working tree:</p>
+<ul>
+<li>branch: <code>production-rc-0.3.0</code>,</li>
+<li>tracked diff: 191 files changed, 28815 insertions, 1810 deletions,</li>
+<li>untracked release assets: 0 files (all release assets are committed),</li>
+<li>full production gate: 1,053 tests passed with 94.76 percent total coverage,</li>
+<li>per-module coverage floor: passed at 85 percent,</li>
+<li>strict typing, lint, format, strict docs build, public branding, source
+  hygiene, security pattern, package, release, workflow, and distribution
+  guards: passed locally/server-side.</li>
+</ul>
+<p>Pre-review conclusion:</p>
+<ul>
+<li>repository shape is coherent enough for subsystem review,</li>
+<li>generated/cache artifacts remain excluded by repository hygiene and source
+  hygiene guards,</li>
+<li>final approval is still pending because reviewer sign-off, remote CI parity,
+  security sign-off, private RC publication, controlled pilot, and rollback
+  proof are not yet complete.</li>
+</ul>
+<h2 id="subsystem-review-matrix">Subsystem Review Matrix<a class="headerlink" href="#subsystem-review-matrix" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Subsystem</th>
+<th>Review focus</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Repository hygiene</td>
+<td>No generated cache, build output, virtualenv, or accidental files</td>
+<td>Reviewed</td>
+</tr>
+<tr>
+<td>Branding and authorship</td>
+<td>Public branding is limited to Techrevati doo</td>
+<td>Reviewed — codex/claude vendor branding removed</td>
+</tr>
+<tr>
+<td>Package metadata</td>
+<td>Version, changelog, license, authorship, Python support, zero runtime dependencies</td>
+<td>Reviewed</td>
+</tr>
+<tr>
+<td>Workflows and automation</td>
+<td>Minimal permissions, pinned actions, release tag gates, timeouts, guard stack parity</td>
+<td>Reviewed</td>
+</tr>
+<tr>
+<td>Guard scripts and tests</td>
+<td>False positives, maintainability, CI parity, failure messages</td>
+<td>Reviewed — 3 findings fixed</td>
+</tr>
+<tr>
+<td>Public API compatibility</td>
+<td>Frozen package exports, documented imports, deprecation behavior</td>
+<td>Reviewed</td>
+</tr>
+<tr>
+<td>Runtime behavior</td>
+<td>Validation, failure handling, observability, durability, governance, guardrails, permissions</td>
+<td>Reviewed — 5 findings fixed, 1 accepted</td>
+</tr>
+<tr>
+<td>Documentation</td>
+<td>Operator usefulness, publication safety, public branding, release boundaries</td>
+<td>Reviewed</td>
+</tr>
+<tr>
+<td>Examples and migrations</td>
+<td>Accurate upgrade guidance and no stale forward-looking promises</td>
+<td>Reviewed</td>
+</tr>
+</tbody>
+</table>
+<h2 id="review-findings-2026-06-01">Review Findings (2026-06-01)<a class="headerlink" href="#review-findings-2026-06-01" title="Permanent link">&para;</a></h2>
+<p>A high-effort multi-angle review of the committed branch diff was run by
+subsystem. All fixes ship with regression tests; post-fix gate is 1,053 tests.</p>
+<h3 id="fixed-in-this-review-pass">Fixed in this review pass<a class="headerlink" href="#fixed-in-this-review-pass" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Subsystem</th>
+<th>Finding</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Guard scripts</td>
+<td><code>check_secret_leaks</code> allow-list matched placeholder words as unanchored substrings, so a real credential merely containing <code>example</code>/<code>not-a-secret</code> was allow-listed</td>
+<td>Anchored allow-list to distinct tokens</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Guard scripts</td>
+<td><code>check_secret_leaks</code> used <code>\b</code> boundaries, missing prefixed env names like <code>DATABASE_PASSWORD=</code></td>
+<td>Treat alphanumerics as the name boundary</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Guard scripts</td>
+<td><code>check_workflow_pinning</code> rejected a correctly SHA-pinned but YAML-quoted action</td>
+<td>Strip surrounding quotes before the pin check</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Runtime</td>
+<td><code>arun_turn_stream</code> recorded the recovery/governance failure outcome after yielding <code>final</code>, so a consumer breaking on <code>final</code> skipped it</td>
+<td>Record before the terminal yield</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Runtime</td>
+<td><code>pilot</code> ran regex patterns through the tool-name validator (case-insensitive dedup, strip)</td>
+<td>Dedicated regex validator with compile-check</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Runtime</td>
+<td><code>InMemorySaver.list</code> and <code>SqliteSaver.list</code> diverged on <code>before=</code> under equal timestamps</td>
+<td>Aligned in-memory ordering to <code>(created_at, id)</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Runtime</td>
+<td>otel tool spans were keyed by <code>(role, phase, tool)</code>, so two concurrent calls to the same tool collided and the second force-closed the first as <code>tool_span_interrupted</code></td>
+<td>Per-key LIFO span stack so concurrent same-tool calls each get their own span</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Runtime</td>
+<td><code>decorrelated</code> jitter could return a delay below <code>base</code> for a tiny <code>prev_delay</code></td>
+<td>Clamp upper bound to <code>&gt;= base</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="reviewed-and-accepted-not-a-defect">Reviewed and accepted (not a defect)<a class="headerlink" href="#reviewed-and-accepted-not-a-defect" title="Permanent link">&para;</a></h3>
+<ul>
+<li>otel <code>_is_terminal_parent_close</code> keys terminality on empty event data: a
+  deliberate, tested convention (a <code>failed</code> event carrying data is a warning
+  child, not a session end), not a bug.</li>
+</ul>
+<h2 id="mandatory-no-go-rules">Mandatory No-Go Rules<a class="headerlink" href="#mandatory-no-go-rules" title="Permanent link">&para;</a></h2>
+<p>Do not approve the release candidate when any of these are true:</p>
+<ul>
+<li>public branding contains anything other than Techrevati doo,</li>
+<li>the technical namespace <code>techrevati.runtime</code> is changed,</li>
+<li>package-level public API exports differ from the frozen set,</li>
+<li>documented public imports disagree with the frozen public API,</li>
+<li>any workflow action is unpinned,</li>
+<li>workflow permissions are broader than required,</li>
+<li>any guard script is not classified for CI coverage,</li>
+<li>secret leak guard fails,</li>
+<li>dependency vulnerability guard has unresolved high or critical findings,</li>
+<li>public package index publication is enabled before pilot approval,</li>
+<li>full production gate fails,</li>
+<li>generated artifacts or local caches are included in the release diff,</li>
+<li>staging manifest has unclassified untracked files,</li>
+<li>pilot evidence or rollback proof is marked complete before the real pilot,</li>
+<li>remote CI is missing when tagging or publishing.</li>
+</ul>
+<h2 id="evidence-to-attach">Evidence To Attach<a class="headerlink" href="#evidence-to-attach" title="Permanent link">&para;</a></h2>
+<p>Attach or link this evidence before final sign-off:</p>
+<ul>
+<li><code>git status --short --branch</code>,</li>
+<li><code>git ls-files --others --exclude-standard</code>,</li>
+<li><code>git diff --stat</code>,</li>
+<li>full production gate output,</li>
+<li>remote CI result for the same commit,</li>
+<li>wheel and sdist verification,</li>
+<li>SBOM JSON and XML verification,</li>
+<li>public branding guard output,</li>
+<li>secret leak guard output,</li>
+<li>dependency vulnerability guard output,</li>
+<li>RC readiness summary,</li>
+<li>reviewer handoff checklist,</li>
+<li>staging manifest checklist,</li>
+<li>pilot dry-run output,</li>
+<li>open stable-release blocker list.</li>
+</ul>
+<h2 id="reviewer-sign-off-template">Reviewer Sign-Off Template<a class="headerlink" href="#reviewer-sign-off-template" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Reviewer</td>
+<td>Automated multi-angle review (Claude), pending human sign-off</td>
+</tr>
+<tr>
+<td>Review date</td>
+<td>2026-06-01</td>
+</tr>
+<tr>
+<td>Commit SHA</td>
+<td>tip of <code>production-rc-0.3.0</code></td>
+</tr>
+<tr>
+<td>Remote CI result</td>
+<td>Green — 12/12 checks on <code>c0d8233</code> (re-runs per push)</td>
+</tr>
+<tr>
+<td>Full gate result</td>
+<td>1,053 tests passed, 94.76% coverage (local)</td>
+</tr>
+<tr>
+<td>Findings count</td>
+<td>9 (8 fixed, 1 accepted)</td>
+</tr>
+<tr>
+<td>Stable blockers</td>
+<td>Security review, private RC publication, controlled pilot, rollback proof, stable promotion</td>
+</tr>
+<tr>
+<td>Decision</td>
+<td>Pending / Approved / Changes required</td>
+</tr>
+</tbody>
+</table>
+<p>Approval means the release candidate diff is coherent enough for private RC
+publication. It does not approve stable <code>0.3.0</code>; stable release still requires
+controlled RC pilot evidence and rollback proof.</p>
+        
+      </main>
+    </div>
+    <footer class="site-footer">
+      <span>Copyright 2026 Techrevati doo</span>
+    </footer>
+  </body>
+</html>
