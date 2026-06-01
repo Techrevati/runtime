@@ -12,16 +12,14 @@ implementations ship in this module:
   ``sqlite3`` only (no new runtime dependency), WAL mode for concurrent
   readers + one writer.
 
-The ``CheckpointSaver`` protocol mirrors the LangGraph
-``get`` / ``put`` / ``list`` / ``delete`` shape so downstream code that
-already knows that contract reads naturally here.
+The ``CheckpointSaver`` protocol exposes a small
+``get`` / ``put`` / ``list`` / ``delete`` shape so adapters can bridge it to
+external checkpoint stores without adding runtime dependencies.
 
-Caveat: this is restart-resumable execution, not Temporal-style durable
-execution. Step-level replay (re-running a half-finished turn against a
-recorded history) is NOT in scope; checkpoints only fire between turns.
-For workflow-engine semantics, pair this with Temporal / Restate / DBOS
-behind a wrapping ``CheckpointSaver`` implementation. See
-``docs/patterns/durability.md`` for the trade-off.
+Caveat: this is restart-resumable execution, not full workflow history.
+Step-level replay (re-running a half-finished turn against a recorded history)
+is NOT in scope; checkpoints only fire between turns. Use an external
+coordinator when you need cross-host scheduling or durable timers.
 """
 
 from __future__ import annotations
@@ -31,6 +29,7 @@ import sqlite3
 import threading
 import uuid
 from collections.abc import Mapping
+from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -42,6 +41,10 @@ __all__ = [
     "InMemorySaver",
     "SqliteSaver",
 ]
+
+
+_SQLITE_COMPONENT = "checkpoint"
+_SQLITE_SCHEMA_VERSION = 1
 
 
 @dataclass(frozen=True)
@@ -62,25 +65,55 @@ class Checkpoint:
     parent_id: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "id", _validate_non_empty_str("id", self.id))
+        object.__setattr__(
+            self, "thread_id", _validate_non_empty_str("thread_id", self.thread_id)
+        )
+        object.__setattr__(
+            self, "created_at", _validate_non_empty_str("created_at", self.created_at)
+        )
+        object.__setattr__(
+            self,
+            "parent_id",
+            _validate_optional_non_empty_str("parent_id", self.parent_id),
+        )
+        object.__setattr__(self, "state", _normalize_json_mapping("state", self.state))
+        object.__setattr__(
+            self, "metadata", _normalize_json_mapping("metadata", self.metadata)
+        )
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "thread_id": self.thread_id,
             "created_at": self.created_at,
-            "state": dict(self.state),
+            "state": _normalize_json_mapping("state", self.state),
             "parent_id": self.parent_id,
-            "metadata": dict(self.metadata),
+            "metadata": _normalize_json_mapping("metadata", self.metadata),
         }
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> Checkpoint:
+        if not isinstance(data, Mapping):
+            raise TypeError("data must be a mapping")
+        state = data.get("state", {})
+        metadata = data.get("metadata", {})
+        if state is None:
+            state = {}
+        if metadata is None:
+            metadata = {}
+        if not isinstance(state, Mapping):
+            raise TypeError("state must be a mapping")
+        if not isinstance(metadata, Mapping):
+            raise TypeError("metadata must be a mapping")
         return cls(
             id=data["id"],
             thread_id=data["thread_id"],
             created_at=data["created_at"],
-            state=dict(data.get("state") or {}),
+            state=dict(state),
             parent_id=data.get("parent_id"),
-            metadata=dict(data.get("metadata") or {}),
+            metadata=dict(metadata),
         )
 
 
@@ -134,6 +167,49 @@ def _new_id() -> str:
     return uuid.uuid4().hex
 
 
+def _validate_non_empty_str(field_name: str, value: str) -> str:
+    if not isinstance(value, str):
+        raise TypeError(f"{field_name} must be a string")
+    if not value.strip():
+        raise ValueError(f"{field_name} must not be empty")
+    return value
+
+
+def _validate_optional_non_empty_str(field_name: str, value: str | None) -> str | None:
+    if value is None:
+        return None
+    return _validate_non_empty_str(field_name, value)
+
+
+def _normalize_json_mapping(
+    field_name: str, value: Mapping[str, Any]
+) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise TypeError(f"{field_name} must be a mapping")
+    copied = dict(value)
+    for key in copied:
+        if not isinstance(key, str):
+            raise TypeError(f"{field_name} keys must be strings")
+    try:
+        encoded = json.dumps(copied, ensure_ascii=False)
+    except (TypeError, ValueError) as exc:
+        raise TypeError(f"{field_name} must be JSON-serializable") from exc
+    decoded = json.loads(encoded)
+    if not isinstance(decoded, dict):
+        raise TypeError(f"{field_name} must encode to a JSON object")
+    return decoded
+
+
+def _validate_limit(limit: int) -> int:
+    if isinstance(limit, bool) or not isinstance(limit, int):
+        raise TypeError("limit must be an integer")
+    return limit
+
+
+def _copy_checkpoint(checkpoint: Checkpoint) -> Checkpoint:
+    return Checkpoint.from_dict(checkpoint.to_dict())
+
+
 class InMemorySaver:
     """Process-local checkpoint store. Lost on exit; thread-safe.
 
@@ -148,15 +224,17 @@ class InMemorySaver:
     def get(
         self, thread_id: str, checkpoint_id: str | None = None
     ) -> Checkpoint | None:
+        thread_id = _validate_non_empty_str("thread_id", thread_id)
+        checkpoint_id = _validate_optional_non_empty_str("checkpoint_id", checkpoint_id)
         with self._lock:
             entries = self._threads.get(thread_id)
             if not entries:
                 return None
             if checkpoint_id is None:
-                return entries[-1]
+                return _copy_checkpoint(entries[-1])
             for cp in reversed(entries):
                 if cp.id == checkpoint_id:
-                    return cp
+                    return _copy_checkpoint(cp)
             return None
 
     def put(
@@ -167,21 +245,25 @@ class InMemorySaver:
         parent_id: str | None = None,
         metadata: Mapping[str, Any] | None = None,
     ) -> Checkpoint:
+        thread_id = _validate_non_empty_str("thread_id", thread_id)
         cp = Checkpoint(
             id=_new_id(),
             thread_id=thread_id,
             created_at=_now_iso(),
-            state=dict(state),
+            state=_normalize_json_mapping("state", state),
             parent_id=parent_id,
-            metadata=dict(metadata or {}),
+            metadata=_normalize_json_mapping("metadata", metadata or {}),
         )
         with self._lock:
-            self._threads.setdefault(thread_id, []).append(cp)
-        return cp
+            self._threads.setdefault(thread_id, []).append(_copy_checkpoint(cp))
+        return _copy_checkpoint(cp)
 
     def list(
         self, thread_id: str, *, before: str | None = None, limit: int = 10
     ) -> list[Checkpoint]:
+        thread_id = _validate_non_empty_str("thread_id", thread_id)
+        before = _validate_optional_non_empty_str("before", before)
+        limit = _validate_limit(limit)
         if limit <= 0:
             return []
         with self._lock:
@@ -193,9 +275,10 @@ class InMemorySaver:
                     cutoff_idx = idx
                     break
             entries = entries[:cutoff_idx] if cutoff_idx is not None else []
-        return list(reversed(entries))[:limit]
+        return [_copy_checkpoint(cp) for cp in list(reversed(entries))[:limit]]
 
     def delete(self, thread_id: str) -> None:
+        thread_id = _validate_non_empty_str("thread_id", thread_id)
         with self._lock:
             self._threads.pop(thread_id, None)
 
@@ -213,6 +296,49 @@ CREATE INDEX IF NOT EXISTS idx_checkpoints_thread_created
     ON checkpoints(thread_id, created_at DESC);
 """
 
+_METADATA_SCHEMA = """
+CREATE TABLE IF NOT EXISTS techrevati_runtime_metadata (
+    component      TEXT PRIMARY KEY,
+    schema_version INTEGER NOT NULL
+);
+"""
+
+
+def _ensure_schema_version(
+    conn: sqlite3.Connection, *, component: str, version: int
+) -> None:
+    conn.executescript(_METADATA_SCHEMA)
+    row = conn.execute(
+        "SELECT schema_version FROM techrevati_runtime_metadata WHERE component = ?",
+        (component,),
+    ).fetchone()
+    if row is None:
+        conn.execute(
+            "INSERT INTO techrevati_runtime_metadata"
+            " (component, schema_version) VALUES (?, ?)",
+            (component, version),
+        )
+        return
+    observed = int(row[0])
+    if observed != version:
+        raise RuntimeError(
+            f"unsupported sqlite schema for {component}: "
+            f"version {observed}, expected {version}"
+        )
+
+
+def _open_wal(path: str | Path) -> sqlite3.Connection:
+    """Open a sqlite connection in WAL mode before any schema mutations."""
+    conn = sqlite3.connect(str(path), check_same_thread=False)
+    try:
+        # WAL is a no-op for ":memory:"; harmless to request.
+        conn.execute("PRAGMA journal_mode=WAL")
+    except Exception:
+        with suppress(Exception):
+            conn.close()
+        raise
+    return conn
+
 
 class SqliteSaver:
     """Stdlib-sqlite3 checkpoint store. Survives process restart.
@@ -229,16 +355,20 @@ class SqliteSaver:
 
     def __init__(self, path: str | Path) -> None:
         self._path = str(path)
-        # check_same_thread=False so a session running on a worker thread
-        # can still reuse the saver created on the main thread; we
-        # serialize all writes through ``_lock`` to keep that safe.
-        self._conn = sqlite3.connect(self._path, check_same_thread=False)
+        self._conn = _open_wal(self._path)
         self._lock = threading.Lock()
-        with self._lock:
-            self._conn.executescript(_SCHEMA)
-            # WAL is a no-op for ":memory:"; harmless to request.
-            self._conn.execute("PRAGMA journal_mode=WAL")
-            self._conn.commit()
+        try:
+            with self._lock:
+                _ensure_schema_version(
+                    self._conn,
+                    component=_SQLITE_COMPONENT,
+                    version=_SQLITE_SCHEMA_VERSION,
+                )
+                self._conn.executescript(_SCHEMA)
+                self._conn.commit()
+        except Exception:
+            self._conn.close()
+            raise
 
     def close(self) -> None:
         with self._lock:
@@ -264,6 +394,8 @@ class SqliteSaver:
     def get(
         self, thread_id: str, checkpoint_id: str | None = None
     ) -> Checkpoint | None:
+        thread_id = _validate_non_empty_str("thread_id", thread_id)
+        checkpoint_id = _validate_optional_non_empty_str("checkpoint_id", checkpoint_id)
         with self._lock:
             if checkpoint_id is None:
                 row = self._conn.execute(
@@ -291,13 +423,14 @@ class SqliteSaver:
         parent_id: str | None = None,
         metadata: Mapping[str, Any] | None = None,
     ) -> Checkpoint:
+        thread_id = _validate_non_empty_str("thread_id", thread_id)
         cp = Checkpoint(
             id=_new_id(),
             thread_id=thread_id,
             created_at=_now_iso(),
-            state=dict(state),
+            state=_normalize_json_mapping("state", state),
             parent_id=parent_id,
-            metadata=dict(metadata or {}),
+            metadata=_normalize_json_mapping("metadata", metadata or {}),
         )
         with self._lock:
             self._conn.execute(
@@ -319,6 +452,9 @@ class SqliteSaver:
     def list(
         self, thread_id: str, *, before: str | None = None, limit: int = 10
     ) -> list[Checkpoint]:
+        thread_id = _validate_non_empty_str("thread_id", thread_id)
+        before = _validate_optional_non_empty_str("before", before)
+        limit = _validate_limit(limit)
         if limit <= 0:
             return []
         with self._lock:
@@ -333,7 +469,7 @@ class SqliteSaver:
                 # Resolve ``before`` to its created_at so we can compare
                 # without depending on UUID ordering.
                 ts_row = self._conn.execute(
-                    "SELECT created_at FROM checkpoints"
+                    "SELECT created_at, id FROM checkpoints"
                     " WHERE thread_id = ? AND id = ? LIMIT 1",
                     (thread_id, before),
                 ).fetchone()
@@ -342,13 +478,15 @@ class SqliteSaver:
                 rows = self._conn.execute(
                     "SELECT id, thread_id, created_at, state_json, parent_id,"
                     " metadata_json FROM checkpoints"
-                    " WHERE thread_id = ? AND created_at < ?"
+                    " WHERE thread_id = ?"
+                    " AND (created_at < ? OR (created_at = ? AND id < ?))"
                     " ORDER BY created_at DESC, id DESC LIMIT ?",
-                    (thread_id, ts_row[0], limit),
+                    (thread_id, ts_row[0], ts_row[0], ts_row[1], limit),
                 ).fetchall()
         return [self._row_to_checkpoint(r) for r in rows]
 
     def delete(self, thread_id: str) -> None:
+        thread_id = _validate_non_empty_str("thread_id", thread_id)
         with self._lock:
             self._conn.execute(
                 "DELETE FROM checkpoints WHERE thread_id = ?", (thread_id,)

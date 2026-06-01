@@ -1,11 +1,12 @@
 """
-Hooks — interceptor chain that *mutates* model / tool inputs and outputs.
+Hooks — interceptor chain that mutates model, tool, and handoff boundaries.
 
 Hooks differ from ``EventSink`` (which observes only): each hook may
-inspect and rewrite the data flowing through a turn or a tool call.
+inspect and rewrite the data flowing through a turn, a tool call, or a
+handoff.
 The orchestrator runs hooks left-to-right around every ``run_turn`` /
-``arun_turn`` and ``run_tool`` / ``arun_tool`` call, so a later hook
-always sees the output of the previous one.
+``arun_turn``, ``run_tool`` / ``arun_tool``, and handoff call, so a
+later hook always sees the output of the previous one.
 
 The two built-in transformations are:
 
@@ -31,8 +32,9 @@ This module is zero-dep. Built-ins use stdlib only.
 from __future__ import annotations
 
 import logging
+import math
 import re
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
@@ -77,6 +79,14 @@ class HookContext:
     args: dict[str, Any] = field(default_factory=dict)
     extra: dict[str, Any] = field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        self.role = _validate_name("role", self.role)
+        self.phase = _validate_name("phase", self.phase)
+        self.model = _validate_optional_label("model", self.model)
+        self.tool = _validate_optional_label("tool", self.tool)
+        self.args = _validate_context_dict("args", self.args)
+        self.extra = _validate_context_dict("extra", self.extra)
+
 
 # ---------------------------------------------------------------------------
 # Protocols
@@ -87,7 +97,7 @@ class HookContext:
 class Hook(Protocol):
     """Sync interceptor.
 
-    Implementations override any subset of the four lifecycle methods —
+    Implementations override any subset of the five lifecycle methods —
     the dispatcher uses ``hasattr`` to skip unimplemented ones, so a
     hook that only cares about ``after_tool`` need not provide stubs.
 
@@ -128,6 +138,75 @@ HookLike = Hook | AsyncHook
 
 def _hook_label(hook: HookLike) -> str:
     return getattr(hook, "name", type(hook).__name__)
+
+
+def _validate_name(field_name: str, value: str) -> str:
+    if not isinstance(value, str):
+        raise TypeError(f"{field_name} must be a string")
+    if not value.strip():
+        raise ValueError(f"{field_name} must not be empty")
+    return value
+
+
+def _validate_optional_label(field_name: str, value: str) -> str:
+    if not isinstance(value, str):
+        raise TypeError(f"{field_name} must be a string")
+    if value and not value.strip():
+        raise ValueError(f"{field_name} must not be blank")
+    return value
+
+
+def _validate_context_dict(field_name: str, value: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise TypeError(f"{field_name} must be a dict")
+    for key in value:
+        if not isinstance(key, str):
+            raise TypeError(f"{field_name} keys must be strings")
+    return value
+
+
+def _validate_string(field_name: str, value: str) -> str:
+    if not isinstance(value, str):
+        raise TypeError(f"{field_name} must be a string")
+    return value
+
+
+def _validate_bool(field_name: str, value: bool) -> bool:
+    if not isinstance(value, bool):
+        raise TypeError(f"{field_name} must be a bool")
+    return value
+
+
+def _validate_positive_int(field_name: str, value: int) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError(f"{field_name} must be an integer")
+    if value <= 0:
+        raise ValueError(f"{field_name} must be positive")
+    return value
+
+
+def _validate_log_level(value: int) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError("level must be an integer")
+    if value < logging.NOTSET:
+        raise ValueError("level must be non-negative")
+    return value
+
+
+def _normalize_patterns(patterns: Sequence[str] | None) -> tuple[str, ...]:
+    raw = tuple(patterns) if patterns is not None else _DEFAULT_PII_PATTERNS
+    if isinstance(patterns, (str, bytes)):
+        raise TypeError("patterns must be a sequence of regex strings")
+    if not raw:
+        raise ValueError("RedactPIIHook requires at least one pattern")
+    normalized: list[str] = []
+    for pattern in raw:
+        if not isinstance(pattern, str):
+            raise TypeError("patterns must contain only strings")
+        if not pattern:
+            raise ValueError("patterns must not contain empty regexes")
+        normalized.append(pattern)
+    return tuple(normalized)
 
 
 # ---------------------------------------------------------------------------
@@ -320,8 +399,8 @@ class RedactPIIHook:
     - ``ctx.prompt`` when it is a ``str`` — replaces matches with
       ``replacement`` (default ``"[REDACTED]"``).
     - ``ctx.prompt`` when it is a ``dict`` — walks string leaves.
-    - ``ctx.prompt`` when it is a list of dicts (OpenAI messages
-      shape) — walks each message's ``content`` field.
+    - ``ctx.prompt`` when it is a list of message dictionaries — walks each
+      message's ``content`` field.
 
     Other shapes are skipped silently — caller can supply a custom hook
     when the schema is exotic. The hook is **best-effort**: it is a
@@ -340,11 +419,9 @@ class RedactPIIHook:
         replacement: str = "[REDACTED]",
         name: str = "redact_pii",
     ) -> None:
-        raw = tuple(patterns) if patterns is not None else _DEFAULT_PII_PATTERNS
-        if not raw:
-            raise ValueError("RedactPIIHook requires at least one pattern")
-        self.name = name
-        self._replacement = replacement
+        raw = _normalize_patterns(patterns)
+        self.name = _validate_name("name", name)
+        self._replacement = _validate_string("replacement", replacement)
         self._compiled = re.compile("|".join(f"(?:{p})" for p in raw))
 
     def _scrub(self, value: Any) -> Any:
@@ -367,13 +444,13 @@ class RedactPIIHook:
 
 
 class LogModelIOHook:
-    """Log model input + output via a stdlib logger.
+    """Log model call metadata, with opt-in payload logging.
 
-    Useful for development and audit dumps. Defaults to ``logger.info``
-    at the ``techrevati.runtime.hooks`` logger; pass ``logger=`` to
-    redirect. ``include_prompt`` / ``include_result`` are toggles so
-    production deployments can keep one side off (e.g. log inputs only
-    for debugging, never log outputs).
+    Defaults to ``logger.info`` at the ``techrevati.runtime.hooks`` logger;
+    pass ``logger=`` to redirect. Prompt and result payloads are disabled by
+    default so production deployments do not accidentally leak model inputs or
+    outputs. Set ``include_prompt=True`` and/or ``include_result=True`` only
+    after redaction and retention policy are in place.
 
     The hook truncates payloads above ``max_chars`` (default 4000) and
     suffixes ``"…(truncated)"`` so a runaway 100k-token blob does not
@@ -385,19 +462,19 @@ class LogModelIOHook:
         *,
         logger: logging.Logger | None = None,
         level: int = logging.INFO,
-        include_prompt: bool = True,
-        include_result: bool = True,
+        include_prompt: bool = False,
+        include_result: bool = False,
         max_chars: int = 4000,
         name: str = "log_model_io",
     ) -> None:
-        if max_chars <= 0:
-            raise ValueError("max_chars must be positive")
-        self.name = name
+        if logger is not None and not isinstance(logger, logging.Logger):
+            raise TypeError("logger must be a logging.Logger")
+        self.name = _validate_name("name", name)
         self._logger = logger or logging.getLogger("techrevati.runtime.hooks")
-        self._level = level
-        self._include_prompt = include_prompt
-        self._include_result = include_result
-        self._max_chars = max_chars
+        self._level = _validate_log_level(level)
+        self._include_prompt = _validate_bool("include_prompt", include_prompt)
+        self._include_result = _validate_bool("include_result", include_result)
+        self._max_chars = _validate_positive_int("max_chars", max_chars)
 
     def _fmt(self, value: Any) -> str:
         text = value if isinstance(value, str) else repr(value)
@@ -406,31 +483,34 @@ class LogModelIOHook:
         return text
 
     def before_model(self, ctx: HookContext) -> None:
-        if not self._include_prompt:
-            return
+        extra: dict[str, Any] = {
+            "role": ctx.role,
+            "phase": ctx.phase,
+            "model": ctx.model,
+            "prompt_logged": self._include_prompt,
+        }
+        if self._include_prompt:
+            extra["prompt"] = self._fmt(ctx.prompt)
         self._logger.log(
             self._level,
             "model_input",
-            extra={
-                "role": ctx.role,
-                "phase": ctx.phase,
-                "model": ctx.model,
-                "prompt": self._fmt(ctx.prompt),
-            },
+            extra=extra,
         )
 
     def after_model(self, ctx: HookContext, result: Any) -> Any:
+        extra: dict[str, Any] = {
+            "role": ctx.role,
+            "phase": ctx.phase,
+            "model": ctx.model,
+            "result_logged": self._include_result,
+        }
         if self._include_result:
-            self._logger.log(
-                self._level,
-                "model_output",
-                extra={
-                    "role": ctx.role,
-                    "phase": ctx.phase,
-                    "model": ctx.model,
-                    "result": self._fmt(result),
-                },
-            )
+            extra["result"] = self._fmt(result)
+        self._logger.log(
+            self._level,
+            "model_output",
+            extra=extra,
+        )
         return result
 
 
@@ -471,26 +551,37 @@ class TokenBudgetCheckHook:
         self,
         *,
         token_limit: int,
-        estimator: Any | None = None,
+        estimator: Callable[[Any], int | float] | None = None,
         name: str = "token_budget_check",
     ) -> None:
-        if token_limit <= 0:
-            raise ValueError("token_limit must be positive")
-        self.name = name
-        self.token_limit = token_limit
+        self.name = _validate_name("name", name)
+        self.token_limit = _validate_positive_int("token_limit", token_limit)
         # Default estimator: 4-chars-per-token heuristic. Good enough as
         # a guardrail; callers running production should pass a real
         # tokenizer (e.g. tiktoken).
-        self._estimator = estimator or (lambda p: max(0, len(str(p)) // 4))
+        if estimator is not None and not callable(estimator):
+            raise TypeError("estimator must be callable")
+        self._estimator: Callable[[Any], int | float] = estimator or (
+            lambda p: max(0, len(str(p)) // 4)
+        )
 
     def before_model(self, ctx: HookContext) -> None:
-        estimated = int(self._estimator(ctx.prompt))
+        estimated = self._estimate_tokens(ctx.prompt)
         if estimated > self.token_limit:
             raise HookBudgetExceededError(
                 estimated=estimated,
                 limit=self.token_limit,
                 model=ctx.model,
             )
+
+    def _estimate_tokens(self, prompt: Any) -> int:
+        estimate = self._estimator(prompt)
+        if isinstance(estimate, bool) or not isinstance(estimate, (int, float)):
+            raise TypeError("estimator must return a finite non-negative number")
+        numeric_estimate = float(estimate)
+        if not math.isfinite(numeric_estimate) or numeric_estimate < 0:
+            raise ValueError("estimator must return a finite non-negative number")
+        return math.ceil(numeric_estimate)
 
 
 __all__ = [
