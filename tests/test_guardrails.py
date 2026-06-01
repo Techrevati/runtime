@@ -3,16 +3,23 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
 from techrevati.runtime import (
+    AgentFailureClass,
     AgentSession,
     AllowAllGuardrail,
     Guardrail,
     GuardrailOutcome,
     GuardrailViolatedError,
+)
+from techrevati.runtime.guardrails import (
+    arun_post_checks,
+    arun_pre_checks,
+    run_post_checks,
+    run_pre_checks,
 )
 
 
@@ -82,6 +89,16 @@ def test_pre_guardrail_blocks_before_invocation():
     assert exc_info.value.stage == "pre"
     assert exc_info.value.tool == "dangerous"
     assert invocations == 0  # never ran
+    blocked = [e for e in session.events if e.event.value == "agent.blocked"]
+    assert blocked[0].data == {
+        "tool": "dangerous",
+        "kind": "guardrail",
+        "stage": "pre",
+        "guardrails": ["block_tool_pre"],
+    }
+    failures = [e for e in session.events if e.event.value == "agent.failed"]
+    assert failures[-1].failure_class == AgentFailureClass.GUARDRAIL_VIOLATION
+    assert not any(e.event.value == "agent.tool_called" for e in session.events)
 
 
 def test_post_guardrail_blocks_after_invocation():
@@ -96,6 +113,15 @@ def test_post_guardrail_blocks_after_invocation():
 
     assert exc_info.value.stage == "post"
     assert "secret" in (exc_info.value.outcome.reason or "")
+    blocked = [e for e in session.events if e.event.value == "agent.blocked"]
+    assert blocked[0].data == {
+        "tool": "ok_tool",
+        "kind": "guardrail",
+        "stage": "post",
+        "guardrails": ["block_output"],
+    }
+    assert any(e.event.value == "agent.tool_called" for e in session.events)
+    assert not any(e.event.value == "agent.tool_completed" for e in session.events)
 
 
 def test_all_guardrails_run_when_first_blocks():
@@ -186,6 +212,13 @@ async def test_async_run_tool_runs_guardrails():
     with pytest.raises(GuardrailViolatedError):
         async with orch.asession() as session:
             await session.arun_tool("g", bad)
+    blocked = [e for e in session.events if e.event.value == "agent.blocked"]
+    assert blocked[0].data == {
+        "tool": "g",
+        "kind": "guardrail",
+        "stage": "post",
+        "guardrails": ["block_output"],
+    }
 
 
 def test_violated_error_carries_context():
@@ -201,3 +234,77 @@ def test_violated_error_carries_context():
     assert err.stage == "pre"
     assert err.guardrail == "g1"
     assert "why" in str(err)
+
+
+def test_guardrail_runners_validate_role_tool_and_outcome_shape():
+    class _BadOutcome:
+        name = "bad_outcome"
+
+        def check_pre(self, *, role: str, tool: str) -> Any:
+            return object()
+
+        def check_post(self, value: Any, *, role: str, tool: str) -> Any:
+            return object()
+
+    good = AllowAllGuardrail()
+    with pytest.raises(ValueError, match="role"):
+        run_pre_checks([good], role="", tool="tool")
+    with pytest.raises(ValueError, match="tool"):
+        run_post_checks([good], "value", role="role", tool=" ")
+    with pytest.raises(TypeError, match="GuardrailOutcome"):
+        run_pre_checks([cast(Guardrail, _BadOutcome())], role="role", tool="tool")
+    with pytest.raises(TypeError, match="GuardrailOutcome"):
+        run_post_checks(
+            [cast(Guardrail, _BadOutcome())],
+            "value",
+            role="role",
+            tool="tool",
+        )
+
+
+def test_violated_error_rejects_invalid_shape():
+    with pytest.raises(ValueError, match="role"):
+        GuardrailViolatedError(
+            GuardrailOutcome(allowed=False),
+            guardrail="g1",
+            role="",
+            tool="tool",
+            stage="pre",
+        )
+    with pytest.raises(TypeError, match="GuardrailViolation"):
+        GuardrailViolatedError(
+            cast(Any, (object(),)),
+            role="role",
+            tool="tool",
+        )
+
+
+@pytest.mark.asyncio
+async def test_async_guardrail_runners_validate_role_tool_and_outcome_shape():
+    class _BadAsyncOutcome:
+        name = "bad_async_outcome"
+
+        async def acheck_pre(self, *, role: str, tool: str) -> Any:
+            return object()
+
+        async def acheck_post(self, value: Any, *, role: str, tool: str) -> Any:
+            return object()
+
+    good = AllowAllGuardrail()
+    with pytest.raises(ValueError, match="role"):
+        await arun_pre_checks([good], role="", tool="tool")
+    with pytest.raises(ValueError, match="tool"):
+        await arun_post_checks([good], "value", role="role", tool=" ")
+    with pytest.raises(TypeError, match="GuardrailOutcome"):
+        await arun_pre_checks(
+            [cast(Any, _BadAsyncOutcome())],
+            role="role",
+            tool="tool",
+        )
+    with pytest.raises(TypeError, match="GuardrailOutcome"):
+        await arun_post_checks(
+            [cast(Any, _BadAsyncOutcome())],
+            "value",
+            role="role",
+            tool="tool",
+        )

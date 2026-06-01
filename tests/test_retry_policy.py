@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+from typing import Any, cast
 
 import pytest
 
@@ -9,7 +10,10 @@ from techrevati.runtime.retry_policy import (
     EscalationPolicy,
     FailureScenario,
     RecoveryContext,
+    RecoveryEvent,
+    RecoveryRecipe,
     RecoveryResult,
+    RecoveryStep,
     attempt_recovery,
     backoff_delay,
     classify_exception,
@@ -35,6 +39,65 @@ def test_each_scenario_has_recipe():
         recipe = recipe_for(scenario)
         assert len(recipe.steps) > 0
         assert recipe.max_attempts >= 1
+
+
+def test_recipe_for_accepts_string_scenario():
+    recipe = recipe_for("llm_timeout")
+    assert recipe.scenario == FailureScenario.LLM_TIMEOUT
+
+
+def test_recovery_recipe_rejects_invalid_shape():
+    with pytest.raises(ValueError, match="scenario"):
+        RecoveryRecipe(
+            scenario=cast(Any, "missing"),
+            steps=(RecoveryStep.RETRY_WITH_BACKOFF,),
+            max_attempts=1,
+            escalation_policy=EscalationPolicy.ALERT_HUMAN,
+        )
+    with pytest.raises(ValueError, match="steps"):
+        RecoveryRecipe(
+            scenario=FailureScenario.LLM_TIMEOUT,
+            steps=cast(Any, ()),
+            max_attempts=1,
+            escalation_policy=EscalationPolicy.ALERT_HUMAN,
+        )
+    with pytest.raises(TypeError, match="steps"):
+        RecoveryRecipe(
+            scenario=FailureScenario.LLM_TIMEOUT,
+            steps=cast(Any, "retry_with_backoff"),
+            max_attempts=1,
+            escalation_policy=EscalationPolicy.ALERT_HUMAN,
+        )
+    with pytest.raises(ValueError, match="max_attempts"):
+        RecoveryRecipe(
+            scenario=FailureScenario.LLM_TIMEOUT,
+            steps=(RecoveryStep.RETRY_WITH_BACKOFF,),
+            max_attempts=0,
+            escalation_policy=EscalationPolicy.ALERT_HUMAN,
+        )
+    with pytest.raises(ValueError, match="escalation_policy"):
+        RecoveryRecipe(
+            scenario=FailureScenario.LLM_TIMEOUT,
+            steps=(RecoveryStep.RETRY_WITH_BACKOFF,),
+            max_attempts=1,
+            escalation_policy=cast(Any, "teleport"),
+        )
+    with pytest.raises(ValueError, match="step_retries"):
+        RecoveryRecipe(
+            scenario=FailureScenario.LLM_TIMEOUT,
+            steps=(RecoveryStep.RETRY_WITH_BACKOFF,),
+            max_attempts=1,
+            escalation_policy=EscalationPolicy.ALERT_HUMAN,
+            step_retries={RecoveryStep.SWITCH_PROVIDER: 1},
+        )
+    with pytest.raises(ValueError, match="step_retries budget"):
+        RecoveryRecipe(
+            scenario=FailureScenario.LLM_TIMEOUT,
+            steps=(RecoveryStep.RETRY_WITH_BACKOFF,),
+            max_attempts=1,
+            escalation_policy=EscalationPolicy.ALERT_HUMAN,
+            step_retries={RecoveryStep.RETRY_WITH_BACKOFF: -1},
+        )
 
 
 def test_successful_recovery():
@@ -78,6 +141,12 @@ def test_context_tracks_per_scenario():
     assert ctx.attempt_count(FailureScenario.LLM_TIMEOUT) == 1
     assert ctx.attempt_count(FailureScenario.LLM_ERROR) == 1
     assert ctx.attempt_count(FailureScenario.PROVIDER_FAILURE) == 0
+    assert ctx.attempt_count("provider_failure") == 0
+
+
+def test_attempt_recovery_rejects_invalid_context():
+    with pytest.raises(TypeError, match="RecoveryContext"):
+        attempt_recovery(FailureScenario.LLM_TIMEOUT, cast(Any, object()))
 
 
 def test_classify_timeout():
@@ -122,6 +191,22 @@ def test_classify_connection_error():
         classify_exception(Exception("503 service unavailable"))
         == FailureScenario.PROVIDER_FAILURE
     )
+
+
+def test_classify_local_dependency_io_failures():
+    assert classify_exception(OSError("No space left on device")) == (
+        FailureScenario.DEPENDENCY_TIMEOUT
+    )
+    assert classify_exception(Exception("database is locked")) == (
+        FailureScenario.DEPENDENCY_TIMEOUT
+    )
+
+    try:
+        raise RuntimeError("wrapped storage failure") from OSError("disk I/O error")
+    except RuntimeError as exc:
+        wrapped = exc
+
+    assert classify_exception(wrapped) == FailureScenario.DEPENDENCY_TIMEOUT
 
 
 def test_classify_default():
@@ -177,15 +262,66 @@ def test_backoff_delay_invalid_mode_raises():
         backoff_delay(1, jitter="quantum")  # type: ignore[arg-type]
 
 
+@pytest.mark.parametrize(
+    ("kwargs", "error_type", "match"),
+    [
+        ({"attempt": True}, TypeError, "attempt"),
+        ({"attempt": -1}, ValueError, "attempt"),
+        ({"attempt": 1, "base": 0.0}, ValueError, "base"),
+        ({"attempt": 1, "base": float("nan")}, ValueError, "base"),
+        ({"attempt": 1, "cap": -1.0}, ValueError, "cap"),
+        ({"attempt": 1, "cap": float("inf")}, ValueError, "cap"),
+        ({"attempt": 1, "prev_delay": -1.0}, ValueError, "prev_delay"),
+    ],
+)
+def test_backoff_delay_rejects_invalid_numbers(
+    kwargs: dict[str, Any], error_type: type[Exception], match: str
+):
+    with pytest.raises(error_type, match=match):
+        backoff_delay(**kwargs)
+
+
+def test_backoff_delay_handles_huge_attempt_by_capping():
+    assert backoff_delay(100_000, jitter=False, cap=10.0) == 10.0
+
+
 def test_next_provider():
     assert next_provider(["provider-a", "gpt4", "test-local"], "provider-a") == "gpt4"
     assert next_provider(["provider-a"], "provider-a") is None
     assert next_provider([], "provider-a") is None
 
 
+def test_next_provider_rejects_invalid_names():
+    with pytest.raises(TypeError, match="sequence"):
+        next_provider(cast(Any, "provider-a"), "provider-a")
+    with pytest.raises(ValueError, match="current_provider"):
+        next_provider([], "")
+    with pytest.raises(TypeError, match="available_providers"):
+        next_provider(cast(Any, [1]), "provider-a")
+    with pytest.raises(ValueError, match="available_providers"):
+        next_provider([""], "provider-a")
+
+
 def test_smaller_context_budget():
     assert smaller_context_budget(10000) == 7500
     assert smaller_context_budget(10000, 0.5) == 5000
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "error_type", "match"),
+    [
+        ({"current_chars": True}, TypeError, "current_chars"),
+        ({"current_chars": -1}, ValueError, "current_chars"),
+        ({"current_chars": 100, "reduction": float("nan")}, ValueError, "reduction"),
+        ({"current_chars": 100, "reduction": -0.1}, ValueError, "between 0 and 1"),
+        ({"current_chars": 100, "reduction": 1.1}, ValueError, "between 0 and 1"),
+    ],
+)
+def test_smaller_context_budget_rejects_invalid_values(
+    kwargs: dict[str, Any], error_type: type[Exception], match: str
+):
+    with pytest.raises(error_type, match=match):
+        smaller_context_budget(**kwargs)
 
 
 def test_escalation_policies():
@@ -244,3 +380,69 @@ def test_result_to_dict():
     d = result.to_dict()
     assert d["outcome"] == "recovered"
     assert d["steps_taken"] == 2
+
+
+def test_result_and_event_copy_mutable_fields():
+    recovered = ["a"]
+    result = RecoveryResult(outcome="recovered", recovered_steps=recovered)
+    recovered.append("later")
+    assert result.recovered_steps == ["a"]
+    d = result.to_dict()
+    d["recovered_steps"].append("extra")
+    assert result.recovered_steps == ["a"]
+
+    result_payload = {"outcome": "recovered", "nested": {"values": [1]}}
+    event = RecoveryEvent(
+        event_type="succeeded",
+        scenario="llm_timeout",
+        recipe_steps=["retry_with_backoff"],
+        result=result_payload,
+        timestamp="2026-01-01T00:00:00+00:00",
+    )
+    result_payload["later"] = True
+    result_payload["nested"]["values"].append(2)
+    assert event.result == {"outcome": "recovered", "nested": {"values": [1]}}
+    event_dict = event.to_dict()
+    event_dict["result"]["extra"] = True
+    event_dict["result"]["nested"]["values"].append(3)
+    assert event.result == {"outcome": "recovered", "nested": {"values": [1]}}
+
+
+def test_recovery_context_events_are_snapshots():
+    ctx = RecoveryContext()
+    attempt_recovery(FailureScenario.LLM_TIMEOUT, ctx)
+
+    first_read = ctx.events
+    assert first_read
+    first_read[0].result["recovered_steps"].append("mutated")
+
+    second_read = ctx.events
+    assert second_read[0].result["recovered_steps"] == [
+        RecoveryStep.RETRY_WITH_BACKOFF.value
+    ]
+    assert second_read[0] is not first_read[0]
+
+
+def test_result_and_event_reject_invalid_shape():
+    with pytest.raises(ValueError, match="outcome"):
+        RecoveryResult(outcome=cast(Any, "maybe"))
+    with pytest.raises(TypeError, match="steps_taken"):
+        RecoveryResult(outcome="recovered", steps_taken=cast(Any, True))
+    with pytest.raises(TypeError, match="recovered_steps"):
+        RecoveryResult(outcome="recovered", recovered_steps=cast(Any, ()))
+    with pytest.raises(ValueError, match="event_type"):
+        RecoveryEvent(
+            event_type="unknown",
+            scenario="llm_timeout",
+            recipe_steps=["retry_with_backoff"],
+            result={},
+            timestamp="2026-01-01T00:00:00+00:00",
+        )
+    with pytest.raises(TypeError, match="result"):
+        RecoveryEvent(
+            event_type="succeeded",
+            scenario="llm_timeout",
+            recipe_steps=["retry_with_backoff"],
+            result=cast(Any, []),
+            timestamp="2026-01-01T00:00:00+00:00",
+        )

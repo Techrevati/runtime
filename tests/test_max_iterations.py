@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from techrevati.runtime import (
+    AgentFailureClass,
     AgentSession,
     MaxIterationsExceededError,
     ModelPricing,
@@ -30,6 +31,24 @@ def test_run_turn_raises_when_cap_reached():
                 session.run_turn(lambda: "ok", model="test-model")
 
     assert exc_info.value.max_iterations == 3
+
+
+def test_run_turn_cap_escape_marks_terminal_governance_breach():
+    orch = AgentSession(role="r", phase="p", max_iterations=1)
+    session = None
+
+    with pytest.raises(MaxIterationsExceededError):
+        with orch.session() as running:
+            session = running
+            running.run_turn(lambda: "ok", model="test-model")
+            running.run_turn(lambda: "too many", model="test-model")
+
+    assert session is not None
+    failures = [
+        event for event in session.events if event.event.value == "agent.failed"
+    ]
+    assert failures[-1].failure_class == AgentFailureClass.GOVERNANCE_BREACH
+    assert failures[-1].detail == "MaxIterationsExceededError raised"
 
 
 def test_run_turn_within_cap_succeeds():
@@ -60,8 +79,30 @@ async def test_arun_turn_raises_when_cap_reached():
                 await session.arun_turn(call, model="test-model")
 
 
+@pytest.mark.asyncio
+async def test_arun_turn_cap_escape_marks_terminal_governance_breach():
+    orch = AgentSession(role="r", phase="p", max_iterations=1)
+    session = None
+
+    async def call():
+        return "ok"
+
+    with pytest.raises(MaxIterationsExceededError):
+        async with orch.asession() as running:
+            session = running
+            await running.arun_turn(call, model="test-model")
+            await running.arun_turn(call, model="test-model")
+
+    assert session is not None
+    failures = [
+        event for event in session.events if event.event.value == "agent.failed"
+    ]
+    assert failures[-1].failure_class == AgentFailureClass.GOVERNANCE_BREACH
+    assert failures[-1].detail == "MaxIterationsExceededError raised"
+
+
 def test_agent_session_alias_is_orchestrator():
-    """AgentSession is the forward-looking name for AgentSession."""
+    """AgentSession remains the canonical session factory."""
     assert AgentSession is AgentSession
     instance = AgentSession(role="r", phase="p", max_iterations=10)
     assert instance.max_iterations == 10

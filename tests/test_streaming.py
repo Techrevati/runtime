@@ -5,13 +5,15 @@ from __future__ import annotations
 import asyncio
 import dataclasses
 import json
+import logging
 from collections.abc import AsyncIterator
 from contextlib import aclosing
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
 from techrevati.runtime import (
+    AgentFailureClass,
     AgentSession,
     HookContext,
     StreamEvent,
@@ -72,6 +74,99 @@ def test_stream_event_to_dict_roundtrip_json() -> None:
     payload = json.loads(ev.to_json())
     assert payload["type"] == "text_delta"
     assert payload["payload"] == {"delta": "hi"}
+
+
+def test_stream_event_copies_payload_inputs_and_outputs() -> None:
+    payload: dict[str, Any] = {"tool": "search", "args": {"q": "x"}}
+    ev = StreamEvent(type="tool_call", payload=payload)
+    payload["later"] = True
+    payload["args"]["q"] = "changed"
+    assert "later" not in ev.payload
+    assert ev.payload["args"] == {"q": "x"}
+
+    serialized = ev.to_dict()
+    serialized["payload"]["extra"] = True
+    serialized["payload"]["args"]["q"] = "serialized-change"
+    assert "extra" not in ev.payload
+    assert ev.payload["args"] == {"q": "x"}
+
+
+def test_stream_event_constructor_payloads_are_deep_copied() -> None:
+    args = {"filters": {"tags": ["a"]}}
+    ev = StreamEvent.tool_call("search", args=args)
+    args["filters"]["tags"].append("b")
+
+    assert ev.payload["args"] == {"filters": {"tags": ["a"]}}
+
+    usage = {"nested": {"tokens": [1]}}
+    final = StreamEvent.final("completed", usage=usage)
+    usage["nested"]["tokens"].append(2)
+
+    assert final.payload["usage"] == {"nested": {"tokens": [1]}}
+
+
+def test_stream_event_rejects_invalid_shape() -> None:
+    with pytest.raises(ValueError, match="valid stream event type"):
+        StreamEvent(type=cast(Any, "unknown"))
+    with pytest.raises(TypeError, match="payload"):
+        StreamEvent(type="text_delta", payload=cast(Any, []))
+    with pytest.raises(TypeError, match="payload keys"):
+        StreamEvent(type="text_delta", payload=cast(Any, {1: "bad"}))
+    with pytest.raises(ValueError, match="emitted_at"):
+        StreamEvent(type="text_delta", payload={"delta": "x"}, emitted_at="")
+
+
+def test_stream_event_direct_constructor_validates_payload_contract() -> None:
+    with pytest.raises(ValueError, match="text_delta payload requires 'delta'"):
+        StreamEvent(type="text_delta")
+    with pytest.raises(TypeError, match="payload.delta"):
+        StreamEvent(type="text_delta", payload={"delta": 1})
+    with pytest.raises(ValueError, match="tool_call payload requires 'args'"):
+        StreamEvent(type="tool_call", payload={"tool": "search"})
+    with pytest.raises(TypeError, match="payload.args"):
+        StreamEvent(type="tool_call", payload={"tool": "search", "args": []})
+    with pytest.raises(ValueError, match="tool_result payload requires 'result'"):
+        StreamEvent(type="tool_result", payload={"tool": "search"})
+    with pytest.raises(ValueError, match="payload.reason"):
+        StreamEvent(type="handoff", payload={"target_role": "r", "reason": " "})
+    with pytest.raises(ValueError, match="valid stream final status"):
+        StreamEvent(type="final", payload={"status": "done"})
+    with pytest.raises(TypeError, match="payload.usage"):
+        StreamEvent(type="final", payload={"status": "completed", "usage": []})
+    with pytest.raises(ValueError, match="payload.message"):
+        StreamEvent(type="error", payload={"error_type": "ValueError", "message": ""})
+
+
+def test_stream_event_direct_constructor_preserves_extra_payload_fields() -> None:
+    ev = StreamEvent(
+        type="final",
+        payload={
+            "status": "completed",
+            "usage": {"input_tokens": 1},
+            "trace_id": "abc",
+        },
+    )
+
+    assert ev.payload == {
+        "status": "completed",
+        "usage": {"input_tokens": 1},
+        "trace_id": "abc",
+    }
+
+
+def test_stream_event_constructors_reject_invalid_inputs() -> None:
+    with pytest.raises(TypeError, match="delta"):
+        StreamEvent.text(cast(Any, 1))
+    with pytest.raises(ValueError, match="tool"):
+        StreamEvent.tool_call("")
+    with pytest.raises(TypeError, match="args"):
+        StreamEvent.tool_call("search", args=cast(Any, []))
+    with pytest.raises(ValueError, match="valid stream final status"):
+        StreamEvent.final(cast(Any, "done"))
+    with pytest.raises(TypeError, match="usage"):
+        StreamEvent.final("completed", usage=cast(Any, []))
+    with pytest.raises(ValueError, match="error_type"):
+        StreamEvent.error("", "bad")
 
 
 def test_stream_event_is_frozen() -> None:
@@ -177,22 +272,75 @@ async def test_arun_turn_stream_consumer_break_sets_cancelled_flag() -> None:
 
 
 @pytest.mark.asyncio
+async def test_arun_turn_stream_records_aclose_failure_diagnostic(caplog) -> None:
+    class BrokenCloseStream:
+        def __init__(self) -> None:
+            self._sent = False
+
+        def __aiter__(self) -> BrokenCloseStream:
+            return self
+
+        async def __anext__(self) -> str:
+            if self._sent:
+                raise StopAsyncIteration
+            self._sent = True
+            return "done"
+
+        async def aclose(self) -> None:
+            raise RuntimeError("socket secret details")
+
+    sess = AgentSession(role="writer", phase="draft", project_id=42)
+    async with sess.asession() as session:
+        with caplog.at_level(logging.ERROR, logger="techrevati.runtime.orchestrator"):
+            received = [
+                ev
+                async for ev in session.arun_turn_stream(
+                    BrokenCloseStream,
+                    model="m",
+                )
+            ]
+
+    assert received[-1].payload["status"] == "completed"
+    diagnostics = [
+        event
+        for event in session.events
+        if event.data and event.data.get("component") == "stream_upstream"
+    ]
+    assert len(diagnostics) == 1
+    diagnostic = diagnostics[0]
+    assert diagnostic.project_id == 42
+    assert diagnostic.failure_class == AgentFailureClass.DEPENDENCY_FAILED
+    assert diagnostic.detail == "stream_upstream failed; session continued"
+    assert diagnostic.data == {
+        "component": "stream_upstream",
+        "error_type": "RuntimeError",
+    }
+    assert "secret details" not in str(diagnostic.to_dict())
+    assert any("upstream.aclose() raised" in r.getMessage() for r in caplog.records)
+    assert all(r.exc_info is None for r in caplog.records)
+    assert "secret details" not in caplog.text
+
+
+@pytest.mark.asyncio
 async def test_arun_turn_stream_upstream_exception_yields_error_and_final() -> None:
     async def failing() -> AsyncIterator[str]:
         yield "first"
-        raise RuntimeError("boom")
+        raise RuntimeError("connection string with sensitive details")
 
     sess = AgentSession(role="writer", phase="draft")
     async with sess.asession() as session:
         received: list[StreamEvent] = []
-        with pytest.raises(RuntimeError, match="boom"):
+        with pytest.raises(RuntimeError, match="sensitive details"):
             async for ev in session.arun_turn_stream(failing, model="m"):
                 received.append(ev)
     # We saw text_delta → error → final (then the raise propagated)
     types = [e.type for e in received]
     assert types == ["text_delta", "error", "final"]
     assert received[-1].payload["status"] == "failed"
+    assert received[-1].payload["detail"] == "RuntimeError raised"
     assert received[-2].payload["error_type"] == "RuntimeError"
+    assert received[-2].payload["message"] == "RuntimeError raised"
+    assert "sensitive" not in str([event.to_dict() for event in received])
 
 
 @pytest.mark.asyncio
@@ -213,6 +361,12 @@ async def test_arun_turn_stream_timeout_raises_turn_timeout_error() -> None:
     assert "text_delta" in types
     assert "error" in types
     assert "final" in types
+    assert any(event.scenario == "llm_timeout" for event in session.recovery.events)
+    assert any(
+        event.event.value == "agent.recovery.attempted"
+        and event.detail == "llm_timeout: recovered"
+        for event in session.events
+    )
 
 
 # ---------------------------------------------------------------------------

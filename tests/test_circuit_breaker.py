@@ -18,6 +18,15 @@ def test_initial_state_is_closed():
     assert not cb.is_open()
 
 
+def test_constructor_rejects_invalid_params():
+    with pytest.raises(ValueError, match="failure_threshold"):
+        CircuitBreaker("test", failure_threshold=0)
+    with pytest.raises(ValueError, match="recovery_timeout_seconds"):
+        CircuitBreaker("test", recovery_timeout_seconds=-0.1)
+    with pytest.raises(ValueError, match="half_open_max_probes"):
+        CircuitBreaker("test", half_open_max_probes=0)
+
+
 def test_successful_calls_keep_circuit_closed():
     cb = CircuitBreaker("test", failure_threshold=3)
     for _ in range(10):
@@ -325,3 +334,135 @@ def test_half_open_admits_n_probes_when_configured():
     # Admitted threads each succeeded; rejected threads got CircuitOpenError.
     assert admitted + rejected == 10
     assert admitted >= 3
+
+
+def test_half_open_closes_only_after_all_inflight_probes_succeed():
+    clock = ManualClock()
+    cb = CircuitBreaker(
+        "svc",
+        failure_threshold=3,
+        recovery_timeout_seconds=0.1,
+        half_open_max_probes=2,
+        clock=clock,
+    )
+    for _ in range(3):
+        with pytest.raises(RuntimeError):
+            cb.call(lambda: (_ for _ in ()).throw(RuntimeError("boom")))
+    clock.advance(0.2)
+
+    first_started = threading.Event()
+    second_started = threading.Event()
+    first_release = threading.Event()
+    second_release = threading.Event()
+
+    def first_probe() -> str:
+        first_started.set()
+        first_release.wait(timeout=2.0)
+        return "first-ok"
+
+    def second_probe() -> str:
+        second_started.set()
+        second_release.wait(timeout=2.0)
+        return "second-ok"
+
+    first = threading.Thread(target=lambda: cb.call(first_probe))
+    second = threading.Thread(target=lambda: cb.call(second_probe))
+    first.start()
+    second.start()
+    assert first_started.wait(timeout=2.0)
+    assert second_started.wait(timeout=2.0)
+
+    first_release.set()
+    first.join(timeout=2.0)
+
+    assert cb.state() == CircuitState.HALF_OPEN
+    with cb._lock:
+        assert cb._probe_in_flight == 1
+
+    second_release.set()
+    second.join(timeout=2.0)
+
+    assert cb.state() == CircuitState.CLOSED
+    with cb._lock:
+        assert cb._probe_in_flight == 0
+
+
+def test_half_open_failing_sibling_reopens_after_successful_sibling():
+    clock = ManualClock()
+    cb = CircuitBreaker(
+        "svc",
+        failure_threshold=3,
+        recovery_timeout_seconds=0.1,
+        half_open_max_probes=2,
+        clock=clock,
+    )
+    for _ in range(3):
+        with pytest.raises(RuntimeError):
+            cb.call(lambda: (_ for _ in ()).throw(RuntimeError("boom")))
+    clock.advance(0.2)
+
+    ok_started = threading.Event()
+    fail_started = threading.Event()
+    ok_release = threading.Event()
+    fail_release = threading.Event()
+    failures: list[BaseException] = []
+
+    def ok_probe() -> str:
+        ok_started.set()
+        ok_release.wait(timeout=2.0)
+        return "ok"
+
+    def failing_probe() -> str:
+        fail_started.set()
+        fail_release.wait(timeout=2.0)
+        raise RuntimeError("still down")
+
+    def run_failing_probe() -> None:
+        try:
+            cb.call(failing_probe)
+        except RuntimeError as exc:
+            failures.append(exc)
+
+    ok_thread = threading.Thread(target=lambda: cb.call(ok_probe))
+    fail_thread = threading.Thread(target=run_failing_probe)
+    ok_thread.start()
+    fail_thread.start()
+    assert ok_started.wait(timeout=2.0)
+    assert fail_started.wait(timeout=2.0)
+
+    ok_release.set()
+    ok_thread.join(timeout=2.0)
+    assert cb.state() == CircuitState.HALF_OPEN
+
+    fail_release.set()
+    fail_thread.join(timeout=2.0)
+
+    assert len(failures) == 1
+    assert cb.state() == CircuitState.OPEN
+
+
+def test_half_open_probe_abort_releases_permit_without_counting_failure():
+    class ProbeAborted(BaseException):
+        pass
+
+    clock = ManualClock()
+    cb = CircuitBreaker(
+        "svc",
+        failure_threshold=1,
+        recovery_timeout_seconds=0.1,
+        half_open_max_probes=1,
+        clock=clock,
+    )
+    with pytest.raises(RuntimeError):
+        cb.call(lambda: (_ for _ in ()).throw(RuntimeError("boom")))
+    clock.advance(0.2)
+
+    with pytest.raises(ProbeAborted):
+        cb.call(lambda: (_ for _ in ()).throw(ProbeAborted()))
+
+    assert cb.state() == CircuitState.HALF_OPEN
+    with cb._lock:
+        assert cb._probe_in_flight == 0
+
+    assert cb.call(lambda: "recovered") == "recovered"
+    assert cb.state() == CircuitState.CLOSED

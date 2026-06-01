@@ -19,6 +19,7 @@ from techrevati.runtime.agent_events import (  # noqa: E402
     AgentEventStatus,
 )
 from techrevati.runtime.otel import (  # noqa: E402
+    _LIVE_SINKS,
     OpenTelemetrySink,
     _flush_orphan_parent_spans_at_exit,
 )
@@ -93,6 +94,82 @@ def test_atexit_flush_does_not_double_close_normal_lifecycle():
     # One parent span; clean OK status (not ERROR)
     assert len(finished) == 1
     assert finished[0].status.status_code != StatusCode.ERROR
+
+
+def test_atexit_flush_logs_sanitized_cleanup_failures(caplog):
+    class BrokenSink:
+        def _close_orphan_parent_spans(self):
+            raise RuntimeError("secret details")
+
+    sink = BrokenSink()
+    _LIVE_SINKS.add(sink)
+    caplog.set_level("ERROR", logger="techrevati.runtime.otel")
+
+    try:
+        _flush_orphan_parent_spans_at_exit()
+    finally:
+        _LIVE_SINKS.discard(sink)
+
+    assert "OpenTelemetry cleanup failed" in caplog.text
+    assert "secret details" not in caplog.text
+    assert all(record.exc_info is None for record in caplog.records)
+    assert any(
+        getattr(record, "phase", None) == "atexit_flush" for record in caplog.records
+    )
+    assert any(
+        getattr(record, "error_type", None) == "RuntimeError"
+        for record in caplog.records
+    )
+
+
+def test_span_error_cleanup_logs_sanitized_failure(caplog):
+    class BrokenSpan:
+        def set_attribute(self, *args):
+            raise RuntimeError("secret details")
+
+        def set_status(self, *args):
+            raise AssertionError("unreachable")
+
+        def end(self):
+            raise AssertionError("unreachable")
+
+    caplog.set_level("ERROR", logger="techrevati.runtime.otel")
+
+    OpenTelemetrySink._end_span_with_error(
+        BrokenSpan(),
+        detail="safe cleanup detail",
+        error_type="abrupt_termination",
+    )
+
+    assert "OpenTelemetry cleanup failed" in caplog.text
+    assert "secret details" not in caplog.text
+    assert all(record.exc_info is None for record in caplog.records)
+    assert any(
+        getattr(record, "phase", None) == "span_error_close"
+        for record in caplog.records
+    )
+    assert any(
+        getattr(record, "error_type", None) == "RuntimeError"
+        for record in caplog.records
+    )
+
+
+def test_atexit_flush_closes_orphan_tool_span():
+    tracer, exporter = _fresh_tracer()
+    sink = OpenTelemetrySink(tracer=tracer)
+    sink.emit(_started_event())
+    sink.emit(AgentEvent.tool_called("writer", "draft", "lookup"))
+
+    _flush_orphan_parent_spans_at_exit()
+
+    assert sink._active_tool_spans == {}
+    assert sink._active_spans == {}
+    finished = exporter.get_finished_spans()
+    assert len(finished) == 2
+    assert all(span.status.status_code == StatusCode.ERROR for span in finished)
+    child = next(span for span in finished if span.parent is not None)
+    assert child.attributes.get("techrevati.data.tool") == "lookup"
+    assert child.attributes.get("error.type") == "abrupt_termination"
 
 
 def test_dropped_sink_does_not_pin_memory_via_atexit():

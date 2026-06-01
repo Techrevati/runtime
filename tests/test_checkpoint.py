@@ -7,13 +7,16 @@ durability (round-trip across a fresh connection) gets its own test.
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+import sqlite3
+from collections.abc import Iterator, Mapping
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
+from unittest.mock import patch
 
 import pytest
 
 from techrevati.runtime import (
+    AgentFailureClass,
     AgentSession,
     Checkpoint,
     CheckpointSaver,
@@ -136,6 +139,27 @@ def test_list_before_unknown_id_returns_empty(saver: CheckpointSaver) -> None:
     assert saver.list("t1", before="does-not-exist") == []
 
 
+def test_sqlite_list_before_handles_equal_timestamps(tmp_path: Path) -> None:
+    db = tmp_path / "same-ts.db"
+    saver = SqliteSaver(db)
+    try:
+        with patch("techrevati.runtime.checkpoint._now_iso") as fake_now:
+            fake_now.return_value = "2026-05-30T00:00:00+00:00"
+            checkpoints = [saver.put("t1", {"i": i}) for i in range(4)]
+
+        all_rows = saver.list("t1")
+        assert len(all_rows) == 4
+
+        before = all_rows[1]
+        rows = saver.list("t1", before=before.id)
+        expected = [cp.id for cp in all_rows[2:]]
+        assert [cp.id for cp in rows] == expected
+        assert before.id not in [cp.id for cp in rows]
+        assert set(expected).issubset({cp.id for cp in checkpoints})
+    finally:
+        saver.close()
+
+
 def test_delete_removes_thread(saver: CheckpointSaver) -> None:
     saver.put("t1", {"i": 0})
     saver.put("t1", {"i": 1})
@@ -164,6 +188,57 @@ def test_checkpoint_to_dict_roundtrip() -> None:
     assert again == cp
 
 
+def test_checkpoint_rejects_invalid_shape() -> None:
+    with pytest.raises(ValueError, match="id"):
+        Checkpoint(id="", thread_id="t1", created_at="2026-05-20", state={})
+    with pytest.raises(ValueError, match="thread_id"):
+        Checkpoint(id="abc", thread_id="", created_at="2026-05-20", state={})
+    with pytest.raises(ValueError, match="parent_id"):
+        Checkpoint(
+            id="abc",
+            thread_id="t1",
+            created_at="2026-05-20",
+            state={},
+            parent_id="",
+        )
+    with pytest.raises(TypeError, match="state"):
+        Checkpoint(
+            id="abc",
+            thread_id="t1",
+            created_at="2026-05-20",
+            state=cast(Any, []),
+        )
+    with pytest.raises(TypeError, match="state keys"):
+        Checkpoint(
+            id="abc",
+            thread_id="t1",
+            created_at="2026-05-20",
+            state=cast(Any, {1: "bad"}),
+        )
+    with pytest.raises(TypeError, match="metadata"):
+        Checkpoint(
+            id="abc",
+            thread_id="t1",
+            created_at="2026-05-20",
+            state={},
+            metadata=cast(Any, []),
+        )
+
+
+def test_checkpoint_from_dict_rejects_invalid_payload() -> None:
+    with pytest.raises(TypeError, match="data"):
+        Checkpoint.from_dict(cast(Any, []))
+    with pytest.raises(TypeError, match="state"):
+        Checkpoint.from_dict(
+            {
+                "id": "abc",
+                "thread_id": "t1",
+                "created_at": "2026-05-20",
+                "state": [],
+            }
+        )
+
+
 def test_checkpoint_state_is_copied_on_construction(saver: CheckpointSaver) -> None:
     src = {"k": "v"}
     saver.put("t1", src)
@@ -173,6 +248,61 @@ def test_checkpoint_state_is_copied_on_construction(saver: CheckpointSaver) -> N
     fetched = saver.get("t1")
     assert fetched is not None
     assert fetched.state == {"k": "v"}
+
+
+def test_checkpoint_nested_state_and_to_dict_are_copied() -> None:
+    src: dict[str, Any] = {"nested": {"k": "v"}}
+    cp = Checkpoint(
+        id="abc",
+        thread_id="t1",
+        created_at="2026-05-20T00:00:00+00:00",
+        state=src,
+    )
+    src["nested"]["k"] = "mutated"
+    assert cp.state == {"nested": {"k": "v"}}
+
+    d = cp.to_dict()
+    d["state"]["nested"]["k"] = "changed"
+    assert cp.state == {"nested": {"k": "v"}}
+
+
+def test_saver_returns_checkpoint_snapshots(saver: CheckpointSaver) -> None:
+    written = saver.put(
+        "t1",
+        {"nested": {"values": [1]}},
+        metadata={"meta": {"values": [10]}},
+    )
+    written.state["nested"]["values"].append(2)
+    written.metadata["meta"]["values"].append(20)
+
+    fetched = saver.get("t1")
+    assert fetched is not None
+    assert fetched.state == {"nested": {"values": [1]}}
+    assert fetched.metadata == {"meta": {"values": [10]}}
+
+    fetched.state["nested"]["values"].append(3)
+    fetched.metadata["meta"]["values"].append(30)
+    listed = saver.list("t1")
+    assert listed[0].state == {"nested": {"values": [1]}}
+    assert listed[0].metadata == {"meta": {"values": [10]}}
+
+    listed[0].state["nested"]["values"].append(4)
+    again = saver.get("t1")
+    assert again is not None
+    assert again.state == {"nested": {"values": [1]}}
+
+
+def test_saver_rejects_invalid_inputs(saver: CheckpointSaver) -> None:
+    with pytest.raises(ValueError, match="thread_id"):
+        saver.put("", {"k": "v"})
+    with pytest.raises(TypeError, match="state"):
+        saver.put("t1", cast(Any, []))
+    with pytest.raises(TypeError, match="JSON-serializable"):
+        saver.put("t1", {"bad": object()})
+    with pytest.raises(TypeError, match="limit"):
+        saver.list("t1", limit=cast(Any, True))
+    with pytest.raises(ValueError, match="thread_id"):
+        saver.delete("")
 
 
 # ---------------------------------------------------------------------------
@@ -199,6 +329,85 @@ def test_sqlite_survives_reopen(tmp_path: Path) -> None:
 def test_sqlite_context_manager_closes() -> None:
     with SqliteSaver(":memory:") as s:
         s.put("t1", {"k": "v"})
+
+
+def test_sqlite_saver_records_schema_version(tmp_path: Path) -> None:
+    db = tmp_path / "schema.db"
+    saver = SqliteSaver(db)
+    saver.close()
+
+    conn = sqlite3.connect(db)
+    try:
+        row = conn.execute(
+            "SELECT schema_version FROM techrevati_runtime_metadata"
+            " WHERE component = ?",
+            ("checkpoint",),
+        ).fetchone()
+    finally:
+        conn.close()
+
+    assert row == (1,)
+
+
+def test_sqlite_saver_enables_wal_before_schema_setup(tmp_path: Path) -> None:
+    db = tmp_path / "wal.db"
+    saver = SqliteSaver(db)
+    saver.close()
+
+    conn = sqlite3.connect(db)
+    try:
+        journal_mode = conn.execute("PRAGMA journal_mode").fetchone()
+    finally:
+        conn.close()
+
+    assert journal_mode == ("wal",)
+
+
+def test_sqlite_saver_closes_connection_when_wal_setup_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class BrokenConnection:
+        def __init__(self) -> None:
+            self.closed = False
+
+        def execute(self, sql: str, *args: object) -> object:
+            assert sql == "PRAGMA journal_mode=WAL"
+            raise sqlite3.OperationalError("wal setup failed")
+
+        def close(self) -> None:
+            self.closed = True
+
+    conn = BrokenConnection()
+    monkeypatch.setattr(
+        "techrevati.runtime.checkpoint.sqlite3.connect",
+        lambda *args, **kwargs: conn,
+    )
+
+    with pytest.raises(sqlite3.OperationalError, match="wal setup failed"):
+        SqliteSaver("broken.db")
+
+    assert conn.closed
+
+
+def test_sqlite_saver_rejects_unsupported_schema_version(tmp_path: Path) -> None:
+    db = tmp_path / "future-schema.db"
+    conn = sqlite3.connect(db)
+    try:
+        conn.execute(
+            "CREATE TABLE techrevati_runtime_metadata"
+            " (component TEXT PRIMARY KEY, schema_version INTEGER NOT NULL)"
+        )
+        conn.execute(
+            "INSERT INTO techrevati_runtime_metadata"
+            " (component, schema_version) VALUES (?, ?)",
+            ("checkpoint", 999),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    with pytest.raises(RuntimeError, match="unsupported sqlite schema"):
+        SqliteSaver(db)
 
 
 # ---------------------------------------------------------------------------
@@ -289,6 +498,32 @@ def test_run_turn_logs_and_skips_non_json_result(
     assert isinstance(result, NotJsonable)
     assert saver.list("t1") == []  # Skipped because of non-serializable result.
     assert any("not JSON-serializable" in r.message for r in caplog.records)
+
+
+def test_checkpoint_persistence_failure_is_dependency_classified() -> None:
+    class FailingSaver(InMemorySaver):
+        def put(
+            self,
+            thread_id: str,
+            state: Mapping[str, Any],
+            *,
+            parent_id: str | None = None,
+            metadata: Mapping[str, Any] | None = None,
+        ) -> Checkpoint:
+            del thread_id, state, parent_id, metadata
+            raise sqlite3.OperationalError("database is locked")
+
+    orch = AgentSession(role="writer", phase="draft", saver=FailingSaver())
+
+    with pytest.raises(sqlite3.OperationalError, match="database is locked"):
+        with orch.session(thread_id="t1") as session:
+            session.run_turn(lambda: "ok", idempotency_key="turn-1")
+
+    failures = [
+        event for event in session.events if event.event.value == "agent.failed"
+    ]
+    assert failures[-1].failure_class == AgentFailureClass.DEPENDENCY_FAILED
+    assert failures[-1].detail == "OperationalError raised"
 
 
 @pytest.mark.asyncio
