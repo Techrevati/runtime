@@ -145,6 +145,24 @@ def test_final_diff_review_accepts_matching_snapshot_parity(
     assert module._check_snapshot_parity(tmp_path) == []
 
 
+def test_final_diff_review_skips_diff_parity_when_base_ref_unavailable(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    # Regression: in a shallow CI checkout `git diff main...HEAD` cannot resolve
+    # the base ref. The inspector returns (None, []) to signal "skip" — the
+    # branch-delta parity must then be skipped, not fail the gate. Untracked
+    # parity (which uses HEAD-independent `git ls-files`) still applies.
+    module = _load_final_diff_review_module()
+    _write_fixture(tmp_path)
+    (tmp_path / ".git").mkdir()
+
+    monkeypatch.setattr(module, "_git_diff_stats", lambda root: (None, []))
+    monkeypatch.setattr(module, "_git_untracked_count", lambda root: (104, []))
+
+    assert module._check_snapshot_parity(tmp_path) == []
+
+
 def test_final_diff_review_rejects_tracked_snapshot_drift(
     tmp_path: Path,
     monkeypatch,

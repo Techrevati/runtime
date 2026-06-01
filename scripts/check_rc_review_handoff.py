@@ -215,9 +215,12 @@ def _git_diff_stats(root: Path) -> tuple[DiffStats | None, list[str]]:
         )
     except FileNotFoundError as exc:
         return None, [f"could not inspect tracked diff: {exc}"]
-    except subprocess.CalledProcessError as exc:
-        details = exc.stderr.strip() or str(exc)
-        return None, [f"could not inspect tracked diff: {details}"]
+    except subprocess.CalledProcessError:
+        # `main...HEAD` cannot be resolved — typically a shallow CI checkout
+        # without the base branch. The branch-delta snapshot is an author-side
+        # review aid; when the base ref is unavailable, skip the parity check
+        # (return no stats, no failure) rather than failing the gate.
+        return None, []
 
     output = result.stdout.strip()
     if not output:

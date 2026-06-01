@@ -57,7 +57,7 @@ lives as committed history on `production-rc-0.3.0`, so the snapshot measures th
 committed branch delta `main...HEAD` rather than an uncommitted working tree:
 
 - branch: `production-rc-0.3.0`,
-- tracked diff: 190 files changed, 28606 insertions, 1807 deletions,
+- tracked diff: 190 files changed, 28630 insertions, 1807 deletions,
 - untracked release assets: 0 files (all release assets are committed),
 - full production gate: 1,050 tests passed with 94.74 percent total coverage,
 - per-module coverage floor: passed at 85 percent,
