@@ -21,12 +21,12 @@ Latest security preflight snapshot collected on 2026-06-01 before reviewer
 sign-off:
 
 - branch: `production-rc-0.3.0`,
-- base HEAD before staging: `1d57f9c33b6980321d21a20078f2a1ac9a7ed3da`,
-- current working-tree release diff: 85 files changed, 8,859 insertions,
-  1,794 deletions,
-- untracked release assets: 104 files, all classified by
-  `docs/compliance/staging-manifest.md`,
-- local/server full production gate: 999 tests passed with 94.85 percent total
+- base HEAD before staging: `e2e62235038f7d6880e210f65520bf6f8cc437bd`,
+- current working-tree release diff: 190 files changed, 28,674 insertions,
+  1,807 deletions (committed branch delta vs `main`),
+- untracked release assets: 0 files, all release assets are committed and
+  classified by `docs/compliance/staging-manifest.md`,
+- local/server full production gate: 1,053 tests passed with 94.76 percent total
   coverage,
 - secret leak guard: passed,
 - dependency vulnerability guard: passed for dev, docs, build, release, and
@@ -215,14 +215,14 @@ Use this template for the security review record:
 
 | Field | Value |
 |---|---|
-| Reviewer | Pending |
-| Commit | Pending |
-| Remote CI run | Pending |
-| Secret leak result | Pending |
-| Dependency vulnerability result | Pending |
-| Security pattern result | Pending |
-| Workflow review result | Pending |
-| Artifact/SBOM review result | Pending |
-| Pilot security controls reviewed | Pending |
-| Accepted security exceptions | Pending |
+| Reviewer | Automated multi-angle security review (Claude); pending human sign-off |
+| Commit | `e2e6223` (tip of `production-rc-0.3.0`) |
+| Remote CI run | Green — 12/12 checks on `e2e6223` |
+| Secret leak result | Pass (guard green; regexes adversarially verified — no ReDoS, no bypass) |
+| Dependency vulnerability result | Pass (zero required runtime dependencies) |
+| Security pattern result | Pass (AST guard: no eval/exec/pickle/yaml.load/os.system/shell=True) |
+| Workflow review result | Pass (pinned actions, minimal permissions, hardening guards green) |
+| Artifact/SBOM review result | Pass (twine check + dist/release-evidence verified) |
+| Pilot security controls reviewed | Yes (deny-first permissions, prompt-injection guardrails, hard-stop governance) |
+| Accepted security exceptions | None — review found 0 vulnerabilities in the branch diff |
 | Decision | Pending / Approved / Changes required |
