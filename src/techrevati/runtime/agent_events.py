@@ -46,6 +46,9 @@ class AgentEventName(str, Enum):
     # Governance plane (Sprint 2 / EU AI Act Article 14 + 15)
     GOVERNANCE_BREACH = "governance.breach"
     GOVERNANCE_ALERT = "governance.alert"
+    # Human oversight (EU AI Act Article 14)
+    OVERSIGHT_REVIEW_REQUESTED = "oversight.review_requested"
+    OVERSIGHT_REVIEW_RESOLVED = "oversight.review_resolved"
 
 
 class AgentEventStatus(str, Enum):
@@ -489,6 +492,54 @@ class AgentEvent:
                 "ceiling": ceiling,
                 "scope": scope,
             },
+        )
+
+    @classmethod
+    def oversight_review_requested(
+        cls,
+        role: str,
+        phase: str,
+        *,
+        decision_id: str,
+        reviewer_id: str | None = None,
+    ) -> AgentEvent:
+        """Article 14 — a turn paused awaiting a human review decision."""
+        decision_id = _validate_non_empty_str("decision_id", decision_id)
+        data: dict[str, Any] = {"decision_id": decision_id}
+        if reviewer_id is not None:
+            data["reviewer_id"] = reviewer_id
+        return cls(
+            event=AgentEventName.OVERSIGHT_REVIEW_REQUESTED,
+            status=AgentEventStatus.BLOCKED,
+            role=role,
+            phase=phase,
+            detail=f"review requested: {decision_id}",
+            data=data,
+        )
+
+    @classmethod
+    def oversight_review_resolved(
+        cls,
+        role: str,
+        phase: str,
+        *,
+        decision_id: str,
+        decision: str,
+        reviewer_id: str | None = None,
+    ) -> AgentEvent:
+        """Article 14 — a human reviewer resolved (or the timeout decided) a pause."""
+        decision_id = _validate_non_empty_str("decision_id", decision_id)
+        decision = _validate_non_empty_str("decision", decision)
+        data: dict[str, Any] = {"decision_id": decision_id, "decision": decision}
+        if reviewer_id is not None:
+            data["reviewer_id"] = reviewer_id
+        return cls(
+            event=AgentEventName.OVERSIGHT_REVIEW_RESOLVED,
+            status=AgentEventStatus.RUNNING,
+            role=role,
+            phase=phase,
+            detail=f"review {decision}: {decision_id}",
+            data=data,
         )
 
     # -- Serialization --

@@ -31,8 +31,24 @@ from techrevati.runtime.compliance.audit_log import (
     RetentionPolicy,
     SqliteAuditBackend,
 )
+from techrevati.runtime.compliance.human_oversight import (
+    ExplanationReport,
+    HumanOversightInterface,
+    ReviewDecision,
+    ReviewerIdentity,
+    ReviewQueue,
+    ReviewTimeoutError,
+    StaticReviewQueue,
+)
+from techrevati.runtime.compliance.risk_registry import (
+    ResidualRiskLevel,
+    Risk,
+    RiskRegistry,
+    RiskUnacceptableError,
+)
 
 __all__ = [
+    # Article 12 — record-keeping
     "AuditBackend",
     "AuditLogSink",
     "AuditRecord",
@@ -40,4 +56,17 @@ __all__ = [
     "InMemoryAuditBackend",
     "RetentionPolicy",
     "SqliteAuditBackend",
+    # Article 14 — human oversight
+    "ExplanationReport",
+    "HumanOversightInterface",
+    "ReviewDecision",
+    "ReviewQueue",
+    "ReviewTimeoutError",
+    "ReviewerIdentity",
+    "StaticReviewQueue",
+    # Article 9 — risk management
+    "ResidualRiskLevel",
+    "Risk",
+    "RiskRegistry",
+    "RiskUnacceptableError",
 ]
