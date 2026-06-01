@@ -152,6 +152,51 @@ def test_tool_failure_closes_tool_span_without_closing_agent_parent() -> None:
     assert tool.attributes.get("techrevati.data.tool") == "lookup"
 
 
+def test_concurrent_same_tool_calls_each_get_their_own_span() -> None:
+    # Regression: two in-flight calls to the same tool used to collide on one
+    # (role, phase, tool) key, so the second tool_called force-closed the first
+    # span as "tool_span_interrupted". They must now each get their own span.
+    sink, exporter = _build_sink_and_exporter()
+
+    sink.emit(AgentEvent.started("writer", "draft"))
+    sink.emit(AgentEvent.tool_called("writer", "draft", "lookup"))
+    sink.emit(AgentEvent.tool_called("writer", "draft", "lookup"))  # concurrent
+    sink.emit(AgentEvent.tool_completed("writer", "draft", "lookup"))
+    sink.emit(AgentEvent.tool_completed("writer", "draft", "lookup"))
+    sink.emit(AgentEvent.completed("writer", "draft"))
+
+    spans = exporter.get_finished_spans()
+    parent = next(s for s in spans if s.parent is None)
+    tool_spans = [s for s in spans if s.parent is not None]
+
+    assert len(tool_spans) == 2  # two distinct tool spans, not one
+    for tool in tool_spans:
+        assert tool.parent is not None
+        assert tool.parent.span_id == parent.context.span_id  # sibling children
+        assert tool.status.status_code != StatusCode.ERROR
+        assert tool.attributes is not None
+        assert tool.attributes.get("error.type") != "tool_span_interrupted"
+
+
+def test_parent_close_ends_all_in_flight_same_tool_spans() -> None:
+    # If the agent parent closes while two concurrent calls to the same tool are
+    # still open, BOTH must be force-closed as interrupted (not just one).
+    sink, exporter = _build_sink_and_exporter()
+
+    sink.emit(AgentEvent.started("writer", "draft"))
+    sink.emit(AgentEvent.tool_called("writer", "draft", "lookup"))
+    sink.emit(AgentEvent.tool_called("writer", "draft", "lookup"))
+    sink.emit(AgentEvent.completed("writer", "draft"))  # parent closes first
+
+    spans = exporter.get_finished_spans()
+    tool_spans = [s for s in spans if s.parent is not None]
+    assert len(tool_spans) == 2
+    for tool in tool_spans:
+        assert tool.status.status_code == StatusCode.ERROR
+        assert tool.attributes is not None
+        assert tool.attributes.get("error.type") == "tool_span_interrupted"
+
+
 def test_non_terminal_failed_event_with_data_does_not_close_parent() -> None:
     sink, exporter = _build_sink_and_exporter()
 

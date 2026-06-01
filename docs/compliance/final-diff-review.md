@@ -57,9 +57,9 @@ lives as committed history on `production-rc-0.3.0`, so the snapshot measures th
 committed branch delta `main...HEAD` rather than an uncommitted working tree:
 
 - branch: `production-rc-0.3.0`,
-- tracked diff: 190 files changed, 28630 insertions, 1807 deletions,
+- tracked diff: 190 files changed, 28674 insertions, 1807 deletions,
 - untracked release assets: 0 files (all release assets are committed),
-- full production gate: 1,050 tests passed with 94.74 percent total coverage,
+- full production gate: 1,053 tests passed with 94.76 percent total coverage,
 - per-module coverage floor: passed at 85 percent,
 - strict typing, lint, format, strict docs build, public branding, source
   hygiene, security pattern, package, release, workflow, and distribution
@@ -84,14 +84,14 @@ Pre-review conclusion:
 | Workflows and automation | Minimal permissions, pinned actions, release tag gates, timeouts, guard stack parity | Reviewed |
 | Guard scripts and tests | False positives, maintainability, CI parity, failure messages | Reviewed — 3 findings fixed |
 | Public API compatibility | Frozen package exports, documented imports, deprecation behavior | Reviewed |
-| Runtime behavior | Validation, failure handling, observability, durability, governance, guardrails, permissions | Reviewed — 4 findings fixed, 1 accepted, 1 deferred |
+| Runtime behavior | Validation, failure handling, observability, durability, governance, guardrails, permissions | Reviewed — 5 findings fixed, 1 accepted |
 | Documentation | Operator usefulness, publication safety, public branding, release boundaries | Reviewed |
 | Examples and migrations | Accurate upgrade guidance and no stale forward-looking promises | Reviewed |
 
 ## Review Findings (2026-06-01)
 
 A high-effort multi-angle review of the committed branch diff was run by
-subsystem. All fixes ship with regression tests; post-fix gate is 1,050 tests.
+subsystem. All fixes ship with regression tests; post-fix gate is 1,053 tests.
 
 ### Fixed in this review pass
 
@@ -103,6 +103,7 @@ subsystem. All fixes ship with regression tests; post-fix gate is 1,050 tests.
 | 4 | Runtime | `arun_turn_stream` recorded the recovery/governance failure outcome after yielding `final`, so a consumer breaking on `final` skipped it | Record before the terminal yield |
 | 5 | Runtime | `pilot` ran regex patterns through the tool-name validator (case-insensitive dedup, strip) | Dedicated regex validator with compile-check |
 | 8 | Runtime | `InMemorySaver.list` and `SqliteSaver.list` diverged on `before=` under equal timestamps | Aligned in-memory ordering to `(created_at, id)` |
+| 7 | Runtime | otel tool spans were keyed by `(role, phase, tool)`, so two concurrent calls to the same tool collided and the second force-closed the first as `tool_span_interrupted` | Per-key LIFO span stack so concurrent same-tool calls each get their own span |
 | 9 | Runtime | `decorrelated` jitter could return a delay below `base` for a tiny `prev_delay` | Clamp upper bound to `>= base` |
 
 ### Reviewed and accepted (not a defect)
@@ -110,12 +111,6 @@ subsystem. All fixes ship with regression tests; post-fix gate is 1,050 tests.
 - otel `_is_terminal_parent_close` keys terminality on empty event data: a
   deliberate, tested convention (a `failed` event carrying data is a warning
   child, not a session end), not a bug.
-
-### Deferred to a follow-up (documented limitation)
-
-- otel tool spans are keyed by `(role, phase, tool)`; two concurrent calls to
-  the same tool collide. A correct fix needs a per-call id in the event model
-  and is out of scope for this release candidate.
 
 ## Mandatory No-Go Rules
 
@@ -164,10 +159,10 @@ Attach or link this evidence before final sign-off:
 | Reviewer | Automated multi-angle review (Claude), pending human sign-off |
 | Review date | 2026-06-01 |
 | Commit SHA | tip of `production-rc-0.3.0` |
-| Remote CI result | Pending |
-| Full gate result | 1,050 tests passed, 94.74% coverage (local) |
-| Findings count | 9 (7 fixed, 1 accepted, 1 deferred) |
-| Stable blockers | Remote CI, security review, private RC publication, controlled pilot, rollback proof |
+| Remote CI result | Green — 12/12 checks on `c0d8233` (re-runs per push) |
+| Full gate result | 1,053 tests passed, 94.76% coverage (local) |
+| Findings count | 9 (8 fixed, 1 accepted) |
+| Stable blockers | Security review, private RC publication, controlled pilot, rollback proof, stable promotion |
 | Decision | Pending / Approved / Changes required |
 
 Approval means the release candidate diff is coherent enough for private RC

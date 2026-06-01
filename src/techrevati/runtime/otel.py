@@ -232,7 +232,10 @@ class OpenTelemetrySink:
     _active_spans: dict[tuple[str, str], Span] = field(
         default_factory=dict, init=False, repr=False
     )
-    _active_tool_spans: dict[tuple[str, str, str], Span] = field(
+    # A LIFO stack of spans per (role, phase, tool) key so concurrent calls to
+    # the *same* tool each get their own span instead of the second call
+    # force-closing the first as interrupted.
+    _active_tool_spans: dict[tuple[str, str, str], list[Span]] = field(
         default_factory=dict, init=False, repr=False
     )
 
@@ -259,12 +262,13 @@ class OpenTelemetrySink:
         Never raises.
         """
         while self._active_tool_spans:
-            _tool_key, tool_span = self._active_tool_spans.popitem()
-            self._end_span_with_error(
-                tool_span,
-                detail="process exited before agent.tool_completed",
-                error_type="abrupt_termination",
-            )
+            _tool_key, tool_spans = self._active_tool_spans.popitem()
+            for tool_span in tool_spans:
+                self._end_span_with_error(
+                    tool_span,
+                    detail="process exited before agent.tool_completed",
+                    error_type="abrupt_termination",
+                )
         while self._active_spans:
             _parent_key, parent = self._active_spans.popitem()
             self._end_span_with_error(
@@ -361,12 +365,12 @@ class OpenTelemetrySink:
         for tool_key in list(self._active_tool_spans):
             if tool_key[:2] != key:
                 continue
-            tool_span = self._active_tool_spans.pop(tool_key)
-            self._end_span_with_error(
-                tool_span,
-                detail=detail,
-                error_type="tool_span_interrupted",
-            )
+            for tool_span in self._active_tool_spans.pop(tool_key):
+                self._end_span_with_error(
+                    tool_span,
+                    detail=detail,
+                    error_type="tool_span_interrupted",
+                )
 
     def _open_tool_span(
         self,
@@ -380,14 +384,8 @@ class OpenTelemetrySink:
         if tool_key is None:
             return False
 
-        if tool_key in self._active_tool_spans:
-            previous = self._active_tool_spans.pop(tool_key)
-            self._end_span_with_error(
-                previous,
-                detail="agent.tool_called repeated before agent.tool_completed",
-                error_type="tool_span_interrupted",
-            )
-
+        # Each tool call is a child of the agent/phase parent (sibling to any
+        # other in-flight call of the same tool), pushed onto the per-key stack.
         parent = self._active_spans.get(tool_key[:2])
         if parent is None:
             tool_span = self.tracer.start_span(span_name)
@@ -395,7 +393,7 @@ class OpenTelemetrySink:
             ctx = trace.set_span_in_context(parent)
             tool_span = self.tracer.start_span(span_name, context=ctx)
         self._populate(tool_span, event, op)
-        self._active_tool_spans[tool_key] = tool_span
+        self._active_tool_spans.setdefault(tool_key, []).append(tool_span)
         return True
 
     def _close_tool_span(
@@ -407,17 +405,23 @@ class OpenTelemetrySink:
         tool_key = self._tool_key(event)
         if tool_key is None:
             return False
-        tool_span = self._active_tool_spans.pop(tool_key, None)
-        if tool_span is None:
+        stack = self._active_tool_spans.get(tool_key)
+        if not stack:
             return False
+        # Close the most recently opened call for this tool (LIFO). Identical
+        # concurrent calls are interchangeable, so LIFO pairing is correct for
+        # span lifecycle and count.
+        tool_span = stack.pop()
+        if not stack:
+            del self._active_tool_spans[tool_key]
         self._populate(tool_span, event, op)
         tool_span.end()
         return True
 
     def _leaf_parent(self, event: AgentEvent) -> Span | None:
         tool_key = self._tool_key(event)
-        if tool_key is not None and tool_key in self._active_tool_spans:
-            return self._active_tool_spans[tool_key]
+        if tool_key is not None and self._active_tool_spans.get(tool_key):
+            return self._active_tool_spans[tool_key][-1]
         return self._active_spans.get(self._span_key(event))
 
     def emit(self, event: AgentEvent) -> None:
