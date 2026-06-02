@@ -79,6 +79,8 @@ nav:
     - Streaming: patterns/streaming.md
     - Hooks: patterns/hooks.md
     - MCP Tools: patterns/mcp.md
+    - Typed Outputs: patterns/typed-outputs.md
+    - Session Memory: patterns/memory.md
     - Pilot Profile: patterns/pilot-profile.md
   - API Reference:
     - Orchestrator: api/orchestrator.md
@@ -103,6 +105,8 @@ nav:
     - Scheduler: api/scheduler.md
     - Telemetry: api/otel.md
     - MCP: api/mcp.md
+    - Typed Outputs: api/output_spec.md
+    - Session Memory: api/memory.md
     - Pilot Profile: api/pilot.md
   - Changelog: changelog.md
 

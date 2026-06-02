@@ -34,6 +34,15 @@ Added:
   bridges a connected `mcp.ClientSession`'s tools into `arun_tool` as coroutine
   factories (no tool registry; permission/guardrail/governance/hook checks still
   apply). Core stays zero-dependency.
+- Typed outputs: `OutputSpec[T]` protocol + `JsonOutputSpec`, `RegexOutputSpec`,
+  `CallableOutputSpec`, and `OutputValidationError` for validating raw model text
+  into typed values.
+- Session memory: `ConversationMemory` protocol + `InMemoryConversationMemory`,
+  `MemoryMessage`, and compaction strategies (`NoCompaction`, `WindowCompaction`,
+  `TokenBudgetCompaction`).
+- Step-level durability: `StepCheckpointSaver` (implemented by `InMemorySaver` and
+  `SqliteSaver`) with `put_step` / `get_step` / `list_steps` + `StepRecord` for
+  in-tool-call replay (caller-keyed memoization, not deterministic replay).
 
 ## 0.3.0rc1 - 2026-05-31
 

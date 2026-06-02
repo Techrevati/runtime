@@ -16,14 +16,18 @@ The ``CheckpointSaver`` protocol exposes a small
 ``get`` / ``put`` / ``list`` / ``delete`` shape so adapters can bridge it to
 external checkpoint stores without adding runtime dependencies.
 
-Caveat: this is restart-resumable execution, not full workflow history.
-Step-level replay (re-running a half-finished turn against a recorded history)
-is NOT in scope; checkpoints only fire between turns. Use an external
-coordinator when you need cross-host scheduling or durable timers.
+``StepCheckpointSaver`` (implemented by both reference savers) adds a small
+key-addressed step store for **in-tool-call replay**: cache the result of an
+expensive, idempotent step under a caller-chosen ``step_key`` so a re-run within
+the same turn can skip it. This is opportunistic memoization keyed by the caller,
+**NOT** Temporal-style deterministic replay — there is no recorded event history,
+no automatic determinism enforcement, and no cross-host scheduling. Use an
+external coordinator when you need those.
 """
 
 from __future__ import annotations
 
+import builtins
 import json
 import sqlite3
 import threading
@@ -40,6 +44,8 @@ __all__ = [
     "CheckpointSaver",
     "InMemorySaver",
     "SqliteSaver",
+    "StepCheckpointSaver",
+    "StepRecord",
 ]
 
 
@@ -159,6 +165,51 @@ class CheckpointSaver(Protocol):
         ...
 
 
+@dataclass(frozen=True)
+class StepRecord:
+    """A key-addressed sub-checkpoint for in-tool-call replay.
+
+    Unlike :class:`Checkpoint` (one per turn, auto-id'd), a step is addressed by a
+    caller-chosen ``step_key`` and overwritten on re-put — so a re-run can look it
+    up and skip the work. ``state`` must be JSON-serializable.
+    """
+
+    thread_id: str
+    step_key: str
+    created_at: str
+    state: dict[str, Any]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "thread_id": self.thread_id,
+            "step_key": self.step_key,
+            "created_at": self.created_at,
+            "state": dict(self.state),
+        }
+
+
+@runtime_checkable
+class StepCheckpointSaver(Protocol):
+    """Step-level memoization contract (in-tool-call replay).
+
+    Additive to :class:`CheckpointSaver`; both reference savers implement both.
+    """
+
+    def put_step(
+        self, thread_id: str, step_key: str, state: Mapping[str, Any]
+    ) -> StepRecord:
+        """Persist (or overwrite) a step's state, keyed by ``step_key``."""
+        ...
+
+    def get_step(self, thread_id: str, step_key: str) -> StepRecord | None:
+        """Return the step's record, or None if it has not been recorded."""
+        ...
+
+    def list_steps(self, thread_id: str) -> builtins.list[StepRecord]:
+        """Return all steps for the thread, in creation order."""
+        ...
+
+
 def _now_iso() -> str:
     return datetime.now(UTC).isoformat()
 
@@ -219,6 +270,7 @@ class InMemorySaver:
 
     def __init__(self) -> None:
         self._threads: dict[str, list[Checkpoint]] = {}
+        self._steps: dict[str, dict[str, StepRecord]] = {}
         self._lock = threading.Lock()
 
     def get(
@@ -286,6 +338,36 @@ class InMemorySaver:
         thread_id = _validate_non_empty_str("thread_id", thread_id)
         with self._lock:
             self._threads.pop(thread_id, None)
+            self._steps.pop(thread_id, None)
+
+    def put_step(
+        self, thread_id: str, step_key: str, state: Mapping[str, Any]
+    ) -> StepRecord:
+        thread_id = _validate_non_empty_str("thread_id", thread_id)
+        step_key = _validate_non_empty_str("step_key", step_key)
+        record = StepRecord(
+            thread_id=thread_id,
+            step_key=step_key,
+            created_at=_now_iso(),
+            state=_normalize_json_mapping("state", state),
+        )
+        with self._lock:
+            self._steps.setdefault(thread_id, {})[step_key] = record
+        return record
+
+    def get_step(self, thread_id: str, step_key: str) -> StepRecord | None:
+        thread_id = _validate_non_empty_str("thread_id", thread_id)
+        step_key = _validate_non_empty_str("step_key", step_key)
+        with self._lock:
+            return self._steps.get(thread_id, {}).get(step_key)
+
+    def list_steps(self, thread_id: str) -> builtins.list[StepRecord]:
+        thread_id = _validate_non_empty_str("thread_id", thread_id)
+        with self._lock:
+            records = list(self._steps.get(thread_id, {}).values())
+        # Match SqliteSaver's (created_at, step_key) ordering so the two savers
+        # stay interchangeable.
+        return sorted(records, key=lambda r: (r.created_at, r.step_key))
 
 
 _SCHEMA = """
@@ -299,6 +381,15 @@ CREATE TABLE IF NOT EXISTS checkpoints (
 );
 CREATE INDEX IF NOT EXISTS idx_checkpoints_thread_created
     ON checkpoints(thread_id, created_at DESC);
+CREATE TABLE IF NOT EXISTS checkpoint_steps (
+    thread_id   TEXT NOT NULL,
+    step_key    TEXT NOT NULL,
+    created_at  TEXT NOT NULL,
+    state_json  TEXT NOT NULL,
+    PRIMARY KEY (thread_id, step_key)
+);
+CREATE INDEX IF NOT EXISTS idx_checkpoint_steps_thread_created
+    ON checkpoint_steps(thread_id, created_at);
 """
 
 _METADATA_SCHEMA = """
@@ -496,4 +587,67 @@ class SqliteSaver:
             self._conn.execute(
                 "DELETE FROM checkpoints WHERE thread_id = ?", (thread_id,)
             )
+            self._conn.execute(
+                "DELETE FROM checkpoint_steps WHERE thread_id = ?", (thread_id,)
+            )
             self._conn.commit()
+
+    def put_step(
+        self, thread_id: str, step_key: str, state: Mapping[str, Any]
+    ) -> StepRecord:
+        thread_id = _validate_non_empty_str("thread_id", thread_id)
+        step_key = _validate_non_empty_str("step_key", step_key)
+        record = StepRecord(
+            thread_id=thread_id,
+            step_key=step_key,
+            created_at=_now_iso(),
+            state=_normalize_json_mapping("state", state),
+        )
+        with self._lock:
+            self._conn.execute(
+                "INSERT OR REPLACE INTO checkpoint_steps"
+                " (thread_id, step_key, created_at, state_json)"
+                " VALUES (?, ?, ?, ?)",
+                (
+                    record.thread_id,
+                    record.step_key,
+                    record.created_at,
+                    json.dumps(record.state, ensure_ascii=False),
+                ),
+            )
+            self._conn.commit()
+        return record
+
+    def get_step(self, thread_id: str, step_key: str) -> StepRecord | None:
+        thread_id = _validate_non_empty_str("thread_id", thread_id)
+        step_key = _validate_non_empty_str("step_key", step_key)
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT thread_id, step_key, created_at, state_json"
+                " FROM checkpoint_steps WHERE thread_id = ? AND step_key = ? LIMIT 1",
+                (thread_id, step_key),
+            ).fetchone()
+        if row is None:
+            return None
+        return StepRecord(
+            thread_id=row[0],
+            step_key=row[1],
+            created_at=row[2],
+            state=json.loads(row[3]),
+        )
+
+    def list_steps(self, thread_id: str) -> builtins.list[StepRecord]:
+        thread_id = _validate_non_empty_str("thread_id", thread_id)
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT thread_id, step_key, created_at, state_json"
+                " FROM checkpoint_steps WHERE thread_id = ?"
+                " ORDER BY created_at, step_key",
+                (thread_id,),
+            ).fetchall()
+        return [
+            StepRecord(
+                thread_id=r[0], step_key=r[1], created_at=r[2], state=json.loads(r[3])
+            )
+            for r in rows
+        ]
