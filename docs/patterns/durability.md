@@ -110,8 +110,8 @@ def run_step(saver, thread_id):
 `put_step` overwrites by `step_key`; `list_steps(thread_id)` returns records in
 `(created_at, step_key)` order; `delete(thread_id)` clears steps too.
 
-This is opportunistic, caller-keyed memoization — **not** Temporal-style
-deterministic replay. There is no recorded event history and no automatic
+This is opportunistic, caller-keyed memoization — **not** full deterministic
+workflow replay. There is no recorded event history and no automatic
 determinism enforcement; you choose the keys and what is safe to cache.
 
 ## See also

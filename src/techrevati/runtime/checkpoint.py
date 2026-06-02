@@ -20,9 +20,9 @@ external checkpoint stores without adding runtime dependencies.
 key-addressed step store for **in-tool-call replay**: cache the result of an
 expensive, idempotent step under a caller-chosen ``step_key`` so a re-run within
 the same turn can skip it. This is opportunistic memoization keyed by the caller,
-**NOT** Temporal-style deterministic replay — there is no recorded event history,
+**NOT** full deterministic workflow replay — there is no recorded event history,
 no automatic determinism enforcement, and no cross-host scheduling. Use an
-external coordinator when you need those.
+external workflow engine when you need those.
 """
 
 from __future__ import annotations
