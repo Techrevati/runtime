@@ -51,6 +51,12 @@ Added:
   implementing `CheckpointSaver` / `AuditBackend` against PostgreSQL and Redis
   (the zero-dependency core continues to ship SQLite reference savers only).
 
+Removed:
+
+- The deprecated `Orchestrator` compatibility alias (use `AgentSession`). It has
+  emitted a `DeprecationWarning` since 0.2.1; see
+  [docs/migrating-from-0.3.x.md](migrating-from-0.3.x.md).
+
 ## 0.3.0rc1 - 2026-05-31
 
 Release candidate for the 0.3.0 line.

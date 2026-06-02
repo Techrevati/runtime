@@ -94,7 +94,6 @@ from techrevati.runtime.orchestrator import (
     AsyncOrchestrationSession,
     MaxIterationsExceededError,
     OrchestrationSession,
-    Orchestrator,
     PermissionDeniedError,
     TurnTimeoutError,
 )
@@ -252,7 +251,6 @@ __all__ = [
     "OrchestrationSession",
     "PatternGuardrail",
     "PromptInjectionGuardrail",
-    "Orchestrator",
     "RedactPIIHook",
     "PermissionDeniedError",
     "PermissionEnforcer",

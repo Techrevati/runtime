@@ -39,7 +39,7 @@ import time
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterator, Sequence
 from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass, field
-from typing import Any, ClassVar, TypeVar
+from typing import Any, TypeVar
 
 from techrevati.runtime._internal import (
     _validate_bool,
@@ -1774,40 +1774,11 @@ def _safe_exception_detail(exc: Exception) -> str:
     return f"{type(exc).__name__} raised"
 
 
-# `Orchestrator` is the legacy 0.1.x name; `AgentSession` is canonical.
-# Subclass (not bare alias) so we can emit DeprecationWarning on the
-# first instantiation in a process. Kept through 0.3.x for compatibility.
-class Orchestrator(AgentSession):
-    """Deprecated compatibility alias for ``AgentSession``.
-
-    Kept through the 0.3.x line so existing callers can upgrade without
-    a hard break. New code should construct ``AgentSession`` directly.
-    """
-
-    _deprecation_emitted: ClassVar[bool] = False
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        if not Orchestrator._deprecation_emitted:
-            import warnings
-
-            warnings.warn(
-                "Orchestrator is a deprecated alias for AgentSession and will "
-                "be removed no earlier than 0.4.0. Replace `Orchestrator(...)` "
-                "with `AgentSession(...)` — the constructor and behavior are "
-                "identical.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            Orchestrator._deprecation_emitted = True
-        super().__init__(*args, **kwargs)
-
-
 __all__ = [
     "AgentSession",
     "AsyncOrchestrationSession",
     "MaxIterationsExceededError",
     "OrchestrationSession",
-    "Orchestrator",
     "PermissionDeniedError",
     "TurnTimeoutError",
 ]

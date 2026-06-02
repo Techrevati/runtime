@@ -68,7 +68,6 @@ EXPECTED_RUNTIME_EXPORTS = (
     "OrchestrationSession",
     "PatternGuardrail",
     "PromptInjectionGuardrail",
-    "Orchestrator",
     "RedactPIIHook",
     "PermissionDeniedError",
     "PermissionEnforcer",

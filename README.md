@@ -72,7 +72,7 @@ parameters. Cancellation transitions the worker to `CANCELLED`.
 
 | Module | Provides |
 |---|---|
-| `orchestrator` | `AgentSession`, sync and async sessions, `Orchestrator` compatibility alias |
+| `orchestrator` | `AgentSession`, sync and async sessions |
 | `circuit_breaker` | Sync and async circuit breakers |
 | `retry_policy` | Failure classification and recovery recipes |
 | `usage_tracking` | Usage snapshots, pricing registration, limits, budgets |
