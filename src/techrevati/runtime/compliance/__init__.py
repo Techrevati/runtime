@@ -31,6 +31,11 @@ from techrevati.runtime.compliance.audit_log import (
     RetentionPolicy,
     SqliteAuditBackend,
 )
+from techrevati.runtime.compliance.cybersecurity import (
+    InputSanitizationError,
+    InputSanitizationHook,
+    OutputIntegrityGuardrail,
+)
 from techrevati.runtime.compliance.human_oversight import (
     ExplanationReport,
     HumanOversightInterface,
@@ -40,11 +45,22 @@ from techrevati.runtime.compliance.human_oversight import (
     ReviewTimeoutError,
     StaticReviewQueue,
 )
+from techrevati.runtime.compliance.incidents import (
+    IncidentReport,
+    IncidentReportingSink,
+    IncidentSeverity,
+    SeriousIncidentDetector,
+)
 from techrevati.runtime.compliance.risk_registry import (
     ResidualRiskLevel,
     Risk,
     RiskRegistry,
     RiskUnacceptableError,
+)
+from techrevati.runtime.compliance.transparency import (
+    AccuracyDeclaration,
+    HumanOversightConfig,
+    TransparencyReport,
 )
 
 __all__ = [
@@ -69,4 +85,17 @@ __all__ = [
     "Risk",
     "RiskRegistry",
     "RiskUnacceptableError",
+    # Article 15 — robustness / cybersecurity
+    "InputSanitizationError",
+    "InputSanitizationHook",
+    "OutputIntegrityGuardrail",
+    # Article 26 + 73 — incident reporting
+    "IncidentReport",
+    "IncidentReportingSink",
+    "IncidentSeverity",
+    "SeriousIncidentDetector",
+    # Article 13 — transparency
+    "AccuracyDeclaration",
+    "HumanOversightConfig",
+    "TransparencyReport",
 ]
