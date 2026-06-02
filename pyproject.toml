@@ -39,6 +39,7 @@ dev = [
     "opentelemetry-api==1.42.0",
     "opentelemetry-sdk==1.42.0",
     "opentelemetry-semantic-conventions==0.63b0",
+    "mcp>=1.0,<2",
 ]
 build = [
     "build==1.5.0",
@@ -62,6 +63,9 @@ otel = [
     "opentelemetry-api>=1.27,<2",
     "opentelemetry-sdk>=1.27,<2",
     "opentelemetry-semantic-conventions>=0.48b0,<1",
+]
+mcp = [
+    "mcp>=1.0,<2",
 ]
 
 [tool.hatch.build.targets.wheel]

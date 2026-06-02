@@ -78,6 +78,7 @@ nav:
     - Governance Plane: patterns/governance.md
     - Streaming: patterns/streaming.md
     - Hooks: patterns/hooks.md
+    - MCP Tools: patterns/mcp.md
     - Pilot Profile: patterns/pilot-profile.md
   - API Reference:
     - Orchestrator: api/orchestrator.md
@@ -101,6 +102,7 @@ nav:
     - Persistence: api/persistence.md
     - Scheduler: api/scheduler.md
     - Telemetry: api/otel.md
+    - MCP: api/mcp.md
     - Pilot Profile: api/pilot.md
   - Changelog: changelog.md
 

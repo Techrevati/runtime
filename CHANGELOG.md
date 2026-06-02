@@ -30,6 +30,10 @@ Added:
 - `oversight.review_requested` / `oversight.review_resolved` event names.
 - `docs/eu-ai-act/` article-by-article guidance (with the audit-log threat model)
   and an expanded compliance crosswalk.
+- Optional `[mcp]` extra + `techrevati.runtime.mcp` module: `MCPToolAdapter`
+  bridges a connected `mcp.ClientSession`'s tools into `arun_tool` as coroutine
+  factories (no tool registry; permission/guardrail/governance/hook checks still
+  apply). Core stays zero-dependency.
 
 ## 0.3.0rc1 - 2026-05-31
 
