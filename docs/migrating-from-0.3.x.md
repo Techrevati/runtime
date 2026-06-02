@@ -11,12 +11,13 @@ emitted a `DeprecationWarning` since 0.2.1, noting removal "no earlier than
 0.4.0"). It is now gone.
 
 ```python
-# Before (0.3.x)
-from techrevati.runtime import Orchestrator
-agent = Orchestrator(role="writer", phase="draft")
+# Before (0.3.x) — REMOVED in 0.4.0:
+#   from techrevati.runtime import Orchestrator
+#   agent = Orchestrator(role="writer", phase="draft")
 
-# After (0.4.0)
+# After (0.4.0):
 from techrevati.runtime import AgentSession
+
 agent = AgentSession(role="writer", phase="draft")
 ```
 
