@@ -27,6 +27,7 @@ What gets emitted:
 from __future__ import annotations
 
 import atexit
+import json
 import logging
 import math
 import weakref
@@ -115,10 +116,25 @@ def _validate_cost_usd(cost_usd: float) -> float:
     return cost
 
 
+# GenAI semantic-convention message-body keys. When a caller puts these in an
+# event payload, they are emitted as span events (not flattened attributes).
+_GEN_AI_MESSAGE_KEYS = ("gen_ai.input.messages", "gen_ai.output.messages")
+
+
 def _is_safe_attribute_value(value: Any) -> bool:
     if isinstance(value, bool | str | int):
         return True
     return isinstance(value, float) and math.isfinite(value)
+
+
+def _render_messages(value: Any) -> str:
+    """Render a GenAI message body to a span-event-safe string."""
+    if isinstance(value, str):
+        return value
+    try:
+        return json.dumps(value, ensure_ascii=False, default=str)
+    except (TypeError, ValueError):
+        return str(value)
 
 
 def _instrumentation_version() -> str:
@@ -356,6 +372,14 @@ class OpenTelemetrySink:
                 )
                 span.set_status(Status(StatusCode.ERROR, status_detail))
         for key, value in (event.data or {}).items():
+            if key in _GEN_AI_MESSAGE_KEYS:
+                # GenAI semconv message bodies are sensitive content; emit them
+                # as span events only when detail capture is explicitly enabled.
+                # The runtime does not own the model call, so these are present
+                # only when the caller puts them in the event payload.
+                if self.include_event_detail:
+                    span.add_event(key, attributes={key: _render_messages(value)})
+                continue
             if _is_safe_attribute_value(value):
                 span.set_attribute(f"techrevati.data.{key}", value)
 

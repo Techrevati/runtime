@@ -43,6 +43,13 @@ Added:
 - Step-level durability: `StepCheckpointSaver` (implemented by `InMemorySaver` and
   `SqliteSaver`) with `put_step` / `get_step` / `list_steps` + `StepRecord` for
   in-tool-call replay (caller-keyed memoization, not deterministic replay).
+- OTel GenAI message bodies: `OpenTelemetrySink` emits caller-supplied
+  `gen_ai.input.messages` / `gen_ai.output.messages` (from `AgentEvent.data`) as
+  span events, gated on `include_event_detail`. (The `gen_ai.client.token.usage`
+  metric and per-tool span nesting already shipped in 0.3.0.)
+- Optional `[postgres]` and `[redis]` extras + durability recipe docs for
+  implementing `CheckpointSaver` / `AuditBackend` against PostgreSQL and Redis
+  (the zero-dependency core continues to ship SQLite reference savers only).
 
 ## 0.3.0rc1 - 2026-05-31
 

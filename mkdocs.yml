@@ -67,6 +67,8 @@ nav:
     - Retry Policy: patterns/retry.md
     - Circuit Breaker: patterns/circuit-breaker.md
     - Durability: patterns/durability.md
+    - Durability (PostgreSQL): patterns/durability-postgres.md
+    - Durability (Redis): patterns/durability-redis.md
     - Rate Limiting: patterns/rate-limiting.md
     - Routing: patterns/routing.md
     - Quality Gate: patterns/quality-gate.md
