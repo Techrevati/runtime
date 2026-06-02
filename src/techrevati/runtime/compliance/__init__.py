@@ -51,6 +51,11 @@ from techrevati.runtime.compliance.incidents import (
     IncidentSeverity,
     SeriousIncidentDetector,
 )
+from techrevati.runtime.compliance.kit import (
+    ConformityChecklist,
+    ConformityItem,
+    EUAIActComplianceKit,
+)
 from techrevati.runtime.compliance.risk_registry import (
     ResidualRiskLevel,
     Risk,
@@ -98,4 +103,8 @@ __all__ = [
     "AccuracyDeclaration",
     "HumanOversightConfig",
     "TransparencyReport",
+    # Facade (Article 16 one-stop)
+    "ConformityChecklist",
+    "ConformityItem",
+    "EUAIActComplianceKit",
 ]

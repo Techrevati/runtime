@@ -2,6 +2,35 @@
 
 Author: Techrevati doo
 
+## 0.4.0.dev0 - Unreleased
+
+The EU AI Act compliance line. Development build on `feat/0.4.0`.
+
+Added:
+
+- `techrevati.runtime.compliance` subpackage with EU AI Act (Regulation (EU)
+  2024/1689) technical primitives:
+  - `AuditLogSink` — tamper-evident, hash-chained event + usage log with
+    `verify_chain()`, optional HMAC envelope, JSONL/CSV export, retention purge,
+    and `SqliteAuditBackend` / `InMemoryAuditBackend` (Article 12).
+  - `HumanOversightInterface`, `ReviewQueue`, `ReviewerIdentity`,
+    `ExplanationReport` — pause / review / override with audit trail (Article 14).
+  - `RiskRegistry`, `Risk`, `ResidualRiskLevel` — residual-risk register that
+    blocks deployment on `UNACCEPTABLE` (Article 9).
+  - `OutputIntegrityGuardrail` + `InputSanitizationHook` — control/escape-byte
+    integrity checks on tool I/O (Article 15).
+  - `IncidentReportingSink`, `SeriousIncidentDetector`, `IncidentReport` —
+    incident detection with 15-day reporting-deadline tracking (Articles 26/73).
+  - `TransparencyReport`, `AccuracyDeclaration` — instructions-for-use rendering
+    (Article 13).
+  - `EUAIActComplianceKit` facade + `ConformityChecklist` (Article 16 self-check).
+- `AgentSession(audit_log=...)` and `AgentSession(compliance=kit)` — fan audit /
+  incident sinks alongside the caller's sinks, prepend Article 15 guardrails /
+  hooks, and assert no unacceptable residual risk before a session opens.
+- `oversight.review_requested` / `oversight.review_resolved` event names.
+- `docs/eu-ai-act/` article-by-article guidance (with the audit-log threat model)
+  and an expanded compliance crosswalk.
+
 ## 0.3.0rc1 - 2026-05-31
 
 Release candidate for the 0.3.0 line.

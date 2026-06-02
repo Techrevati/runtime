@@ -54,6 +54,7 @@ from techrevati.runtime.circuit_breaker import (
     CircuitOpenError,
 )
 from techrevati.runtime.compliance.audit_log import AuditLogSink
+from techrevati.runtime.compliance.kit import EUAIActComplianceKit
 from techrevati.runtime.governance import GovernanceBreachError, GovernancePlane
 from techrevati.runtime.guardrails import (
     AsyncGuardrail,
@@ -333,6 +334,7 @@ class AgentSession:
     governance: GovernancePlane | None = None
     hooks: list[HookLike] = field(default_factory=list)
     audit_log: AuditLogSink | None = None
+    compliance: EUAIActComplianceKit | None = None
 
     def __post_init__(self) -> None:
         self.role = _validate_non_empty_str("role", self.role)
@@ -347,21 +349,67 @@ class AgentSession:
             return None
         return self.governance.for_session()
 
-    def _event_sink_for_session(self) -> EventSink:
-        """Fan the configured event sink out to the audit log when present.
+    def _extra_event_sinks(self) -> list[EventSink]:
+        """Compliance event sinks (audit log + incident sink) to fan out.
 
         The caller's own sink keeps receiving events unchanged; the tamper-
-        evident ``AuditLogSink`` (EU AI Act Article 12) is appended alongside.
+        evident ``AuditLogSink`` (EU AI Act Article 12) and the incident sink
+        (Articles 26/73) are appended alongside. De-duplicated by identity so a
+        standalone ``audit_log`` shared with ``compliance`` is not double-fed.
         """
-        if self.audit_log is None:
+        extra: list[EventSink] = []
+        seen: set[int] = set()
+        candidates: list[EventSink] = []
+        if self.audit_log is not None:
+            candidates.append(self.audit_log)
+        if self.compliance is not None:
+            candidates.extend(self.compliance.event_sinks())
+        for sink in candidates:
+            if id(sink) not in seen:
+                seen.add(id(sink))
+                extra.append(sink)
+        return extra
+
+    def _extra_usage_sinks(self) -> list[UsageSink]:
+        extra: list[UsageSink] = []
+        seen: set[int] = set()
+        candidates: list[UsageSink] = []
+        if self.audit_log is not None:
+            candidates.append(self.audit_log)
+        if self.compliance is not None:
+            candidates.extend(self.compliance.usage_sinks())
+        for sink in candidates:
+            if id(sink) not in seen:
+                seen.add(id(sink))
+                extra.append(sink)
+        return extra
+
+    def _event_sink_for_session(self) -> EventSink:
+        extra = self._extra_event_sinks()
+        if not extra:
             return self.event_sink
-        return FanoutEventSink([self.event_sink, self.audit_log])
+        return FanoutEventSink([self.event_sink, *extra])
 
     def _usage_sink_for_session(self) -> UsageSink:
-        """Fan the configured usage sink out to the audit log when present."""
-        if self.audit_log is None:
+        extra = self._extra_usage_sinks()
+        if not extra:
             return self.usage_sink
-        return FanoutUsageSink([self.usage_sink, self.audit_log])
+        return FanoutUsageSink([self.usage_sink, *extra])
+
+    def _guardrails_for_session(self) -> list[Guardrail | AsyncGuardrail]:
+        """Prepend the compliance kit's output guardrails (Article 15)."""
+        extra = self.compliance.guardrails() if self.compliance is not None else []
+        return [*extra, *self.guardrails]
+
+    def _hooks_for_session(self) -> list[HookLike]:
+        """Prepend the compliance kit's input-sanitization hooks (Article 15)."""
+        extra = self.compliance.hooks() if self.compliance is not None else []
+        return [*extra, *self.hooks]
+
+    def _assert_compliance_deployable(self) -> None:
+        """Block session creation on an unacceptable residual risk (Article 9(4))."""
+        if self.compliance is not None:
+            self.compliance.assert_deployable()
 
     @contextmanager
     def session(
@@ -377,6 +425,7 @@ class AgentSession:
         ``idempotency_key`` on ``run_turn`` makes that turn replay-safe.
         """
         thread_id = _validate_optional_non_empty_str("thread_id", thread_id)
+        self._assert_compliance_deployable()
         worker = self._start_worker()
         session = OrchestrationSession(
             worker=worker,
@@ -390,7 +439,7 @@ class AgentSession:
             budget_usd=self.budget_usd,
             enforce_budget=self.enforce_budget,
             max_iterations=self.max_iterations,
-            guardrails=list(self.guardrails),
+            guardrails=self._guardrails_for_session(),
             event_sink=self._event_sink_for_session(),
             usage_sink=self._usage_sink_for_session(),
             phase=self.phase,
@@ -402,7 +451,7 @@ class AgentSession:
             rate_limiter=self.rate_limiter,
             usage_limits=self.usage_limits,
             governance=self._governance_for_session(),
-            hooks=list(self.hooks),
+            hooks=self._hooks_for_session(),
         )
         session._emit_event(AgentEvent.started(self.role, self.phase))
 
@@ -440,6 +489,7 @@ class AgentSession:
         replay-safe async turns.
         """
         thread_id = _validate_optional_non_empty_str("thread_id", thread_id)
+        self._assert_compliance_deployable()
         worker = self._start_worker()
         session = AsyncOrchestrationSession(
             worker=worker,
@@ -453,7 +503,7 @@ class AgentSession:
             budget_usd=self.budget_usd,
             enforce_budget=self.enforce_budget,
             max_iterations=self.max_iterations,
-            guardrails=list(self.guardrails),
+            guardrails=self._guardrails_for_session(),
             event_sink=self._event_sink_for_session(),
             usage_sink=self._usage_sink_for_session(),
             phase=self.phase,
@@ -465,7 +515,7 @@ class AgentSession:
             async_rate_limiter=self.async_rate_limiter,
             usage_limits=self.usage_limits,
             governance=self._governance_for_session(),
-            hooks=list(self.hooks),
+            hooks=self._hooks_for_session(),
         )
         session._emit_event(AgentEvent.started(self.role, self.phase))
 

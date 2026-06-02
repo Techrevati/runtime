@@ -34,6 +34,15 @@ nav:
   - Migrating from 0.0.x: migrating-from-0.0.x.md
   - Migrating from 0.1.x: migrating-from-0.1.x.md
   - Consuming as a Library: consuming-as-a-library.md
+  - EU AI Act:
+    - Overview: eu-ai-act/index.md
+    - Audit Log (Art. 12): eu-ai-act/audit-log.md
+    - Human Oversight (Art. 14): eu-ai-act/human-oversight.md
+    - Risk Management (Art. 9): eu-ai-act/risk-management.md
+    - Cybersecurity (Art. 15): eu-ai-act/cybersecurity.md
+    - Incident Reporting (Art. 26/73): eu-ai-act/incident-reporting.md
+    - Transparency (Art. 13): eu-ai-act/transparency.md
+    - Conformity Self-Check (Art. 16): eu-ai-act/conformity-checklist.md
   - Compliance:
     - Compliance Mapping: compliance/index.md
     - Production Readiness: compliance/production-readiness.md

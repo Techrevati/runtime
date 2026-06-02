@@ -19,6 +19,16 @@ data handling, user disclosures, monitoring, incident response, and records.
 | Recovery review | `RecoveryContext`, recovery outcome events | Attempted/succeeded/failed/escalated recovery events |
 | Tool control | `PermissionEnforcer`, guardrails, hooks | `agent.blocked`, `agent.tool_called`, `agent.tool_completed` |
 | Release evidence | Release workflow, distribution checker, SBOM artifacts | Wheel/sdist validation, metadata check, CycloneDX SBOM |
+| Tamper-evident record-keeping (Art. 12) | `AuditLogSink` (`SqliteAuditBackend`) | Hash-chained records; `verify_chain()` detects edits/deletes/reorders |
+| Human oversight (Art. 14) | `HumanOversightInterface`, `ReviewQueue` | `oversight.review_requested` / `oversight.review_resolved` with reviewer id |
+| Risk management (Art. 9) | `RiskRegistry`, `Risk`, `ResidualRiskLevel` | Residual-risk register; deployment blocked on `UNACCEPTABLE` |
+| Robustness (Art. 15) | `OutputIntegrityGuardrail`, `InputSanitizationHook` | Blocked tool I/O carrying control/escape bytes |
+| Incident reporting (Art. 26/73) | `IncidentReportingSink`, `SeriousIncidentDetector` | `IncidentReport` with 15-day reporting deadline |
+| Transparency (Art. 13) | `TransparencyReport`, `AccuracyDeclaration` | Instructions-for-use markdown / dict |
+
+For the full EU AI Act compliance kit (the `EUAIActComplianceKit` facade,
+article-by-article guidance, and the audit-log threat model) see the dedicated
+[EU AI Act](../eu-ai-act/index.md) section.
 
 ## Review Checklist
 
