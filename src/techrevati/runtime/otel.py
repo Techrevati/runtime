@@ -37,6 +37,12 @@ from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _pkg_version
 from typing import TYPE_CHECKING, Any
 
+from techrevati.runtime._internal import (
+    _validate_bool,
+    _validate_cost_usd,
+    _validate_non_empty_str,
+    _validate_optional_non_empty_str,
+)
 from techrevati.runtime.agent_events import (
     AgentEvent,
     AgentEventName,
@@ -69,26 +75,6 @@ _INSTRUMENTATION_SCOPE_NAME = "techrevati.runtime"
 logger = logging.getLogger(__name__)
 
 
-def _validate_non_empty_str(field_name: str, value: str) -> str:
-    if not isinstance(value, str):
-        raise TypeError(f"{field_name} must be a string")
-    if not value.strip():
-        raise ValueError(f"{field_name} must not be empty")
-    return value
-
-
-def _validate_optional_non_empty_str(field_name: str, value: str | None) -> str | None:
-    if value is None:
-        return None
-    return _validate_non_empty_str(field_name, value)
-
-
-def _validate_bool(field_name: str, value: bool) -> bool:
-    if not isinstance(value, bool):
-        raise TypeError(f"{field_name} must be a bool")
-    return value
-
-
 def _validate_event(event: AgentEvent) -> AgentEvent:
     if not isinstance(event, AgentEvent):
         raise TypeError("event must be an AgentEvent")
@@ -103,17 +89,6 @@ def _validate_usage(usage: UsageSnapshot) -> UsageSnapshot:
     if not isinstance(usage, UsageSnapshot):
         raise TypeError("usage must be a UsageSnapshot")
     return usage
-
-
-def _validate_cost_usd(cost_usd: float) -> float:
-    if isinstance(cost_usd, bool) or not isinstance(cost_usd, (int, float)):
-        raise TypeError("cost_usd must be a number")
-    cost = float(cost_usd)
-    if not math.isfinite(cost):
-        raise ValueError("cost_usd must be finite")
-    if cost < 0:
-        raise ValueError("cost_usd must be non-negative")
-    return cost
 
 
 # GenAI semantic-convention message-body keys. When a caller puts these in an

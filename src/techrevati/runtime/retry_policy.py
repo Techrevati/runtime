@@ -13,7 +13,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import math
 import random
 from collections.abc import Awaitable, Callable
 from copy import deepcopy
@@ -21,6 +20,13 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, Literal
+
+from techrevati.runtime._internal import (
+    _validate_finite_number,
+    _validate_non_empty_str,
+    _validate_non_negative_int,
+    _validate_positive_int,
+)
 
 logger = logging.getLogger("techrevati.runtime.retry")
 logger.addHandler(logging.NullHandler())
@@ -103,43 +109,10 @@ def _coerce_escalation_policy(
     raise TypeError("escalation_policy must be an EscalationPolicy")
 
 
-def _validate_non_empty_str(field_name: str, value: str) -> str:
-    if not isinstance(value, str):
-        raise TypeError(f"{field_name} must be a string")
-    if not value.strip():
-        raise ValueError(f"{field_name} must not be empty")
-    return value
-
-
 def _validate_optional_str(field_name: str, value: str) -> str:
     if not isinstance(value, str):
         raise TypeError(f"{field_name} must be a string")
     return value
-
-
-def _validate_non_negative_int(field_name: str, value: int) -> int:
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError(f"{field_name} must be an integer")
-    if value < 0:
-        raise ValueError(f"{field_name} must be non-negative")
-    return value
-
-
-def _validate_positive_int(field_name: str, value: int) -> int:
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError(f"{field_name} must be an integer")
-    if value <= 0:
-        raise ValueError(f"{field_name} must be positive")
-    return value
-
-
-def _validate_finite_number(field_name: str, value: float) -> float:
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        raise TypeError(f"{field_name} must be a number")
-    number = float(value)
-    if not math.isfinite(number):
-        raise ValueError(f"{field_name} must be finite")
-    return number
 
 
 def _validate_positive_number(field_name: str, value: float) -> float:

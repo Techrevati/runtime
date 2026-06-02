@@ -41,6 +41,12 @@ from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass, field
 from typing import Any, ClassVar, TypeVar
 
+from techrevati.runtime._internal import (
+    _validate_bool,
+    _validate_non_empty_str,
+    _validate_optional_non_empty_str,
+    _validate_project_id,
+)
 from techrevati.runtime.agent_events import AgentEvent, AgentFailureClass
 from techrevati.runtime.agent_lifecycle import (
     AgentRegistry,
@@ -176,30 +182,6 @@ class MaxIterationsExceededError(Exception):
         )
 
 
-def _validate_non_empty_str(field_name: str, value: str) -> str:
-    if not isinstance(value, str):
-        raise TypeError(f"{field_name} must be a string")
-    if not value.strip():
-        raise ValueError(f"{field_name} must not be empty")
-    return value
-
-
-def _validate_optional_non_empty_str(field_name: str, value: str | None) -> str | None:
-    if value is None:
-        return None
-    return _validate_non_empty_str(field_name, value)
-
-
-def _validate_project_id(value: int | None) -> int | None:
-    if value is None:
-        return None
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError("project_id must be an integer or None")
-    if value < 0:
-        raise ValueError("project_id must be non-negative")
-    return value
-
-
 def _validate_budget_usd(value: float | None) -> float | None:
     if value is None:
         return None
@@ -211,12 +193,6 @@ def _validate_budget_usd(value: float | None) -> float | None:
     if budget < 0:
         raise ValueError("budget_usd must be non-negative")
     return budget
-
-
-def _validate_bool(field_name: str, value: bool) -> bool:
-    if not isinstance(value, bool):
-        raise TypeError(f"{field_name} must be a bool")
-    return value
 
 
 def _validate_max_iterations(value: int) -> int:

@@ -16,13 +16,17 @@ cross-process observability can be added through separate sink implementations.
 from __future__ import annotations
 
 import logging
-import math
 import threading
 from collections import deque
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
+from techrevati.runtime._internal import (
+    _validate_bool,
+    _validate_cost_usd,
+    _validate_model,
+)
 from techrevati.runtime.agent_events import AgentEvent
 from techrevati.runtime.usage_tracking import UsageSnapshot
 
@@ -48,14 +52,6 @@ def _copy_event(event: AgentEvent) -> AgentEvent:
     return AgentEvent.from_dict(event.to_dict())
 
 
-def _validate_model(model: str) -> str:
-    if not isinstance(model, str):
-        raise TypeError("model must be a string")
-    if not model.strip():
-        raise ValueError("model must not be empty")
-    return model.strip()
-
-
 def _validate_usage(usage: UsageSnapshot) -> UsageSnapshot:
     if not isinstance(usage, UsageSnapshot):
         raise TypeError("usage must be a UsageSnapshot")
@@ -64,23 +60,6 @@ def _validate_usage(usage: UsageSnapshot) -> UsageSnapshot:
 
 def _copy_usage(usage: UsageSnapshot) -> UsageSnapshot:
     return UsageSnapshot.from_dict(usage.to_dict())
-
-
-def _validate_cost_usd(cost_usd: float) -> float:
-    if isinstance(cost_usd, bool) or not isinstance(cost_usd, (int, float)):
-        raise TypeError("cost_usd must be a number")
-    cost = float(cost_usd)
-    if not math.isfinite(cost):
-        raise ValueError("cost_usd must be finite")
-    if cost < 0:
-        raise ValueError("cost_usd must be non-negative")
-    return cost
-
-
-def _validate_bool(field_name: str, value: bool) -> bool:
-    if not isinstance(value, bool):
-        raise TypeError(f"{field_name} must be a bool")
-    return value
 
 
 @runtime_checkable

@@ -17,6 +17,14 @@ from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
+from techrevati.runtime._internal import (
+    _validate_non_empty_str,
+    _validate_non_negative_int,
+    _validate_optional_str,
+    _validate_positive_int,
+    _validate_project_id,
+)
+
 logger = logging.getLogger("techrevati.runtime.lifecycle")
 logger.addHandler(logging.NullHandler())
 
@@ -77,52 +85,10 @@ def _now_iso() -> str:
     return datetime.now(UTC).isoformat()
 
 
-def _validate_non_empty_str(field_name: str, value: str) -> str:
-    if not isinstance(value, str):
-        raise TypeError(f"{field_name} must be a string")
-    if not value.strip():
-        raise ValueError(f"{field_name} must not be empty")
-    return value
-
-
-def _validate_optional_str(field_name: str, value: str | None) -> str | None:
-    if value is None:
-        return None
-    if not isinstance(value, str):
-        raise TypeError(f"{field_name} must be a string or None")
-    return value
-
-
-def _validate_project_id(value: int | None) -> int | None:
-    if value is None:
-        return None
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError("project_id must be an integer or None")
-    if value < 0:
-        raise ValueError("project_id must be non-negative")
-    return value
-
-
 def _validate_required_project_id(value: int) -> int:
     project_id = _validate_project_id(value)
     assert project_id is not None
     return project_id
-
-
-def _validate_non_negative_int(field_name: str, value: int) -> int:
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError(f"{field_name} must be an integer")
-    if value < 0:
-        raise ValueError(f"{field_name} must be non-negative")
-    return value
-
-
-def _validate_positive_int(field_name: str, value: int) -> int:
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError(f"{field_name} must be an integer")
-    if value <= 0:
-        raise ValueError(f"{field_name} must be positive")
-    return value
 
 
 def _coerce_status(field_name: str, value: AgentStatus | str) -> AgentStatus:

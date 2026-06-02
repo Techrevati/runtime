@@ -39,6 +39,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
+from techrevati.runtime._internal import (
+    _ensure_schema_version,
+    _validate_non_empty_str,
+    _validate_optional_non_empty_str,
+)
+
 __all__ = [
     "Checkpoint",
     "CheckpointSaver",
@@ -218,20 +224,6 @@ def _new_id() -> str:
     return uuid.uuid4().hex
 
 
-def _validate_non_empty_str(field_name: str, value: str) -> str:
-    if not isinstance(value, str):
-        raise TypeError(f"{field_name} must be a string")
-    if not value.strip():
-        raise ValueError(f"{field_name} must not be empty")
-    return value
-
-
-def _validate_optional_non_empty_str(field_name: str, value: str | None) -> str | None:
-    if value is None:
-        return None
-    return _validate_non_empty_str(field_name, value)
-
-
 def _normalize_json_mapping(
     field_name: str, value: Mapping[str, Any]
 ) -> dict[str, Any]:
@@ -391,36 +383,6 @@ CREATE TABLE IF NOT EXISTS checkpoint_steps (
 CREATE INDEX IF NOT EXISTS idx_checkpoint_steps_thread_created
     ON checkpoint_steps(thread_id, created_at);
 """
-
-_METADATA_SCHEMA = """
-CREATE TABLE IF NOT EXISTS techrevati_runtime_metadata (
-    component      TEXT PRIMARY KEY,
-    schema_version INTEGER NOT NULL
-);
-"""
-
-
-def _ensure_schema_version(
-    conn: sqlite3.Connection, *, component: str, version: int
-) -> None:
-    conn.executescript(_METADATA_SCHEMA)
-    row = conn.execute(
-        "SELECT schema_version FROM techrevati_runtime_metadata WHERE component = ?",
-        (component,),
-    ).fetchone()
-    if row is None:
-        conn.execute(
-            "INSERT INTO techrevati_runtime_metadata"
-            " (component, schema_version) VALUES (?, ?)",
-            (component, version),
-        )
-        return
-    observed = int(row[0])
-    if observed != version:
-        raise RuntimeError(
-            f"unsupported sqlite schema for {component}: "
-            f"version {observed}, expected {version}"
-        )
 
 
 def _open_wal(path: str | Path) -> sqlite3.Connection:

@@ -9,12 +9,19 @@ JSON-serializable and include both an 'event' (full path) and 'type'
 from __future__ import annotations
 
 import json
-import math
 from copy import deepcopy
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
+
+from techrevati.runtime._internal import (
+    _validate_finite_number,
+    _validate_non_empty_str,
+    _validate_optional_non_empty_str,
+    _validate_optional_str,
+    _validate_project_id,
+)
 
 
 class AgentEventName(str, Enum):
@@ -114,28 +121,6 @@ def _now_iso() -> str:
     return datetime.now(UTC).isoformat()
 
 
-def _validate_non_empty_str(field_name: str, value: str) -> str:
-    if not isinstance(value, str):
-        raise TypeError(f"{field_name} must be a string")
-    if not value.strip():
-        raise ValueError(f"{field_name} must not be empty")
-    return value
-
-
-def _validate_optional_str(field_name: str, value: str | None) -> str | None:
-    if value is None:
-        return None
-    if not isinstance(value, str):
-        raise TypeError(f"{field_name} must be a string or None")
-    return value
-
-
-def _validate_optional_non_empty_str(field_name: str, value: str | None) -> str | None:
-    if value is None:
-        return None
-    return _validate_non_empty_str(field_name, value)
-
-
 def _coerce_event_name(value: AgentEventName | str) -> AgentEventName:
     if isinstance(value, AgentEventName):
         return value
@@ -173,16 +158,6 @@ def _coerce_failure_class(
     raise TypeError("failure_class must be an AgentFailureClass or None")
 
 
-def _validate_project_id(value: int | None) -> int | None:
-    if value is None:
-        return None
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError("project_id must be an integer or None")
-    if value < 0:
-        raise ValueError("project_id must be non-negative")
-    return value
-
-
 def _copy_data(data: dict[str, Any] | None) -> dict[str, Any] | None:
     if data is None:
         return None
@@ -193,15 +168,6 @@ def _copy_data(data: dict[str, Any] | None) -> dict[str, Any] | None:
         if not isinstance(key, str):
             raise TypeError("data keys must be strings")
     return copied
-
-
-def _validate_finite_number(field_name: str, value: float) -> float:
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        raise TypeError(f"{field_name} must be a number")
-    number = float(value)
-    if not math.isfinite(number):
-        raise ValueError(f"{field_name} must be finite")
-    return number
 
 
 @dataclass(frozen=True)

@@ -16,6 +16,10 @@ from dataclasses import dataclass, field
 from enum import IntEnum
 from typing import Any
 
+from techrevati.runtime._internal import (
+    _validate_bool,
+)
+
 
 class PermissionMode(IntEnum):
     """Ordered permission levels. Higher grants more access."""
@@ -46,12 +50,6 @@ def _normalize_mode(value: PermissionMode | int) -> PermissionMode:
         raise TypeError("permission mode must be a PermissionMode") from exc
     except ValueError as exc:
         raise ValueError("permission mode must be a valid PermissionMode") from exc
-
-
-def _validate_bool(field_name: str, value: bool) -> bool:
-    if not isinstance(value, bool):
-        raise TypeError(f"{field_name} must be a bool")
-    return value
 
 
 def _copy_role_config(config: RolePermissionConfig) -> RolePermissionConfig:
