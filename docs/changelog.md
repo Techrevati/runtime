@@ -2,6 +2,61 @@
 
 Author: Techrevati doo
 
+## 0.4.0.dev0 - 2026-06-02
+
+The EU AI Act compliance line. Development build on `feat/0.4.0`.
+
+Added:
+
+- `techrevati.runtime.compliance` subpackage with EU AI Act (Regulation (EU)
+  2024/1689) technical primitives:
+  - `AuditLogSink` — tamper-evident, hash-chained event + usage log with
+    `verify_chain()`, optional HMAC envelope, JSONL/CSV export, retention purge,
+    and `SqliteAuditBackend` / `InMemoryAuditBackend` (Article 12).
+  - `HumanOversightInterface`, `ReviewQueue`, `ReviewerIdentity`,
+    `ExplanationReport` — pause / review / override with audit trail (Article 14).
+  - `RiskRegistry`, `Risk`, `ResidualRiskLevel` — residual-risk register that
+    blocks deployment on `UNACCEPTABLE` (Article 9).
+  - `OutputIntegrityGuardrail` + `InputSanitizationHook` — control/escape-byte
+    integrity checks on tool I/O (Article 15).
+  - `IncidentReportingSink`, `SeriousIncidentDetector`, `IncidentReport` —
+    incident detection with 15-day reporting-deadline tracking (Articles 26/73).
+  - `TransparencyReport`, `AccuracyDeclaration` — instructions-for-use rendering
+    (Article 13).
+  - `EUAIActComplianceKit` facade + `ConformityChecklist` (Article 16 self-check).
+- `AgentSession(audit_log=...)` and `AgentSession(compliance=kit)` — fan audit /
+  incident sinks alongside the caller's sinks, prepend Article 15 guardrails /
+  hooks, and assert no unacceptable residual risk before a session opens.
+- `oversight.review_requested` / `oversight.review_resolved` event names.
+- `docs/eu-ai-act/` article-by-article guidance (with the audit-log threat model)
+  and an expanded compliance crosswalk.
+- Optional `[mcp]` extra + `techrevati.runtime.mcp` module: `MCPToolAdapter`
+  bridges a connected `mcp.ClientSession`'s tools into `arun_tool` as coroutine
+  factories (no tool registry; permission/guardrail/governance/hook checks still
+  apply). Core stays zero-dependency.
+- Typed outputs: `OutputSpec[T]` protocol + `JsonOutputSpec`, `RegexOutputSpec`,
+  `CallableOutputSpec`, and `OutputValidationError` for validating raw model text
+  into typed values.
+- Session memory: `ConversationMemory` protocol + `InMemoryConversationMemory`,
+  `MemoryMessage`, and compaction strategies (`NoCompaction`, `WindowCompaction`,
+  `TokenBudgetCompaction`).
+- Step-level durability: `StepCheckpointSaver` (implemented by `InMemorySaver` and
+  `SqliteSaver`) with `put_step` / `get_step` / `list_steps` + `StepRecord` for
+  in-tool-call replay (caller-keyed memoization, not deterministic replay).
+- OTel GenAI message bodies: `OpenTelemetrySink` emits caller-supplied
+  `gen_ai.input.messages` / `gen_ai.output.messages` (from `AgentEvent.data`) as
+  span events, gated on `include_event_detail`. (The `gen_ai.client.token.usage`
+  metric and per-tool span nesting already shipped in 0.3.0.)
+- Optional `[postgres]` and `[redis]` extras + durability recipe docs for
+  implementing `CheckpointSaver` / `AuditBackend` against PostgreSQL and Redis
+  (the zero-dependency core continues to ship SQLite reference savers only).
+
+Removed:
+
+- The deprecated `Orchestrator` compatibility alias (use `AgentSession`). It has
+  emitted a `DeprecationWarning` since 0.2.1; see
+  [docs/migrating-from-0.3.x.md](migrating-from-0.3.x.md).
+
 ## 0.3.0rc1 - 2026-05-31
 
 Release candidate for the 0.3.0 line.

@@ -44,8 +44,12 @@ FORBIDDEN_DOC_SNIPPETS = (
 
 def _runtime_modules(root: Path) -> list[str]:
     runtime_dir = root / "src" / "techrevati" / "runtime"
+    # Private modules (leading underscore, e.g. _internal) are implementation
+    # detail — they carry no public API and need no reference page.
     return sorted(
-        path.stem for path in runtime_dir.glob("*.py") if path.name != "__init__.py"
+        path.stem
+        for path in runtime_dir.glob("*.py")
+        if path.name != "__init__.py" and not path.name.startswith("_")
     )
 
 
