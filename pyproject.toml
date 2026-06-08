@@ -36,9 +36,9 @@ dev = [
     "ruff==0.14.5",
     # Optional integrations need to be importable so we can type-check
     # and test the optional modules under mypy --strict.
-    "opentelemetry-api==1.42.0",
-    "opentelemetry-sdk==1.42.0",
-    "opentelemetry-semantic-conventions==0.63b0",
+    "opentelemetry-api==1.42.1",
+    "opentelemetry-sdk==1.42.1",
+    "opentelemetry-semantic-conventions==0.63b1",
 ]
 build = [
     "build==1.5.0",
