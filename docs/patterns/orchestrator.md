@@ -9,10 +9,10 @@ retry classification, circuit-breaker protection, permission gating,
 guardrails, max-iterations cap, telemetry sinks, and cost accounting in
 one place.
 
-> **Naming note.** `AgentSession` is the canonical session factory.
-> `Orchestrator` is kept as a deprecated compatibility alias through
-> the 0.3.x line. Use `session.handoff_to(...)` or async
-> `session.ahandoff_to(...)` to connect multiple sessions.
+> **Naming note.** `AgentSession` is the canonical session factory. The
+> deprecated `Orchestrator` compatibility alias was removed in 0.4.0 — see the
+> [0.3.x migration guide](../migrating-from-0.3.x.md). Use `session.handoff_to(...)`
+> or async `session.ahandoff_to(...)` to connect multiple sessions.
 
 ## Quick example (sync)
 

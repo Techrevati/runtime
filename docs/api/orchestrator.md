@@ -3,7 +3,6 @@
 ::: techrevati.runtime.orchestrator
     options:
       members:
-        - Orchestrator
         - OrchestrationSession
         - AsyncOrchestrationSession
         - AgentSession

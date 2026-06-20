@@ -8,7 +8,7 @@ budget enforcement, role-based tool gating, guardrails, handoffs, policy
 evaluation, checkpointing, rate limiting, streaming, hooks, and telemetry
 integration.
 
-The package is currently `0.3.0rc1`. This is a release candidate; the `0.x`
+The package is currently `0.4.0rc1`. This is a release candidate; the `0.x`
 API surface is still unstable, so pin exact versions when you depend on a
 specific behavior.
 
