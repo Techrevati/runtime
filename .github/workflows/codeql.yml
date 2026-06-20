@@ -41,6 +41,9 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           queries: security-and-quality
+          # paths-ignore (tests) lives in the config file; the quality suite
+          # false-positives on intentional negative-path test idioms.
+          config-file: ./.github/codeql/codeql-config.yml
 
       - name: Autobuild
         # github/codeql-action v3

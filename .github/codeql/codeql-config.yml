@@ -1,0 +1,18 @@
+name: "techrevati-runtime CodeQL config"
+
+# The `security-and-quality` suite (see codeql.yml) includes maintainability
+# queries that false-positive on intentional negative-path test idioms. For
+# example, constructor-validation tests written as
+#
+#     with pytest.raises(ValueError, match="budget_usd"):
+#         BudgetExceededError(budget_usd=-1.0, current_cost_usd=0.0)
+#
+# trip `py/unused-exception-object`: the constructor raises during validation,
+# so the object is intentionally never returned or re-raised. Rewriting these
+# to satisfy the query would make the tests wrong (the error type is not a
+# ValueError, so a literal `raise` would not match). Test code is not shipped
+# and is not part of the runtime attack surface, so we keep the full
+# security-and-quality suite on `src/` and skip the test tree rather than
+# contort correct tests.
+paths-ignore:
+  - tests
