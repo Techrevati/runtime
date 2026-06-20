@@ -1,18 +1,33 @@
 name: "techrevati-runtime CodeQL config"
 
-# The `security-and-quality` suite (see codeql.yml) includes maintainability
-# queries that false-positive on intentional negative-path test idioms. For
-# example, constructor-validation tests written as
+# The `security-and-quality` suite (see codeql.yml) keeps full security
+# coverage, but its maintainability/reliability queries produce only
+# false positives on this codebase's idiomatic Python — and overlap with
+# ruff (E,W,F,I,B,C4,UP,N) + mypy --strict, which already run in CI.
 #
-#     with pytest.raises(ValueError, match="budget_usd"):
-#         BudgetExceededError(budget_usd=-1.0, current_cost_usd=0.0)
-#
-# trip `py/unused-exception-object`: the constructor raises during validation,
-# so the object is intentionally never returned or re-raised. Rewriting these
-# to satisfy the query would make the tests wrong (the error type is not a
-# ValueError, so a literal `raise` would not match). Test code is not shipped
-# and is not part of the runtime attack surface, so we keep the full
-# security-and-quality suite on `src/` and skip the test tree rather than
-# contort correct tests.
+# Tests are not shipped and are not part of the runtime attack surface,
+# and the quality queries flag intentional negative-path test idioms
+# (e.g. `with pytest.raises(ValueError): SomeError(bad_input)` trips
+# py/unused-exception-object because the constructor raises during
+# validation, so the object is intentionally never used). Skip the test
+# tree wholesale.
 paths-ignore:
   - tests
+
+# In src/, three quality queries fire on correct, idiomatic code:
+#   - py/call/wrong-arguments: a `Callable` dataclass field defaulting to a
+#     module-level function (memory.py: TokenBudgetCompaction.estimator) is
+#     mis-modelled as a bound method, so the analyser thinks `self.estimator`
+#     takes zero args. mypy --strict already verifies real call arity.
+#   - py/implicit-string-concatenation-in-list: intentional line-wrapped long
+#     string literals inside a list (compliance/kit.py, transparency.py).
+#   - py/ineffectual-statement: `...` bodies in Protocol stubs and module
+#     docstrings.
+# Drop just these three; everything else in the suite stays active.
+query-filters:
+  - exclude:
+      id: py/call/wrong-arguments
+  - exclude:
+      id: py/implicit-string-concatenation-in-list
+  - exclude:
+      id: py/ineffectual-statement
