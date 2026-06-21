@@ -45,13 +45,18 @@ REQUIRED_SNIPPETS = (
     "dist/sbom.cyclonedx.json",
     "dist/sbom.cyclonedx.xml",
     "dist/SHA256SUMS",
+    # Public package index via OIDC trusted publishing (no stored token).
+    "id-token: write",
+    "packages-dir: pypi-dist",
+    "Publish to the package index (Trusted Publishing)",
 )
 
 FORBIDDEN_SNIPPETS = (
-    "id-token: write",
-    "packages-dir: pypi-dist",
+    # Trusted publishing is OIDC-only — stored API tokens stay banned.
     "__token__",
     "api-token:",
+    # The public package index uses the default endpoint; an explicit upload or
+    # test URL is banned so trusted publishing cannot be silently repointed.
     "repository-url: https://upload." + "pypi.org",
     "repository-url: https://test." + "pypi.org",
     "pip install --no-index --find-links dist techrevati-runtime",
