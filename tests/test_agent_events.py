@@ -1,6 +1,7 @@
 """Tests for agent_patterns.agent_events"""
 
 import json
+from dataclasses import replace
 from typing import Any, cast
 
 import pytest
@@ -439,3 +440,123 @@ def test_to_otel_attributes_excludes_none_fields():
     assert "agent.role" not in attrs
     assert "agent.failure_class" not in attrs
     assert "agent.detail" not in attrs
+
+
+# Golden wire-format snapshots. to_dict() is the frozen serialization contract
+# consumed by durable sinks and the OTel bridge, so a field rename, addition, or
+# removal must break a test on purpose. emitted_at is pinned for determinism.
+FIXED_TS = "2026-01-01T00:00:00+00:00"
+
+GOLDEN_TO_DICT: list[tuple[AgentEvent, dict[str, Any]]] = [
+    (
+        AgentEvent.started("planner", "draft"),
+        {
+            "event": "agent.started",
+            "type": "started",
+            "status": "running",
+            "emitted_at": FIXED_TS,
+            "role": "planner",
+            "phase": "draft",
+        },
+    ),
+    (
+        AgentEvent.completed("planner", "draft", "done"),
+        {
+            "event": "agent.completed",
+            "type": "completed",
+            "status": "completed",
+            "emitted_at": FIXED_TS,
+            "role": "planner",
+            "phase": "draft",
+            "detail": "done",
+        },
+    ),
+    (
+        AgentEvent.tool_called("planner", "draft", "search"),
+        {
+            "event": "agent.tool_called",
+            "type": "tool_called",
+            "status": "running",
+            "emitted_at": FIXED_TS,
+            "role": "planner",
+            "phase": "draft",
+            "data": {"tool": "search"},
+        },
+    ),
+    (
+        AgentEvent.failed("planner", "draft", AgentFailureClass.TOOL_ERROR, "boom"),
+        {
+            "event": "agent.failed",
+            "type": "failed",
+            "status": "failed",
+            "emitted_at": FIXED_TS,
+            "role": "planner",
+            "phase": "draft",
+            "failure_class": "tool_error",
+            "detail": "boom",
+        },
+    ),
+    (
+        AgentEvent.gate_passed("review"),
+        {
+            "event": "phase.gate_passed",
+            "type": "gate_passed",
+            "status": "green",
+            "emitted_at": FIXED_TS,
+            "phase": "review",
+        },
+    ),
+    (
+        AgentEvent.phase_started("draft"),
+        {
+            "event": "phase.started",
+            "type": "started",
+            "status": "running",
+            "emitted_at": FIXED_TS,
+            "phase": "draft",
+        },
+    ),
+    (
+        AgentEvent.oversight_review_resolved(
+            "approver",
+            "decide",
+            decision_id="d1",
+            decision="approve",
+            reviewer_id="alice",
+        ),
+        {
+            "event": "oversight.review_resolved",
+            "type": "review_resolved",
+            "status": "running",
+            "emitted_at": FIXED_TS,
+            "role": "approver",
+            "phase": "decide",
+            "detail": "review approve: d1",
+            "data": {
+                "decision_id": "d1",
+                "decision": "approve",
+                "reviewer_id": "alice",
+            },
+        },
+    ),
+    (
+        AgentEvent.started("planner", "draft").with_project(42),
+        {
+            "event": "agent.started",
+            "type": "started",
+            "status": "running",
+            "emitted_at": FIXED_TS,
+            "role": "planner",
+            "phase": "draft",
+            "project_id": 42,
+        },
+    ),
+]
+
+
+@pytest.mark.parametrize("event, expected", GOLDEN_TO_DICT)
+def test_to_dict_golden_snapshot(event: AgentEvent, expected: dict[str, Any]) -> None:
+    pinned = replace(event, emitted_at=FIXED_TS)
+    assert pinned.to_dict() == expected
+    # The wire contract round-trips losslessly.
+    assert AgentEvent.from_dict(pinned.to_dict()) == pinned
