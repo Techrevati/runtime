@@ -137,6 +137,8 @@ logger = logging.getLogger("techrevati.runtime.orchestrator")
 logger.addHandler(logging.NullHandler())
 
 T = TypeVar("T")
+
+
 class PermissionDeniedError(Exception):
     """Raised when a tool is blocked by the configured PermissionEnforcer."""
 
