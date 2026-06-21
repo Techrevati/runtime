@@ -41,6 +41,12 @@ sink.verify_chain(signing_key=hsm_key).valid
   never deletes records younger than this, and only purges past `max_retention`
   when `purge_after_max=True`. After a purge the earliest retained record is a
   trust anchor and the chain re-verifies forward from there.
+- Because the default `verify_chain()` anchors at the earliest *retained* record,
+  it cannot tell a legitimate purge from **front-truncation** (an attacker dropping
+  the genesis record and a prefix). On a chain you do **not** purge, call
+  `verify_chain(require_genesis=True)` to additionally assert the chain starts at
+  the genuine genesis (`prev_hash == "0" * 64`). To detect front-truncation *while*
+  still purging, publish the chain tip to a write-once external anchor (below).
 - `export(fmt="jsonl")` / `export(fmt="csv")` stream the chain for an auditor.
 
 ## Threat model — tamper-evident, **not** tamper-proof

@@ -281,6 +281,34 @@ def test_purge_removes_old_keeps_recent_and_stays_verifiable() -> None:
     assert sink.verify_chain().valid
 
 
+def test_require_genesis_accepts_full_chain() -> None:
+    sink = AuditLogSink(InMemoryAuditBackend())
+    sink.emit(_event("a"))
+    sink.emit(_event("b"))
+    assert sink.verify_chain(require_genesis=True).valid
+
+
+def test_require_genesis_empty_chain_is_valid() -> None:
+    sink = AuditLogSink(InMemoryAuditBackend())
+    assert sink.verify_chain(require_genesis=True).valid
+
+
+def test_require_genesis_detects_front_truncation() -> None:
+    backend = InMemoryAuditBackend()
+    sink = AuditLogSink(backend)
+    sink.emit(_event("genesis"))
+    sink.emit(_event("second"))
+    sink.emit(_event("third"))
+    # Drop the genesis record. The remaining records are still internally
+    # contiguous, so the default (anchored) mode accepts the truncated chain —
+    # the documented limitation — but require_genesis catches it.
+    del backend._records[0]
+    assert sink.verify_chain().valid
+    result = sink.verify_chain(require_genesis=True)
+    assert not result.valid
+    assert "front-truncation" in (result.error or "")
+
+
 def test_record_rejects_bad_inputs() -> None:
     sink = AuditLogSink(InMemoryAuditBackend())
     with pytest.raises(ValueError):

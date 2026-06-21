@@ -11,8 +11,9 @@ Added:
 - `techrevati.runtime.compliance` subpackage with EU AI Act (Regulation (EU)
   2024/1689) technical primitives:
   - `AuditLogSink` — tamper-evident, hash-chained event + usage log with
-    `verify_chain()`, optional HMAC envelope, JSONL/CSV export, retention purge,
-    and `SqliteAuditBackend` / `InMemoryAuditBackend` (Article 12).
+    `verify_chain()` (optional `require_genesis=True` front-truncation check),
+    optional HMAC envelope, JSONL/CSV export, retention purge, and
+    `SqliteAuditBackend` / `InMemoryAuditBackend` (Article 12).
   - `HumanOversightInterface`, `ReviewQueue`, `ReviewerIdentity`,
     `ExplanationReport` — pause / review / override with audit trail (Article 14).
   - `RiskRegistry`, `Risk`, `ResidualRiskLevel` — residual-risk register that

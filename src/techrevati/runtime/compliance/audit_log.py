@@ -436,19 +436,38 @@ class AuditLogSink:
     def records(self) -> Iterator[AuditRecord]:
         return self._backend.records()
 
-    def verify_chain(self, *, signing_key: bytes | None = None) -> ChainVerification:
+    def verify_chain(
+        self, *, signing_key: bytes | None = None, require_genesis: bool = False
+    ) -> ChainVerification:
         """Recompute every hash (and HMAC, if a key is given) and detect tampering.
 
-        After a :meth:`purge_expired`, the earliest *retained* record is treated
-        as a trust anchor (its ``prev_hash`` is taken as given); contiguity is
-        then verified forward from there.
+        By default the earliest *retained* record is treated as a trust anchor
+        (its ``prev_hash`` is taken as given) and contiguity is verified forward
+        from there, so a :meth:`purge_expired` re-verifies cleanly. The cost of
+        that is that *front-truncation* — dropping the genesis record and a prefix
+        of the chain — is **not** detected by the default mode.
+
+        Pass ``require_genesis=True`` to additionally assert that the first record
+        is the genuine genesis (``prev_hash == GENESIS_HASH``), closing the
+        front-truncation gap. It is mutually exclusive with retention purging: a
+        purged chain no longer starts at genesis and reports invalid under this
+        mode. (To detect front-truncation while still purging, publish the chain
+        tip to a write-once external anchor — see the audit-log threat model.)
         """
         key = signing_key if signing_key is not None else self._signing_key
         prev_hash: str | None = None
         total = 0
         for record in self._backend.records():
             total += 1
-            if prev_hash is not None and record.prev_hash != prev_hash:
+            if prev_hash is None:
+                if require_genesis and record.prev_hash != GENESIS_HASH:
+                    return ChainVerification(
+                        valid=False,
+                        total_records=total,
+                        first_bad_sequence=record.sequence,
+                        error="first record is not genesis (front-truncation?)",
+                    )
+            elif record.prev_hash != prev_hash:
                 return ChainVerification(
                     valid=False,
                     total_records=total,
