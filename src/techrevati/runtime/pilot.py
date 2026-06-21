@@ -17,6 +17,9 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
+from techrevati.runtime._internal import (
+    _validate_positive_int,
+)
 from techrevati.runtime.governance import (
     GovernancePlane,
     MaxBudgetLimit,
@@ -105,14 +108,6 @@ def _validate_pattern_sequence(
         seen.add(value)
         normalized.append(value)
     return tuple(normalized)
-
-
-def _validate_positive_int(field_name: str, value: int) -> int:
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError(f"{field_name} must be an integer")
-    if value <= 0:
-        raise ValueError(f"{field_name} must be positive")
-    return value
 
 
 def _validate_positive_float(field_name: str, value: float) -> float:

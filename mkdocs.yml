@@ -33,7 +33,17 @@ nav:
   - End-to-End Tutorial: tutorials/end-to-end.md
   - Migrating from 0.0.x: migrating-from-0.0.x.md
   - Migrating from 0.1.x: migrating-from-0.1.x.md
+  - Migrating from 0.3.x: migrating-from-0.3.x.md
   - Consuming as a Library: consuming-as-a-library.md
+  - EU AI Act:
+    - Overview: eu-ai-act/index.md
+    - Audit Log (Art. 12): eu-ai-act/audit-log.md
+    - Human Oversight (Art. 14): eu-ai-act/human-oversight.md
+    - Risk Management (Art. 9): eu-ai-act/risk-management.md
+    - Cybersecurity (Art. 15): eu-ai-act/cybersecurity.md
+    - Incident Reporting (Art. 26/73): eu-ai-act/incident-reporting.md
+    - Transparency (Art. 13): eu-ai-act/transparency.md
+    - Conformity Self-Check (Art. 16): eu-ai-act/conformity-checklist.md
   - Compliance:
     - Compliance Mapping: compliance/index.md
     - Production Readiness: compliance/production-readiness.md
@@ -58,6 +68,8 @@ nav:
     - Retry Policy: patterns/retry.md
     - Circuit Breaker: patterns/circuit-breaker.md
     - Durability: patterns/durability.md
+    - Durability (PostgreSQL): patterns/durability-postgres.md
+    - Durability (Redis): patterns/durability-redis.md
     - Rate Limiting: patterns/rate-limiting.md
     - Routing: patterns/routing.md
     - Quality Gate: patterns/quality-gate.md
@@ -69,6 +81,9 @@ nav:
     - Governance Plane: patterns/governance.md
     - Streaming: patterns/streaming.md
     - Hooks: patterns/hooks.md
+    - MCP Tools: patterns/mcp.md
+    - Typed Outputs: patterns/typed-outputs.md
+    - Session Memory: patterns/memory.md
     - Pilot Profile: patterns/pilot-profile.md
   - API Reference:
     - Orchestrator: api/orchestrator.md
@@ -92,6 +107,9 @@ nav:
     - Persistence: api/persistence.md
     - Scheduler: api/scheduler.md
     - Telemetry: api/otel.md
+    - MCP: api/mcp.md
+    - Typed Outputs: api/output_spec.md
+    - Session Memory: api/memory.md
     - Pilot Profile: api/pilot.md
   - Changelog: changelog.md
 

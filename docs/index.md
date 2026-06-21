@@ -7,9 +7,10 @@ Runtime primitives for multi-step LLM agent loops.
 The runtime provides sync and async sessions, lifecycle tracking,
 retry classification, circuit breakers, usage tracking, permissions,
 guardrails, policy evaluation, checkpointing, rate limiting, streaming, hooks,
-and telemetry sinks.
+telemetry sinks, typed outputs, session memory, an MCP tool adapter, and an
+EU AI Act compliance kit.
 
-The package is currently `0.3.0rc1`. This is a release candidate; the `0.x`
+The package is currently `0.4.0rc1`. This is a release candidate; the `0.x`
 API surface remains unstable, so pin exact versions when you depend on a
 specific behavior.
 
@@ -19,7 +20,7 @@ pip install techrevati-runtime
 
 ## What's Included
 
-- `AgentSession` / `Orchestrator` compatibility alias
+- `AgentSession` (sync and async orchestration sessions)
 - Retry policy
 - Circuit breaker
 - Usage tracking
@@ -35,6 +36,11 @@ pip install techrevati-runtime
 - Streaming
 - Hooks
 - Durable sinks
+- Typed outputs (`OutputSpec`)
+- Session memory and compaction
+- Step-level durability
+- MCP tool adapter (`[mcp]` extra)
+- EU AI Act compliance kit (audit log, human oversight, risk registry, incidents, transparency)
 
 ## Design Tenets
 

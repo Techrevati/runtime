@@ -38,6 +38,11 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
+from techrevati.runtime._internal import (
+    _validate_bool,
+    _validate_positive_int,
+)
+
 logger = logging.getLogger("techrevati.runtime.hooks")
 logger.addHandler(logging.NullHandler())
 
@@ -168,20 +173,6 @@ def _validate_context_dict(field_name: str, value: dict[str, Any]) -> dict[str, 
 def _validate_string(field_name: str, value: str) -> str:
     if not isinstance(value, str):
         raise TypeError(f"{field_name} must be a string")
-    return value
-
-
-def _validate_bool(field_name: str, value: bool) -> bool:
-    if not isinstance(value, bool):
-        raise TypeError(f"{field_name} must be a bool")
-    return value
-
-
-def _validate_positive_int(field_name: str, value: int) -> int:
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError(f"{field_name} must be an integer")
-    if value <= 0:
-        raise ValueError(f"{field_name} must be positive")
     return value
 
 

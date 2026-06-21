@@ -99,7 +99,7 @@ def _check_verify_job(workflow_name: str, job_text: str) -> list[str]:
         if command not in job_text:
             failures.append(f"{workflow_name}: missing verify guard {command}")
 
-    if "python scripts/check_module_coverage.py --threshold 85" not in job_text:
+    if "python scripts/check_module_coverage.py --threshold 88" not in job_text:
         failures.append(f"{workflow_name}: missing module coverage guard")
     if "python scripts/install_toolchain.py audit" not in job_text:
         failures.append(f"{workflow_name}: missing audit toolchain install")

@@ -37,6 +37,8 @@ from techrevati.runtime.checkpoint import (
     CheckpointSaver,
     InMemorySaver,
     SqliteSaver,
+    StepCheckpointSaver,
+    StepRecord,
 )
 from techrevati.runtime.circuit_breaker import (
     AsyncCircuitBreaker,
@@ -78,14 +80,29 @@ from techrevati.runtime.hooks import (
     RedactPIIHook,
     TokenBudgetCheckHook,
 )
+from techrevati.runtime.memory import (
+    CompactionStrategy,
+    ConversationMemory,
+    InMemoryConversationMemory,
+    MemoryMessage,
+    NoCompaction,
+    TokenBudgetCompaction,
+    WindowCompaction,
+)
 from techrevati.runtime.orchestrator import (
     AgentSession,
     AsyncOrchestrationSession,
     MaxIterationsExceededError,
     OrchestrationSession,
-    Orchestrator,
     PermissionDeniedError,
     TurnTimeoutError,
+)
+from techrevati.runtime.output_spec import (
+    CallableOutputSpec,
+    JsonOutputSpec,
+    OutputSpec,
+    OutputValidationError,
+    RegexOutputSpec,
 )
 from techrevati.runtime.permissions import (
     PermissionEnforcer,
@@ -234,7 +251,6 @@ __all__ = [
     "OrchestrationSession",
     "PatternGuardrail",
     "PromptInjectionGuardrail",
-    "Orchestrator",
     "RedactPIIHook",
     "PermissionDeniedError",
     "PermissionEnforcer",
@@ -267,7 +283,21 @@ __all__ = [
     "SqliteEventSink",
     "SqliteSaver",
     "SqliteUsageSink",
+    "StepCheckpointSaver",
+    "StepRecord",
     "StaticProviderRouter",
+    "CompactionStrategy",
+    "ConversationMemory",
+    "InMemoryConversationMemory",
+    "MemoryMessage",
+    "NoCompaction",
+    "TokenBudgetCompaction",
+    "WindowCompaction",
+    "CallableOutputSpec",
+    "JsonOutputSpec",
+    "OutputSpec",
+    "OutputValidationError",
+    "RegexOutputSpec",
     "StreamEvent",
     "StreamEventType",
     "StreamFinalStatus",

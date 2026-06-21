@@ -23,7 +23,7 @@ def _verify_job_text() -> str:
         "run: python scripts/install_toolchain.py audit",
         *(f"run: python scripts/{guard}" for guard in module.VERIFY_GUARDS),
     ]
-    lines.append("run: python scripts/check_module_coverage.py --threshold 85")
+    lines.append("run: python scripts/check_module_coverage.py --threshold 88")
     return "\n".join(lines)
 
 
@@ -46,7 +46,7 @@ def test_ci_guardrails_rejects_missing_verify_guard() -> None:
 def test_ci_guardrails_rejects_missing_coverage_guard() -> None:
     module = _load_ci_guardrails_module()
     job = _verify_job_text().replace(
-        "run: python scripts/check_module_coverage.py --threshold 85",
+        "run: python scripts/check_module_coverage.py --threshold 88",
         "",
     )
 

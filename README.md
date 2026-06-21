@@ -8,7 +8,7 @@ budget enforcement, role-based tool gating, guardrails, handoffs, policy
 evaluation, checkpointing, rate limiting, streaming, hooks, and telemetry
 integration.
 
-The package is currently `0.3.0rc1`. This is a release candidate; the `0.x`
+The package is currently `0.4.0rc1`. This is a release candidate; the `0.x`
 API surface is still unstable, so pin exact versions when you depend on a
 specific behavior.
 
@@ -72,7 +72,7 @@ parameters. Cancellation transitions the worker to `CANCELLED`.
 
 | Module | Provides |
 |---|---|
-| `orchestrator` | `AgentSession`, sync and async sessions, `Orchestrator` compatibility alias |
+| `orchestrator` | `AgentSession`, sync and async sessions |
 | `circuit_breaker` | Sync and async circuit breakers |
 | `retry_policy` | Failure classification and recovery recipes |
 | `usage_tracking` | Usage snapshots, pricing registration, limits, budgets |
@@ -89,6 +89,32 @@ parameters. Cancellation transitions the worker to `CANCELLED`.
 | `sinks` | Event and usage sink protocols |
 | `persistence` | SQLite-backed durable sinks |
 | `otel` | Optional telemetry sinks |
+| `compliance` | EU AI Act primitives (audit log, oversight, risk registry, incidents, transparency) |
+
+## EU AI Act compliance
+
+The `techrevati.runtime.compliance` subpackage provides technical primitives that
+map to EU AI Act (Regulation (EU) 2024/1689) Articles 9, 12, 13, 14, 15, 26, and
+73 — a tamper-evident hash-chained audit log, human-oversight pause/override, a
+risk registry, incident detection with 15-day deadline tracking, and a
+transparency report — bundled behind the `EUAIActComplianceKit` facade:
+
+```python
+from techrevati.runtime import AgentSession
+from techrevati.runtime.compliance import EUAIActComplianceKit, AuditLogSink, SqliteAuditBackend
+
+kit = EUAIActComplianceKit.standard(audit_log=AuditLogSink(SqliteAuditBackend("audit.db")))
+session = AgentSession(role="loan_assessor", phase="decide", compliance=kit)
+with session.session() as s:
+    s.run_tool("score", lambda: assess(application))
+assert kit.audit_log.verify_chain().valid
+```
+
+> ⚠️ **Not legal advice.** The runtime is not itself an AI system; it provides
+> building blocks. The deployer remains responsible for classification,
+> conformity assessment, and operation. See the
+> [EU AI Act docs](https://Techrevati.github.io/runtime/eu-ai-act/) for the
+> article-by-article guidance and the audit-log threat model.
 
 ## Example: Async Handoff
 

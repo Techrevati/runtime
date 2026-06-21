@@ -27,6 +27,7 @@ What gets emitted:
 from __future__ import annotations
 
 import atexit
+import json
 import logging
 import math
 import weakref
@@ -36,6 +37,12 @@ from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _pkg_version
 from typing import TYPE_CHECKING, Any
 
+from techrevati.runtime._internal import (
+    _validate_bool,
+    _validate_cost_usd,
+    _validate_non_empty_str,
+    _validate_optional_non_empty_str,
+)
 from techrevati.runtime.agent_events import (
     AgentEvent,
     AgentEventName,
@@ -68,26 +75,6 @@ _INSTRUMENTATION_SCOPE_NAME = "techrevati.runtime"
 logger = logging.getLogger(__name__)
 
 
-def _validate_non_empty_str(field_name: str, value: str) -> str:
-    if not isinstance(value, str):
-        raise TypeError(f"{field_name} must be a string")
-    if not value.strip():
-        raise ValueError(f"{field_name} must not be empty")
-    return value
-
-
-def _validate_optional_non_empty_str(field_name: str, value: str | None) -> str | None:
-    if value is None:
-        return None
-    return _validate_non_empty_str(field_name, value)
-
-
-def _validate_bool(field_name: str, value: bool) -> bool:
-    if not isinstance(value, bool):
-        raise TypeError(f"{field_name} must be a bool")
-    return value
-
-
 def _validate_event(event: AgentEvent) -> AgentEvent:
     if not isinstance(event, AgentEvent):
         raise TypeError("event must be an AgentEvent")
@@ -104,21 +91,25 @@ def _validate_usage(usage: UsageSnapshot) -> UsageSnapshot:
     return usage
 
 
-def _validate_cost_usd(cost_usd: float) -> float:
-    if isinstance(cost_usd, bool) or not isinstance(cost_usd, (int, float)):
-        raise TypeError("cost_usd must be a number")
-    cost = float(cost_usd)
-    if not math.isfinite(cost):
-        raise ValueError("cost_usd must be finite")
-    if cost < 0:
-        raise ValueError("cost_usd must be non-negative")
-    return cost
+# GenAI semantic-convention message-body keys. When a caller puts these in an
+# event payload, they are emitted as span events (not flattened attributes).
+_GEN_AI_MESSAGE_KEYS = ("gen_ai.input.messages", "gen_ai.output.messages")
 
 
 def _is_safe_attribute_value(value: Any) -> bool:
     if isinstance(value, bool | str | int):
         return True
     return isinstance(value, float) and math.isfinite(value)
+
+
+def _render_messages(value: Any) -> str:
+    """Render a GenAI message body to a span-event-safe string."""
+    if isinstance(value, str):
+        return value
+    try:
+        return json.dumps(value, ensure_ascii=False, default=str)
+    except (TypeError, ValueError):
+        return str(value)
 
 
 def _instrumentation_version() -> str:
@@ -356,6 +347,14 @@ class OpenTelemetrySink:
                 )
                 span.set_status(Status(StatusCode.ERROR, status_detail))
         for key, value in (event.data or {}).items():
+            if key in _GEN_AI_MESSAGE_KEYS:
+                # GenAI semconv message bodies are sensitive content; emit them
+                # as span events only when detail capture is explicitly enabled.
+                # The runtime does not own the model call, so these are present
+                # only when the caller puts them in the event payload.
+                if self.include_event_detail:
+                    span.add_event(key, attributes={key: _render_messages(value)})
+                continue
             if _is_safe_attribute_value(value):
                 span.set_attribute(f"techrevati.data.{key}", value)
 

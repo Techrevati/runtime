@@ -90,6 +90,30 @@ swap between them by changing the `saver=` argument on `AgentSession`.
 | `_restore_idempotent_turn` scan depth | 100 | Internal cap on how far back an idempotency lookup walks. If your threads exceed 100 turns and you need replay older than that, cache the lookup outside the runtime. |
 | SQLite schema version | 1 | Managed by the runtime; create a fresh database or migrate explicitly if a future version changes the schema. |
 
+## Step-level durability (in-tool-call replay)
+
+Checkpoints fire *between* turns. For an expensive, idempotent step *inside* a
+turn (an API call you don't want to repeat on a re-run), both reference savers
+also implement `StepCheckpointSaver`: cache the step's result under a
+caller-chosen `step_key` and skip it next time.
+
+```python
+def run_step(saver, thread_id):
+    cached = saver.get_step(thread_id, "turn3:fetch-rates")
+    if cached is not None:
+        return cached.state                  # skip the expensive work
+    result = fetch_rates()                    # idempotent, costly
+    saver.put_step(thread_id, "turn3:fetch-rates", result)
+    return result
+```
+
+`put_step` overwrites by `step_key`; `list_steps(thread_id)` returns records in
+`(created_at, step_key)` order; `delete(thread_id)` clears steps too.
+
+This is opportunistic, caller-keyed memoization — **not** full deterministic
+workflow replay. There is no recorded event history and no automatic
+determinism enforcement; you choose the keys and what is safe to cache.
+
 ## See also
 
 - [Migrating from 0.0.x](../migrating-from-0.0.x.md) — `thread_id` /

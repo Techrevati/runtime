@@ -39,8 +39,19 @@ import time
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterator, Sequence
 from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass, field
-from typing import Any, ClassVar, TypeVar
+from typing import Any, TypeVar
 
+from techrevati.runtime._classify import (
+    _is_prompt_rejection_exception,
+    _safe_exception_detail,
+    _scenario_to_class,
+)
+from techrevati.runtime._internal import (
+    _validate_bool,
+    _validate_non_empty_str,
+    _validate_optional_non_empty_str,
+    _validate_project_id,
+)
 from techrevati.runtime.agent_events import AgentEvent, AgentFailureClass
 from techrevati.runtime.agent_lifecycle import (
     AgentRegistry,
@@ -53,6 +64,8 @@ from techrevati.runtime.circuit_breaker import (
     CircuitBreaker,
     CircuitOpenError,
 )
+from techrevati.runtime.compliance.audit_log import AuditLogSink
+from techrevati.runtime.compliance.kit import EUAIActComplianceKit
 from techrevati.runtime.governance import GovernanceBreachError, GovernancePlane
 from techrevati.runtime.guardrails import (
     AsyncGuardrail,
@@ -105,6 +118,8 @@ from techrevati.runtime.retry_policy import (
 from techrevati.runtime.routing import ProviderRouter
 from techrevati.runtime.sinks import (
     EventSink,
+    FanoutEventSink,
+    FanoutUsageSink,
     NoopEventSink,
     NoopUsageSink,
     UsageSink,
@@ -122,18 +137,6 @@ logger = logging.getLogger("techrevati.runtime.orchestrator")
 logger.addHandler(logging.NullHandler())
 
 T = TypeVar("T")
-_PROMPT_REJECTION_MARKERS = (
-    "prompt rejected",
-    "prompt rejection",
-    "content policy",
-    "content filter",
-    "safety policy",
-    "blocked by safety",
-    "moderation",
-    "jailbreak",
-    "unsafe prompt",
-    "disallowed content",
-)
 
 
 class PermissionDeniedError(Exception):
@@ -172,30 +175,6 @@ class MaxIterationsExceededError(Exception):
         )
 
 
-def _validate_non_empty_str(field_name: str, value: str) -> str:
-    if not isinstance(value, str):
-        raise TypeError(f"{field_name} must be a string")
-    if not value.strip():
-        raise ValueError(f"{field_name} must not be empty")
-    return value
-
-
-def _validate_optional_non_empty_str(field_name: str, value: str | None) -> str | None:
-    if value is None:
-        return None
-    return _validate_non_empty_str(field_name, value)
-
-
-def _validate_project_id(value: int | None) -> int | None:
-    if value is None:
-        return None
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError("project_id must be an integer or None")
-    if value < 0:
-        raise ValueError("project_id must be non-negative")
-    return value
-
-
 def _validate_budget_usd(value: float | None) -> float | None:
     if value is None:
         return None
@@ -207,12 +186,6 @@ def _validate_budget_usd(value: float | None) -> float | None:
     if budget < 0:
         raise ValueError("budget_usd must be non-negative")
     return budget
-
-
-def _validate_bool(field_name: str, value: bool) -> bool:
-    if not isinstance(value, bool):
-        raise TypeError(f"{field_name} must be a bool")
-    return value
 
 
 def _validate_max_iterations(value: int) -> int:
@@ -329,6 +302,8 @@ class AgentSession:
     usage_limits: UsageLimits | None = None
     governance: GovernancePlane | None = None
     hooks: list[HookLike] = field(default_factory=list)
+    audit_log: AuditLogSink | None = None
+    compliance: EUAIActComplianceKit | None = None
 
     def __post_init__(self) -> None:
         self.role = _validate_non_empty_str("role", self.role)
@@ -342,6 +317,68 @@ class AgentSession:
         if self.governance is None:
             return None
         return self.governance.for_session()
+
+    def _extra_event_sinks(self) -> list[EventSink]:
+        """Compliance event sinks (audit log + incident sink) to fan out.
+
+        The caller's own sink keeps receiving events unchanged; the tamper-
+        evident ``AuditLogSink`` (EU AI Act Article 12) and the incident sink
+        (Articles 26/73) are appended alongside. De-duplicated by identity so a
+        standalone ``audit_log`` shared with ``compliance`` is not double-fed.
+        """
+        extra: list[EventSink] = []
+        seen: set[int] = set()
+        candidates: list[EventSink] = []
+        if self.audit_log is not None:
+            candidates.append(self.audit_log)
+        if self.compliance is not None:
+            candidates.extend(self.compliance.event_sinks())
+        for sink in candidates:
+            if id(sink) not in seen:
+                seen.add(id(sink))
+                extra.append(sink)
+        return extra
+
+    def _extra_usage_sinks(self) -> list[UsageSink]:
+        extra: list[UsageSink] = []
+        seen: set[int] = set()
+        candidates: list[UsageSink] = []
+        if self.audit_log is not None:
+            candidates.append(self.audit_log)
+        if self.compliance is not None:
+            candidates.extend(self.compliance.usage_sinks())
+        for sink in candidates:
+            if id(sink) not in seen:
+                seen.add(id(sink))
+                extra.append(sink)
+        return extra
+
+    def _event_sink_for_session(self) -> EventSink:
+        extra = self._extra_event_sinks()
+        if not extra:
+            return self.event_sink
+        return FanoutEventSink([self.event_sink, *extra])
+
+    def _usage_sink_for_session(self) -> UsageSink:
+        extra = self._extra_usage_sinks()
+        if not extra:
+            return self.usage_sink
+        return FanoutUsageSink([self.usage_sink, *extra])
+
+    def _guardrails_for_session(self) -> list[Guardrail | AsyncGuardrail]:
+        """Prepend the compliance kit's output guardrails (Article 15)."""
+        extra = self.compliance.guardrails() if self.compliance is not None else []
+        return [*extra, *self.guardrails]
+
+    def _hooks_for_session(self) -> list[HookLike]:
+        """Prepend the compliance kit's input-sanitization hooks (Article 15)."""
+        extra = self.compliance.hooks() if self.compliance is not None else []
+        return [*extra, *self.hooks]
+
+    def _assert_compliance_deployable(self) -> None:
+        """Block session creation on an unacceptable residual risk (Article 9(4))."""
+        if self.compliance is not None:
+            self.compliance.assert_deployable()
 
     @contextmanager
     def session(
@@ -357,6 +394,7 @@ class AgentSession:
         ``idempotency_key`` on ``run_turn`` makes that turn replay-safe.
         """
         thread_id = _validate_optional_non_empty_str("thread_id", thread_id)
+        self._assert_compliance_deployable()
         worker = self._start_worker()
         session = OrchestrationSession(
             worker=worker,
@@ -370,9 +408,9 @@ class AgentSession:
             budget_usd=self.budget_usd,
             enforce_budget=self.enforce_budget,
             max_iterations=self.max_iterations,
-            guardrails=list(self.guardrails),
-            event_sink=self.event_sink,
-            usage_sink=self.usage_sink,
+            guardrails=self._guardrails_for_session(),
+            event_sink=self._event_sink_for_session(),
+            usage_sink=self._usage_sink_for_session(),
             phase=self.phase,
             role=self.role,
             project_id=self.project_id,
@@ -382,7 +420,7 @@ class AgentSession:
             rate_limiter=self.rate_limiter,
             usage_limits=self.usage_limits,
             governance=self._governance_for_session(),
-            hooks=list(self.hooks),
+            hooks=self._hooks_for_session(),
         )
         session._emit_event(AgentEvent.started(self.role, self.phase))
 
@@ -420,6 +458,7 @@ class AgentSession:
         replay-safe async turns.
         """
         thread_id = _validate_optional_non_empty_str("thread_id", thread_id)
+        self._assert_compliance_deployable()
         worker = self._start_worker()
         session = AsyncOrchestrationSession(
             worker=worker,
@@ -433,9 +472,9 @@ class AgentSession:
             budget_usd=self.budget_usd,
             enforce_budget=self.enforce_budget,
             max_iterations=self.max_iterations,
-            guardrails=list(self.guardrails),
-            event_sink=self.event_sink,
-            usage_sink=self.usage_sink,
+            guardrails=self._guardrails_for_session(),
+            event_sink=self._event_sink_for_session(),
+            usage_sink=self._usage_sink_for_session(),
             phase=self.phase,
             role=self.role,
             project_id=self.project_id,
@@ -445,7 +484,7 @@ class AgentSession:
             async_rate_limiter=self.async_rate_limiter,
             usage_limits=self.usage_limits,
             governance=self._governance_for_session(),
-            hooks=list(self.hooks),
+            hooks=self._hooks_for_session(),
         )
         session._emit_event(AgentEvent.started(self.role, self.phase))
 
@@ -1671,20 +1710,6 @@ class AsyncOrchestrationSession(_SessionBase):
     )
 
 
-def _scenario_to_class(scenario: FailureScenario) -> AgentFailureClass:
-    """Map a recovery FailureScenario to the event-level taxonomy."""
-    mapping: dict[FailureScenario, AgentFailureClass] = {
-        FailureScenario.LLM_TIMEOUT: AgentFailureClass.LLM_TIMEOUT,
-        FailureScenario.LLM_ERROR: AgentFailureClass.LLM_ERROR,
-        FailureScenario.TOOL_EXECUTION_ERROR: AgentFailureClass.TOOL_ERROR,
-        FailureScenario.CONTEXT_OVERFLOW: AgentFailureClass.CONTEXT_OVERFLOW,
-        FailureScenario.DEPENDENCY_TIMEOUT: AgentFailureClass.DEPENDENCY_FAILED,
-        FailureScenario.MEMORY_CORRUPTION: AgentFailureClass.MEMORY_CORRUPTION,
-        FailureScenario.PROVIDER_FAILURE: AgentFailureClass.DEPENDENCY_FAILED,
-    }
-    return mapping.get(scenario, AgentFailureClass.UNKNOWN)
-
-
 def _failure_class_for_exception(exc: Exception) -> AgentFailureClass:
     """Classify terminal session exceptions into the public event taxonomy."""
     if isinstance(exc, BudgetExceededError | UsageLimitExceededError):
@@ -1707,61 +1732,11 @@ def _failure_class_for_exception(exc: Exception) -> AgentFailureClass:
     return _scenario_to_class(scenario)
 
 
-def _is_prompt_rejection_exception(exc: Exception) -> bool:
-    """Return True when an exception chain looks like a prompt safety rejection."""
-    seen: set[int] = set()
-    cursor: BaseException | None = exc
-    while cursor is not None and id(cursor) not in seen:
-        seen.add(id(cursor))
-        message = str(cursor).lower()
-        if any(marker in message for marker in _PROMPT_REJECTION_MARKERS):
-            return True
-        nxt: BaseException | None = cursor.__cause__
-        if nxt is None and not cursor.__suppress_context__:
-            nxt = cursor.__context__
-        cursor = nxt
-    return False
-
-
-def _safe_exception_detail(exc: Exception) -> str:
-    """Describe a terminal exception without copying its message into events."""
-    return f"{type(exc).__name__} raised"
-
-
-# `Orchestrator` is the legacy 0.1.x name; `AgentSession` is canonical.
-# Subclass (not bare alias) so we can emit DeprecationWarning on the
-# first instantiation in a process. Kept through 0.3.x for compatibility.
-class Orchestrator(AgentSession):
-    """Deprecated compatibility alias for ``AgentSession``.
-
-    Kept through the 0.3.x line so existing callers can upgrade without
-    a hard break. New code should construct ``AgentSession`` directly.
-    """
-
-    _deprecation_emitted: ClassVar[bool] = False
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        if not Orchestrator._deprecation_emitted:
-            import warnings
-
-            warnings.warn(
-                "Orchestrator is a deprecated alias for AgentSession and will "
-                "be removed no earlier than 0.4.0. Replace `Orchestrator(...)` "
-                "with `AgentSession(...)` — the constructor and behavior are "
-                "identical.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            Orchestrator._deprecation_emitted = True
-        super().__init__(*args, **kwargs)
-
-
 __all__ = [
     "AgentSession",
     "AsyncOrchestrationSession",
     "MaxIterationsExceededError",
     "OrchestrationSession",
-    "Orchestrator",
     "PermissionDeniedError",
     "TurnTimeoutError",
 ]

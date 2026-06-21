@@ -9,25 +9,23 @@ class name.
 
 ### 1. Prefer `AgentSession` over `Orchestrator`
 
-The canonical class name is now `AgentSession`. `Orchestrator` is still
-exported as a deprecated compatibility subclass and constructs the same
-kind of session, but it will be removed no earlier than 0.4.0. Update
-imports at your convenience:
+The canonical class name is now `AgentSession`. The old `Orchestrator` name was
+a deprecated compatibility alias through the 0.3.x line and was **removed in
+0.4.0** (see the [0.4.0 migration guide](migrating-from-0.3.x.md)). Update
+imports:
 
 ```python
-# Old (still works through 0.3.x):
-from techrevati.runtime import Orchestrator
-orch = Orchestrator(role="writer", phase="draft")
+# Old 0.1.x name (deprecated in 0.2.x, REMOVED in 0.4.0):
+#   Orchestrator(role="writer", phase="draft")
 
-# New (recommended):
+# Current:
 from techrevati.runtime import AgentSession
+
 agent = AgentSession(role="writer", phase="draft")
 ```
 
-The constructor signature is identical. `Orchestrator(...)` returns an
-`AgentSession` subclass instance, so `isinstance(x, AgentSession)`
-remains true. Prefer `AgentSession` for new code so upgrades do not
-emit deprecation warnings.
+The constructor signature is identical to the old `Orchestrator`, so the call
+site is a one-line rename. Use `AgentSession` everywhere in current code.
 
 ### 2. Telemetry sink wire format: one-shot -> nested
 

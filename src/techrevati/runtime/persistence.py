@@ -21,7 +21,6 @@ small so adapters are easy.
 from __future__ import annotations
 
 import json
-import math
 import sqlite3
 import threading
 from collections.abc import Iterator
@@ -30,6 +29,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from techrevati.runtime._internal import (
+    _ensure_schema_version,
+    _validate_cost_usd,
+    _validate_model,
+)
 from techrevati.runtime.agent_events import AgentEvent
 from techrevati.runtime.usage_tracking import UsageSnapshot
 
@@ -50,29 +54,10 @@ def _validate_event(event: AgentEvent) -> AgentEvent:
     return event
 
 
-def _validate_model(model: str) -> str:
-    if not isinstance(model, str):
-        raise TypeError("model must be a string")
-    if not model.strip():
-        raise ValueError("model must not be empty")
-    return model.strip()
-
-
 def _validate_usage(usage: UsageSnapshot) -> UsageSnapshot:
     if not isinstance(usage, UsageSnapshot):
         raise TypeError("usage must be a UsageSnapshot")
     return usage
-
-
-def _validate_cost_usd(cost_usd: float) -> float:
-    if isinstance(cost_usd, bool) or not isinstance(cost_usd, (int, float)):
-        raise TypeError("cost_usd must be a number")
-    cost = float(cost_usd)
-    if not math.isfinite(cost):
-        raise ValueError("cost_usd must be finite")
-    if cost < 0:
-        raise ValueError("cost_usd must be non-negative")
-    return cost
 
 
 def _validate_optional_limit(limit: int | None) -> int | None:
@@ -107,36 +92,6 @@ CREATE TABLE IF NOT EXISTS usage_records (
 CREATE INDEX IF NOT EXISTS idx_usage_records_recorded_at
     ON usage_records(recorded_at);
 """
-
-_METADATA_SCHEMA = """
-CREATE TABLE IF NOT EXISTS techrevati_runtime_metadata (
-    component      TEXT PRIMARY KEY,
-    schema_version INTEGER NOT NULL
-);
-"""
-
-
-def _ensure_schema_version(
-    conn: sqlite3.Connection, *, component: str, version: int
-) -> None:
-    conn.executescript(_METADATA_SCHEMA)
-    row = conn.execute(
-        "SELECT schema_version FROM techrevati_runtime_metadata WHERE component = ?",
-        (component,),
-    ).fetchone()
-    if row is None:
-        conn.execute(
-            "INSERT INTO techrevati_runtime_metadata"
-            " (component, schema_version) VALUES (?, ?)",
-            (component, version),
-        )
-        return
-    observed = int(row[0])
-    if observed != version:
-        raise RuntimeError(
-            f"unsupported sqlite schema for {component}: "
-            f"version {observed}, expected {version}"
-        )
 
 
 def _open_wal(path: str | Path) -> sqlite3.Connection:

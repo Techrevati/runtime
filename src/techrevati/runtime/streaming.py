@@ -20,6 +20,10 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any, Literal
 
+from techrevati.runtime._internal import (
+    _validate_non_empty_str,
+)
+
 StreamEventType = Literal[
     "text_delta",
     "tool_call",
@@ -46,14 +50,6 @@ _VALID_FINAL_STATUSES: frozenset[str] = frozenset({"completed", "cancelled", "fa
 
 def _now_iso() -> str:
     return datetime.now(UTC).isoformat()
-
-
-def _validate_non_empty_str(field_name: str, value: str) -> str:
-    if not isinstance(value, str):
-        raise TypeError(f"{field_name} must be a string")
-    if not value.strip():
-        raise ValueError(f"{field_name} must not be empty")
-    return value
 
 
 def _validate_str(field_name: str, value: str) -> str:

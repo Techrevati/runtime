@@ -22,13 +22,10 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
-
-def _validate_non_empty_str(field_name: str, value: str) -> str:
-    if not isinstance(value, str):
-        raise TypeError(f"{field_name} must be a string")
-    if not value.strip():
-        raise ValueError(f"{field_name} must not be empty")
-    return value
+from techrevati.runtime._internal import (
+    _validate_non_empty_str,
+    _validate_project_id,
+)
 
 
 def _validate_optional_str(field_name: str, value: str) -> str:
@@ -37,16 +34,6 @@ def _validate_optional_str(field_name: str, value: str) -> str:
     if value and not value.strip():
         raise ValueError(f"{field_name} must not be blank")
     return value.strip()
-
-
-def _validate_project_id(value: int | None) -> int | None:
-    if value is None:
-        return None
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError("project_id must be an integer or None")
-    if value < 0:
-        raise ValueError("project_id must be non-negative")
-    return value
 
 
 def _normalize_context(context: dict[str, Any]) -> dict[str, Any]:
