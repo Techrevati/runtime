@@ -46,6 +46,29 @@ async def test_pause_resume_returns_human_decision() -> None:
 
 
 @pytest.mark.asyncio
+async def test_pause_for_review_is_standalone_no_lifecycle_side_effects() -> None:
+    # Honest contract (Article 14 docs): the interface is a standalone async gate.
+    # Its only effect is the two oversight.* audit events plus the returned
+    # decision — it holds no worker reference and does NOT transition any worker
+    # lifecycle status. A future change that wires it into a session must update
+    # this test (and the docs) deliberately.
+    audit = AuditLogSink(InMemoryAuditBackend())
+    queue = StaticReviewQueue(
+        {"d1": ReviewDecision(decision="approve", reason="ok", reviewer=REVIEWER)}
+    )
+    oversight = HumanOversightInterface(queue, audit_log=audit)
+
+    await oversight.pause_for_review("d1", {})
+
+    event_types = [r.event_type for r in audit.records()]
+    assert event_types == [
+        "oversight.review_requested",
+        "oversight.review_resolved",
+    ]
+    assert not any(t.startswith("agent.") or "status" in t for t in event_types)
+
+
+@pytest.mark.asyncio
 async def test_timeout_abort_raises() -> None:
     queue = StaticReviewQueue({})  # never resolves -> timeout
     oversight = HumanOversightInterface(queue, on_timeout="abort")

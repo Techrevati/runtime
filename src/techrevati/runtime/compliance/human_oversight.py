@@ -10,10 +10,13 @@ This module provides:
 - :class:`ReviewerIdentity` / :class:`ReviewDecision` — who decided, and what.
 - :class:`ReviewQueue` — a caller-implemented async bridge to whatever UI / Slack
   / ticketing system actually surfaces the decision to a human.
-- :class:`HumanOversightInterface` — pauses a turn for review (the worker sits in
-  ``AgentStatus.WAITING_FOR_INPUT`` while awaiting the queue), records the request
-  and resolution to the tamper-evident audit log, and exposes a manual
-  :meth:`override` (Article 14(4)(d)).
+- :class:`HumanOversightInterface` — a standalone async decision gate. The caller
+  awaits :meth:`~HumanOversightInterface.pause_for_review` at a high-stakes point;
+  it records the request and resolution to the tamper-evident audit log and returns
+  the human's :class:`ReviewDecision` (or the configured on-timeout decision). It
+  does **not** transition worker lifecycle status or auto-pause ``AgentSession``
+  turns — reflecting ``AgentStatus.WAITING_FOR_INPUT`` around the ``await`` is the
+  caller's responsibility. Also exposes a manual :meth:`override` (Article 14(4)(d)).
 - :class:`ExplanationReport` — a reviewer-readable summary of one turn
   (Article 14(4)(c)).
 
@@ -147,7 +150,9 @@ class StaticReviewQueue:
 
 
 class HumanOversightInterface:
-    """Article 14 human-oversight primitive: pause for review + manual override."""
+    """Article 14 human-oversight primitive: a standalone async pause-for-review
+    gate plus a manual override. It records to the audit log and returns the
+    decision; it does not itself change worker status or auto-pause sessions."""
 
     def __init__(
         self,
@@ -183,11 +188,13 @@ class HumanOversightInterface:
         *,
         timeout_seconds: float | None = None,
     ) -> ReviewDecision:
-        """Pause the turn until a human resolves it (or the timeout decides).
+        """Await a human decision for ``decision_id`` (or let the timeout decide).
 
-        Records ``oversight.review_requested`` then ``oversight.review_resolved``
-        (with the reviewer id) to the audit log, so the Article 12 trail shows
-        who decided and when.
+        This blocks the *calling coroutine*, not any worker — the caller awaits it
+        at a decision point; it does not transition worker lifecycle status. Records
+        ``oversight.review_requested`` then ``oversight.review_resolved`` (with the
+        reviewer id) to the audit log, so the Article 12 trail shows who decided and
+        when.
         """
         if not decision_id.strip():
             raise ValueError("decision_id must be non-empty")

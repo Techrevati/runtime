@@ -9,9 +9,13 @@ override, recording who decided and when into the Article 12 audit log.
 
 ## Pause for review
 
-You supply a `ReviewQueue` — the async bridge to your UI / Slack / ticketing
-system. The worker sits in `AgentStatus.WAITING_FOR_INPUT` while it awaits a
-decision.
+`pause_for_review` is a standalone async gate: you `await` it at a high-stakes
+decision point and it returns the human's `ReviewDecision`. You supply a
+`ReviewQueue` — the async bridge to your UI / Slack / ticketing system. The call
+blocks your coroutine (not any worker) until a human responds or the timeout
+elapses; it does **not** itself change the session's lifecycle status. If you want
+the worker to show `AgentStatus.WAITING_FOR_INPUT` while it waits, transition it
+around the `await` yourself.
 
 ```python
 from techrevati.runtime.compliance import (
