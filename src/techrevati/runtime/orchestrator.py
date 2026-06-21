@@ -41,6 +41,11 @@ from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass, field
 from typing import Any, TypeVar
 
+from techrevati.runtime._classify import (
+    _is_prompt_rejection_exception,
+    _safe_exception_detail,
+    _scenario_to_class,
+)
 from techrevati.runtime._internal import (
     _validate_bool,
     _validate_non_empty_str,
@@ -132,20 +137,6 @@ logger = logging.getLogger("techrevati.runtime.orchestrator")
 logger.addHandler(logging.NullHandler())
 
 T = TypeVar("T")
-_PROMPT_REJECTION_MARKERS = (
-    "prompt rejected",
-    "prompt rejection",
-    "content policy",
-    "content filter",
-    "safety policy",
-    "blocked by safety",
-    "moderation",
-    "jailbreak",
-    "unsafe prompt",
-    "disallowed content",
-)
-
-
 class PermissionDeniedError(Exception):
     """Raised when a tool is blocked by the configured PermissionEnforcer."""
 
@@ -1717,20 +1708,6 @@ class AsyncOrchestrationSession(_SessionBase):
     )
 
 
-def _scenario_to_class(scenario: FailureScenario) -> AgentFailureClass:
-    """Map a recovery FailureScenario to the event-level taxonomy."""
-    mapping: dict[FailureScenario, AgentFailureClass] = {
-        FailureScenario.LLM_TIMEOUT: AgentFailureClass.LLM_TIMEOUT,
-        FailureScenario.LLM_ERROR: AgentFailureClass.LLM_ERROR,
-        FailureScenario.TOOL_EXECUTION_ERROR: AgentFailureClass.TOOL_ERROR,
-        FailureScenario.CONTEXT_OVERFLOW: AgentFailureClass.CONTEXT_OVERFLOW,
-        FailureScenario.DEPENDENCY_TIMEOUT: AgentFailureClass.DEPENDENCY_FAILED,
-        FailureScenario.MEMORY_CORRUPTION: AgentFailureClass.MEMORY_CORRUPTION,
-        FailureScenario.PROVIDER_FAILURE: AgentFailureClass.DEPENDENCY_FAILED,
-    }
-    return mapping.get(scenario, AgentFailureClass.UNKNOWN)
-
-
 def _failure_class_for_exception(exc: Exception) -> AgentFailureClass:
     """Classify terminal session exceptions into the public event taxonomy."""
     if isinstance(exc, BudgetExceededError | UsageLimitExceededError):
@@ -1751,27 +1728,6 @@ def _failure_class_for_exception(exc: Exception) -> AgentFailureClass:
     if isinstance(exc, ValueError | TypeError):
         return AgentFailureClass.VALIDATION_ERROR
     return _scenario_to_class(scenario)
-
-
-def _is_prompt_rejection_exception(exc: Exception) -> bool:
-    """Return True when an exception chain looks like a prompt safety rejection."""
-    seen: set[int] = set()
-    cursor: BaseException | None = exc
-    while cursor is not None and id(cursor) not in seen:
-        seen.add(id(cursor))
-        message = str(cursor).lower()
-        if any(marker in message for marker in _PROMPT_REJECTION_MARKERS):
-            return True
-        nxt: BaseException | None = cursor.__cause__
-        if nxt is None and not cursor.__suppress_context__:
-            nxt = cursor.__context__
-        cursor = nxt
-    return False
-
-
-def _safe_exception_detail(exc: Exception) -> str:
-    """Describe a terminal exception without copying its message into events."""
-    return f"{type(exc).__name__} raised"
 
 
 __all__ = [
