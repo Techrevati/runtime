@@ -69,7 +69,7 @@ def _ci_workflow_text() -> str:
         (
             "python-version: ['3.11', '3.12', '3.13']",
             "python scripts/check_remote_ci_validation.py",
-            "python scripts/check_module_coverage.py --threshold 85",
+            "python scripts/check_module_coverage.py --threshold 88",
             "pip install --no-index --no-deps --find-links dist techrevati-runtime",
             "zero-deps-smoke",
         )

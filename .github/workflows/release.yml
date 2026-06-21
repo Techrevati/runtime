@@ -163,8 +163,8 @@ jobs:
       - name: Run tests
         run: pytest tests/ -v --cov=src/techrevati --cov-report=term-missing
 
-      - name: Per-module coverage floor (>= 85%)
-        run: python scripts/check_module_coverage.py --threshold 85
+      - name: Per-module coverage floor (>= 88%)
+        run: python scripts/check_module_coverage.py --threshold 88
 
   release:
     name: Publish release

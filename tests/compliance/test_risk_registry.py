@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from typing import Any, cast
 
 import pytest
 
@@ -90,3 +91,37 @@ def test_mitigation_recipe_recorded() -> None:
         mitigation_recipe="LLM_TIMEOUT",
     )
     assert risk.to_dict()["mitigation_recipe"] == "LLM_TIMEOUT"
+
+
+def test_risk_rejects_empty_id() -> None:
+    with pytest.raises(ValueError, match="Risk.id"):
+        Risk(id="   ", description="d", residual=ResidualRiskLevel.LOW)
+
+
+def test_risk_rejects_empty_description() -> None:
+    with pytest.raises(ValueError, match="Risk.description"):
+        Risk(id="r1", description="  ", residual=ResidualRiskLevel.LOW)
+
+
+def test_risk_rejects_nonpositive_review_interval() -> None:
+    with pytest.raises(ValueError, match="review_interval"):
+        Risk(
+            id="r1",
+            description="d",
+            residual=ResidualRiskLevel.LOW,
+            review_interval=timedelta(0),
+        )
+
+
+def test_registry_add_rejects_non_risk() -> None:
+    reg = RiskRegistry()
+    with pytest.raises(TypeError, match="must be a Risk"):
+        reg.add(cast(Any, "not a risk"))
+
+
+def test_registry_get_and_len() -> None:
+    reg = RiskRegistry([_risk("a"), _risk("b")])
+    assert len(reg) == 2
+    got = reg.get("a")
+    assert got is not None and got.id == "a"
+    assert reg.get("missing") is None

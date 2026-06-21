@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from techrevati.runtime import AgentEvent
+from techrevati.runtime import AgentEvent, AgentFailureClass
 from techrevati.runtime.compliance import (
     AuditLogSink,
     ExplanationReport,
@@ -144,3 +144,49 @@ def test_explanation_report_from_events() -> None:
     md = report.to_markdown()
     assert "turn-1" in md
     assert "search" in md
+
+
+def test_reviewer_identity_to_dict() -> None:
+    d = REVIEWER.to_dict()
+    assert d["id"] == "alice@corp"
+    assert d["role"] == "approver"
+    assert d["authentication_method"] == "oauth"
+    assert "authenticated_at" in d
+
+
+def test_review_decision_to_dict_includes_modifications() -> None:
+    decision = ReviewDecision(
+        decision="modify",
+        reason="cap the amount",
+        reviewer=REVIEWER,
+        modifications={"amount": 500},
+    )
+    d = decision.to_dict()
+    assert d["decision"] == "modify"
+    assert d["modifications"] == {"amount": 500}
+    assert d["reviewer"]["id"] == "alice@corp"
+    # Without modifications the key is omitted.
+    plain = ReviewDecision(decision="approve", reason="ok", reviewer=REVIEWER)
+    assert "modifications" not in plain.to_dict()
+
+
+def test_override_modify_action_returns_modify_outcome() -> None:
+    oversight = HumanOversightInterface(StaticReviewQueue())
+    decision = oversight.override("adjust", REVIEWER, action="modify_next_turn")
+    assert decision.decision == "modify"
+    assert decision.modifications == {"action": "modify_next_turn"}
+
+
+def test_explanation_report_records_failures_and_serializes() -> None:
+    events = [
+        AgentEvent.started("planner", "draft"),
+        AgentEvent.tool_called("planner", "draft", "search"),
+        AgentEvent.failed("planner", "draft", AgentFailureClass.TOOL_ERROR, "boom"),
+    ]
+    report = ExplanationReport.from_events("turn-9", events)
+    assert report.failures == ("tool_error",)
+    d = report.to_dict()
+    assert d["turn_id"] == "turn-9"
+    assert d["failures"] == ["tool_error"]
+    assert d["tools_invoked"] == ["search"]
+    assert d["event_count"] == 3
