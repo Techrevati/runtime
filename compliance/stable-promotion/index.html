@@ -671,6 +671,14 @@ are ready, but it is not approval to publish or label <code>0.3.0</code> as stab
 The inventory can prove that the candidate is reviewable. This checklist proves
 that the reviewed candidate is safe enough to become the stable production
 package.</p>
+<blockquote>
+<p><strong>Pre-1.0 policy.</strong> This external-evidence promotion record applies to the
+<code>0.3.0</code> hardening line and to <code>1.0.0</code>+ stable promotions. Pre-1.0 (<code>0.x</code>)
+minor releases ship on the automated CI gates (lint, types, tests, coverage,
+supply-chain, public-API and branding guards); the controlled pilot, rollback
+proof, and reviewer sign-off become mandatory from <code>1.0.0</code>, when the
+API-stability contract begins.</p>
+</blockquote>
 <p>Do not use any of these as stable approval by themselves:</p>
 <ul>
 <li>local/server production gate output,</li>
