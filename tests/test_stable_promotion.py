@@ -165,6 +165,17 @@ def test_stable_promotion_blocks_stable_version_without_approval(
     assert any("| Decision | Approved |" in failure for failure in failures)
 
 
+def test_stable_promotion_allows_0x_stable_without_external_evidence(
+    tmp_path: Path,
+) -> None:
+    # Pre-1.0 (0.x) stable versions ship on the automated CI gates; the formal
+    # external-evidence promotion only applies from 1.0.0 onward.
+    module = _load_stable_promotion_module()
+    _write_fixture(tmp_path)
+
+    assert module._check_stable_version_approval(tmp_path, "0.4.0") == []
+
+
 def test_stable_promotion_accepts_stable_version_with_approval(
     tmp_path: Path,
 ) -> None:

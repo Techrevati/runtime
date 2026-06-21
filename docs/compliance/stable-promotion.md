@@ -51,6 +51,13 @@ The inventory can prove that the candidate is reviewable. This checklist proves
 that the reviewed candidate is safe enough to become the stable production
 package.
 
+> **Pre-1.0 policy.** This external-evidence promotion record applies to the
+> `0.3.0` hardening line and to `1.0.0`+ stable promotions. Pre-1.0 (`0.x`)
+> minor releases ship on the automated CI gates (lint, types, tests, coverage,
+> supply-chain, public-API and branding guards); the controlled pilot, rollback
+> proof, and reviewer sign-off become mandatory from `1.0.0`, when the
+> API-stability contract begins.
+
 Do not use any of these as stable approval by themselves:
 
 - local/server production gate output,

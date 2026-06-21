@@ -2,9 +2,9 @@
 
 Author: Techrevati doo
 
-## 0.4.0rc1 - 2026-06-20
+## 0.4.0 - 2026-06-20
 
-The EU AI Act compliance line. Release candidate on `feat/0.4.0`.
+The EU AI Act compliance line.
 
 Added:
 

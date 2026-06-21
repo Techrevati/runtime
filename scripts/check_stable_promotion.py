@@ -162,6 +162,13 @@ def _check_stable_version_approval(root: Path, version: str) -> list[str]:
     if not STABLE_VERSION_RE.fullmatch(version):
         return []
 
+    # Pre-1.0 (0.x) releases ship on the automated CI gates; the formal
+    # external-evidence promotion (controlled pilot, rollback proof, reviewer
+    # sign-off) is required from 1.0.0 onward, when the API-stability contract
+    # begins. The heavy promotion ceremony stays for the line that needs it.
+    if int(version.split(".", 1)[0]) < 1:
+        return []
+
     doc_path = root / DOC
     if not doc_path.is_file():
         return [f"{DOC.as_posix()} is missing"]

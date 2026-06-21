@@ -10,7 +10,7 @@ guardrails, policy evaluation, checkpointing, rate limiting, streaming, hooks,
 telemetry sinks, typed outputs, session memory, an MCP tool adapter, and an
 EU AI Act compliance kit.
 
-The package is currently `0.4.0rc1`. This is a release candidate; the `0.x`
+The package is currently `0.4.0`. The `0.x`
 API surface remains unstable, so pin exact versions when you depend on a
 specific behavior.
 
