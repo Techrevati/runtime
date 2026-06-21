@@ -57,8 +57,82 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.3.x/">Migrating from 0.3.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
         
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>EU AI Act</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/">Overview</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/audit-log/">Audit Log (Art. 12)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/human-oversight/">Human Oversight (Art. 14)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/risk-management/">Risk Management (Art. 9)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/cybersecurity/">Cybersecurity (Art. 15)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/incident-reporting/">Incident Reporting (Art. 26/73)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/transparency/">Transparency (Art. 13)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/conformity-checklist/">Conformity Self-Check (Art. 16)</a>
+        
+        
+      </li>
+    
+  </ul>
         
       </li>
     
@@ -236,6 +310,20 @@
     
       <li class="nav-item">
         
+          <a href="../../patterns/durability-postgres/">Durability (PostgreSQL)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/durability-redis/">Durability (Redis)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../patterns/rate-limiting/">Rate Limiting</a>
         
         
@@ -307,6 +395,27 @@
       <li class="nav-item">
         
           <a href="../../patterns/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/mcp/">MCP Tools</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/typed-outputs/">Typed Outputs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/memory/">Session Memory</a>
         
         
       </li>
@@ -478,6 +587,27 @@
     
       <li class="nav-item">
         
+          <a href="../mcp/">MCP</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../output_spec/">Typed Outputs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../memory/">Session Memory</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../pilot/">Pilot Profile</a>
         
         
@@ -528,10 +658,13 @@ implementations ship in this module:</p>
 <p>The <code>CheckpointSaver</code> protocol exposes a small
 <code>get</code> / <code>put</code> / <code>list</code> / <code>delete</code> shape so adapters can bridge it to
 external checkpoint stores without adding runtime dependencies.</p>
-<p>Caveat: this is restart-resumable execution, not full workflow history.
-Step-level replay (re-running a half-finished turn against a recorded history)
-is NOT in scope; checkpoints only fire between turns. Use an external
-coordinator when you need cross-host scheduling or durable timers.</p>
+<p><code>StepCheckpointSaver</code> (implemented by both reference savers) adds a small
+key-addressed step store for <strong>in-tool-call replay</strong>: cache the result of an
+expensive, idempotent step under a caller-chosen <code>step_key</code> so a re-run within
+the same turn can skip it. This is opportunistic memoization keyed by the caller,
+<strong>NOT</strong> full deterministic workflow replay — there is no recorded event history,
+no automatic determinism enforcement, and no cross-host scheduling. Use an
+external workflow engine when you need those.</p>
 
 
 

@@ -1,0 +1,738 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview - Runtime</title>
+    <link rel="stylesheet" href="../styles/runtime.css">
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+  </head>
+  <body>
+    <header class="site-header">
+      
+        <a class="brand" href="..">Runtime</a>
+      
+    </header>
+    <div class="layout">
+      <nav class="site-nav" aria-label="Primary navigation">
+        <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <span>Home</span>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../getting-started/">Getting Started</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../tutorials/end-to-end/">End-to-End Tutorial</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../migrating-from-0.0.x/">Migrating from 0.0.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../migrating-from-0.1.x/">Migrating from 0.1.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../migrating-from-0.3.x/">Migrating from 0.3.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item is-active">
+        
+          <span>EU AI Act</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item is-active">
+        
+          <a href="./">Overview</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="audit-log/">Audit Log (Art. 12)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="human-oversight/">Human Oversight (Art. 14)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="risk-management/">Risk Management (Art. 9)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="cybersecurity/">Cybersecurity (Art. 15)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="incident-reporting/">Incident Reporting (Art. 26/73)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="transparency/">Transparency (Art. 13)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="conformity-checklist/">Conformity Self-Check (Art. 16)</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>Compliance</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/">Compliance Mapping</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/production-readiness/">Production Readiness</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/rc-readiness-summary/">RC Readiness Summary</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/stable-promotion/">Stable Promotion</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/remote-ci-validation/">Remote CI Validation</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/final-diff-review/">Final Diff Review</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/rc-review-handoff/">RC Review Handoff</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/staging-manifest/">Staging Manifest</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/guard-calibration/">Guard Calibration</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/security-review/">Security Review</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/private-rc-publication/">Private RC Publication</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/pilot-operations-runbook/">Pilot Operations Runbook</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/pilot-execution/">Pilot Execution Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/pilot-dry-run/">Pilot Dry-Run</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/pilot-evidence-template/">Controlled RC Pilot Evidence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/rollback-execution/">Rollback Execution Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/rollback-proof-checklist/">Rollback Proof Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/rc-inventory/">Release Candidate Inventory</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>Patterns</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/retry/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/circuit-breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/durability/">Durability</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/durability-postgres/">Durability (PostgreSQL)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/durability-redis/">Durability (Redis)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/rate-limiting/">Rate Limiting</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/quality-gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/agent-events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/policy/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/usage-tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/governance/">Governance Plane</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/mcp/">MCP Tools</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/typed-outputs/">Typed Outputs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/memory/">Session Memory</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/pilot-profile/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>API Reference</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../api/orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/agent_events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/agent_lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/circuit_breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/checkpoint/">Checkpoint</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/policy_engine/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/quality_gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/rate_limit/">Rate Limit</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/retry_policy/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/usage_tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/guardrails/">Guardrails</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/governance/">Governance</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/handoffs/">Handoffs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/sinks/">Sinks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/persistence/">Persistence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/scheduler/">Scheduler</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/otel/">Telemetry</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/mcp/">MCP</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/output_spec/">Typed Outputs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/memory/">Session Memory</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/pilot/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../changelog/">Changelog</a>
+        
+        
+      </li>
+    
+  </ul>
+      </nav>
+      <main class="content" id="content">
+        
+          <h1 id="eu-ai-act-compliance-kit">EU AI Act compliance kit<a class="headerlink" href="#eu-ai-act-compliance-kit" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p>⚠️ <strong>Not legal advice.</strong> This documentation describes engineering primitives
+that map to EU AI Act (Regulation (EU) 2024/1689) technical requirements.
+Whether your system is in scope, what risk category applies, and which exact
+obligations bind you depend on facts and law this library cannot assess.
+Consult qualified counsel and, where applicable, your national competent
+authority (Article 70).</p>
+</blockquote>
+<p><code>techrevati-runtime</code> is <strong>not itself an AI system</strong> — it is infrastructure. But a
+deployer building a high-risk system on it must provide the technical controls
+that Articles 9–15 and 26 require. The <code>techrevati.runtime.compliance</code> subpackage
+ships those controls as composable primitives, bundled behind one facade:
+<code>EUAIActComplianceKit</code>.</p>
+<h2 id="article-primitive-crosswalk">Article → primitive crosswalk<a class="headerlink" href="#article-primitive-crosswalk" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Article</th>
+<th>Requirement</th>
+<th>Primitive</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Art. 9</strong></td>
+<td>Risk management system</td>
+<td><a href="risk-management/"><code>RiskRegistry</code></a> — declare risks, residual levels, review cadence; blocks deployment on <code>UNACCEPTABLE</code></td>
+</tr>
+<tr>
+<td><strong>Art. 12</strong></td>
+<td>Record-keeping</td>
+<td><a href="audit-log/"><code>AuditLogSink</code></a> — tamper-evident, hash-chained event + usage log</td>
+</tr>
+<tr>
+<td><strong>Art. 13</strong></td>
+<td>Transparency to deployers</td>
+<td><a href="transparency/"><code>TransparencyReport</code></a> — instructions-for-use markdown</td>
+</tr>
+<tr>
+<td><strong>Art. 14</strong></td>
+<td>Human oversight</td>
+<td><a href="human-oversight/"><code>HumanOversightInterface</code></a> — pause / review / override</td>
+</tr>
+<tr>
+<td><strong>Art. 15</strong></td>
+<td>Robustness &amp; cybersecurity</td>
+<td><a href="cybersecurity/"><code>OutputIntegrityGuardrail</code> + <code>InputSanitizationHook</code></a>, plus existing <code>PromptInjectionGuardrail</code>, <code>CircuitBreaker</code>, <code>RateLimiter</code></td>
+</tr>
+<tr>
+<td><strong>Art. 26 / 73</strong></td>
+<td>Incident monitoring &amp; reporting</td>
+<td><a href="incident-reporting/"><code>IncidentReportingSink</code> + <code>SeriousIncidentDetector</code></a> — 15-day deadline tracking</td>
+</tr>
+<tr>
+<td><strong>Art. 16</strong></td>
+<td>Conformity assessment</td>
+<td><a href="conformity-checklist/"><code>ConformityChecklist</code></a> — self-check derived from the kit</td>
+</tr>
+</tbody>
+</table>
+<h2 id="quickstart">Quickstart<a class="headerlink" href="#quickstart" title="Permanent link">&para;</a></h2>
+<pre><code class="language-python">from techrevati.runtime import AgentSession
+from techrevati.runtime.compliance import (
+    AuditLogSink, SqliteAuditBackend, EUAIActComplianceKit,
+    RiskRegistry, Risk, ResidualRiskLevel,
+)
+
+kit = EUAIActComplianceKit.standard(
+    audit_log=AuditLogSink(SqliteAuditBackend(&quot;audit.db&quot;)),   # durable Article 12
+    risk_registry=RiskRegistry([
+        Risk(id=&quot;bias&quot;, description=&quot;scoring bias&quot;,
+             residual=ResidualRiskLevel.LOW, affected_articles=(&quot;art.10&quot;,)),
+    ]),
+)
+
+session = AgentSession(role=&quot;loan_assessor&quot;, phase=&quot;decide&quot;, compliance=kit)
+with session.session() as s:
+    result = s.run_tool(&quot;score&quot;, lambda: assess(application))
+
+assert kit.audit_log.verify_chain().valid          # tamper-evidence holds
+print(kit.conformity_assessment_checklist().to_markdown())
+</code></pre>
+<p><code>AgentSession(compliance=kit)</code> automatically:</p>
+<ul>
+<li>fans every event + usage record into the audit log (Article 12) and the
+  incident sink (Articles 26/73), alongside your own sinks;</li>
+<li>prepends the kit's output-integrity guardrail and input-sanitization hook
+  (Article 15);</li>
+<li>asserts the risk registry has no <code>UNACCEPTABLE</code> residual risk before the
+  session opens (Article 9(4)).</li>
+</ul>
+<h2 id="what-this-is-not">What this is <strong>not</strong><a class="headerlink" href="#what-this-is-not" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Not a statement that the runtime is "EU AI Act compliant" — only a deployment
+  can be.</li>
+<li>Not a guarantee of compliance — conformity assessment, data governance,
+  training, and monitoring remain the deployer's responsibility.</li>
+<li>Not certification — we are not a notified body.</li>
+</ul>
+        
+      </main>
+    </div>
+    <footer class="site-footer">
+      <span>Copyright 2026 Techrevati doo</span>
+    </footer>
+  </body>
+</html>

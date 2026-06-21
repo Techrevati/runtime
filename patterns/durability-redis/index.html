@@ -1,0 +1,695 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Durability (Redis) - Runtime</title>
+    <link rel="stylesheet" href="../../styles/runtime.css">
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+  </head>
+  <body>
+    <header class="site-header">
+      
+        <a class="brand" href="../..">Runtime</a>
+      
+    </header>
+    <div class="layout">
+      <nav class="site-nav" aria-label="Primary navigation">
+        <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <span>Home</span>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../getting-started/">Getting Started</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../tutorials/end-to-end/">End-to-End Tutorial</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../migrating-from-0.0.x/">Migrating from 0.0.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../migrating-from-0.1.x/">Migrating from 0.1.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../migrating-from-0.3.x/">Migrating from 0.3.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>EU AI Act</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/">Overview</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/audit-log/">Audit Log (Art. 12)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/human-oversight/">Human Oversight (Art. 14)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/risk-management/">Risk Management (Art. 9)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/cybersecurity/">Cybersecurity (Art. 15)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/incident-reporting/">Incident Reporting (Art. 26/73)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/transparency/">Transparency (Art. 13)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/conformity-checklist/">Conformity Self-Check (Art. 16)</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>Compliance</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/">Compliance Mapping</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/production-readiness/">Production Readiness</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/rc-readiness-summary/">RC Readiness Summary</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/stable-promotion/">Stable Promotion</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/remote-ci-validation/">Remote CI Validation</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/final-diff-review/">Final Diff Review</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/rc-review-handoff/">RC Review Handoff</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/staging-manifest/">Staging Manifest</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/guard-calibration/">Guard Calibration</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/security-review/">Security Review</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/private-rc-publication/">Private RC Publication</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/pilot-operations-runbook/">Pilot Operations Runbook</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/pilot-execution/">Pilot Execution Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/pilot-dry-run/">Pilot Dry-Run</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/pilot-evidence-template/">Controlled RC Pilot Evidence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/rollback-execution/">Rollback Execution Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/rollback-proof-checklist/">Rollback Proof Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/rc-inventory/">Release Candidate Inventory</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item is-active">
+        
+          <span>Patterns</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../retry/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../circuit-breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../durability/">Durability</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../durability-postgres/">Durability (PostgreSQL)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item is-active">
+        
+          <a href="./">Durability (Redis)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rate-limiting/">Rate Limiting</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../quality-gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../agent-events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../policy/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../usage-tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../governance/">Governance Plane</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../mcp/">MCP Tools</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../typed-outputs/">Typed Outputs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../memory/">Session Memory</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-profile/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>API Reference</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../../api/orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/agent_events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/agent_lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/circuit_breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/checkpoint/">Checkpoint</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/policy_engine/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/quality_gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/rate_limit/">Rate Limit</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/retry_policy/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/usage_tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/guardrails/">Guardrails</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/governance/">Governance</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/handoffs/">Handoffs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/sinks/">Sinks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/persistence/">Persistence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/scheduler/">Scheduler</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/otel/">Telemetry</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/mcp/">MCP</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/output_spec/">Typed Outputs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/memory/">Session Memory</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/pilot/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../changelog/">Changelog</a>
+        
+        
+      </li>
+    
+  </ul>
+      </nav>
+      <main class="content" id="content">
+        
+          <h1 id="durable-execution-on-redis">Durable execution on Redis<a class="headerlink" href="#durable-execution-on-redis" title="Permanent link">&para;</a></h1>
+<p>For low-latency, shared checkpoint storage, implement <code>CheckpointSaver</code> against
+Redis. Install the deps:</p>
+<pre><code class="language-bash">pip install 'techrevati-runtime[redis]'
+</code></pre>
+<p>This is a <strong>recipe</strong>, not a shipped module. Redis is best for short-to-medium
+retention and fast cross-process resume; for long-term audit retention prefer a
+relational store (see <a href="../durability-postgres/">PostgreSQL</a>).</p>
+<pre><code class="language-python">import json
+from datetime import UTC, datetime
+from uuid import uuid4
+
+import redis
+from techrevati.runtime import Checkpoint
+
+
+class RedisSaver:  # satisfies CheckpointSaver structurally
+    def __init__(self, client: redis.Redis, *, ttl_seconds: int | None = None) -&gt; None:
+        self._r = client
+        self._ttl = ttl_seconds
+
+    def put(self, thread_id, state, *, parent_id=None, metadata=None):
+        cp = Checkpoint(
+            id=uuid4().hex, thread_id=thread_id,
+            created_at=datetime.now(UTC).isoformat(),
+            state=dict(state), parent_id=parent_id, metadata=dict(metadata or {}),
+        )
+        key = f&quot;ckpt:{thread_id}&quot;
+        # Sorted set by created_at for ordered listing; payloads in a hash.
+        self._r.hset(f&quot;{key}:payloads&quot;, cp.id, json.dumps(cp.to_dict()))
+        self._r.zadd(key, {cp.id: _score(cp.created_at)})
+        if self._ttl:
+            self._r.expire(key, self._ttl)
+            self._r.expire(f&quot;{key}:payloads&quot;, self._ttl)
+        return cp
+
+    def get(self, thread_id, checkpoint_id=None):
+        key = f&quot;ckpt:{thread_id}&quot;
+        if checkpoint_id is None:
+            ids = self._r.zrevrange(key, 0, 0)
+            if not ids:
+                return None
+            checkpoint_id = ids[0]
+        raw = self._r.hget(f&quot;{key}:payloads&quot;, checkpoint_id)
+        return None if raw is None else Checkpoint.from_dict(json.loads(raw))
+
+    def list(self, thread_id, *, before=None, limit=10): ...   # zrevrange + keyset
+    def delete(self, thread_id):
+        self._r.delete(f&quot;ckpt:{thread_id}&quot;, f&quot;ckpt:{thread_id}:payloads&quot;)
+
+
+def _score(created_at: str) -&gt; float:
+    return datetime.fromisoformat(created_at).timestamp()
+</code></pre>
+<p>Inject the client (<code>RedisSaver(redis.Redis(...))</code>) so you can unit-test against
+<a href="https://pypi.org/project/fakeredis/"><code>fakeredis</code></a> without a live server, then
+wire it via <code>AgentSession(saver=RedisSaver(...))</code>.</p>
+        
+      </main>
+    </div>
+    <footer class="site-footer">
+      <span>Copyright 2026 Techrevati doo</span>
+    </footer>
+  </body>
+</html>

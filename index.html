@@ -57,8 +57,82 @@
     
       <li class="nav-item">
         
+          <a href="migrating-from-0.3.x/">Migrating from 0.3.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="consuming-as-a-library/">Consuming as a Library</a>
         
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>EU AI Act</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="eu-ai-act/">Overview</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="eu-ai-act/audit-log/">Audit Log (Art. 12)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="eu-ai-act/human-oversight/">Human Oversight (Art. 14)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="eu-ai-act/risk-management/">Risk Management (Art. 9)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="eu-ai-act/cybersecurity/">Cybersecurity (Art. 15)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="eu-ai-act/incident-reporting/">Incident Reporting (Art. 26/73)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="eu-ai-act/transparency/">Transparency (Art. 13)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="eu-ai-act/conformity-checklist/">Conformity Self-Check (Art. 16)</a>
+        
+        
+      </li>
+    
+  </ul>
         
       </li>
     
@@ -236,6 +310,20 @@
     
       <li class="nav-item">
         
+          <a href="patterns/durability-postgres/">Durability (PostgreSQL)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="patterns/durability-redis/">Durability (Redis)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="patterns/rate-limiting/">Rate Limiting</a>
         
         
@@ -307,6 +395,27 @@
       <li class="nav-item">
         
           <a href="patterns/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="patterns/mcp/">MCP Tools</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="patterns/typed-outputs/">Typed Outputs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="patterns/memory/">Session Memory</a>
         
         
       </li>
@@ -478,6 +587,27 @@
     
       <li class="nav-item">
         
+          <a href="api/mcp/">MCP</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="api/output_spec/">Typed Outputs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="api/memory/">Session Memory</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="api/pilot/">Pilot Profile</a>
         
         
@@ -504,15 +634,16 @@
 <p>The runtime provides sync and async sessions, lifecycle tracking,
 retry classification, circuit breakers, usage tracking, permissions,
 guardrails, policy evaluation, checkpointing, rate limiting, streaming, hooks,
-and telemetry sinks.</p>
-<p>The package is currently <code>0.3.0rc1</code>. This is a release candidate; the <code>0.x</code>
+telemetry sinks, typed outputs, session memory, an MCP tool adapter, and an
+EU AI Act compliance kit.</p>
+<p>The package is currently <code>0.4.0rc1</code>. This is a release candidate; the <code>0.x</code>
 API surface remains unstable, so pin exact versions when you depend on a
 specific behavior.</p>
 <pre><code class="language-bash">pip install techrevati-runtime
 </code></pre>
 <h2 id="whats-included">What's Included<a class="headerlink" href="#whats-included" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>AgentSession</code> / <code>Orchestrator</code> compatibility alias</li>
+<li><code>AgentSession</code> (sync and async orchestration sessions)</li>
 <li>Retry policy</li>
 <li>Circuit breaker</li>
 <li>Usage tracking</li>
@@ -528,6 +659,11 @@ specific behavior.</p>
 <li>Streaming</li>
 <li>Hooks</li>
 <li>Durable sinks</li>
+<li>Typed outputs (<code>OutputSpec</code>)</li>
+<li>Session memory and compaction</li>
+<li>Step-level durability</li>
+<li>MCP tool adapter (<code>[mcp]</code> extra)</li>
+<li>EU AI Act compliance kit (audit log, human oversight, risk registry, incidents, transparency)</li>
 </ul>
 <h2 id="design-tenets">Design Tenets<a class="headerlink" href="#design-tenets" title="Permanent link">&para;</a></h2>
 <ul>

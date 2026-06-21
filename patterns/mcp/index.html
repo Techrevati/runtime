@@ -1,0 +1,691 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MCP Tools - Runtime</title>
+    <link rel="stylesheet" href="../../styles/runtime.css">
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+  </head>
+  <body>
+    <header class="site-header">
+      
+        <a class="brand" href="../..">Runtime</a>
+      
+    </header>
+    <div class="layout">
+      <nav class="site-nav" aria-label="Primary navigation">
+        <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <span>Home</span>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../getting-started/">Getting Started</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../tutorials/end-to-end/">End-to-End Tutorial</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../migrating-from-0.0.x/">Migrating from 0.0.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../migrating-from-0.1.x/">Migrating from 0.1.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../migrating-from-0.3.x/">Migrating from 0.3.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>EU AI Act</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/">Overview</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/audit-log/">Audit Log (Art. 12)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/human-oversight/">Human Oversight (Art. 14)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/risk-management/">Risk Management (Art. 9)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/cybersecurity/">Cybersecurity (Art. 15)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/incident-reporting/">Incident Reporting (Art. 26/73)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/transparency/">Transparency (Art. 13)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/conformity-checklist/">Conformity Self-Check (Art. 16)</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>Compliance</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/">Compliance Mapping</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/production-readiness/">Production Readiness</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/rc-readiness-summary/">RC Readiness Summary</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/stable-promotion/">Stable Promotion</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/remote-ci-validation/">Remote CI Validation</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/final-diff-review/">Final Diff Review</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/rc-review-handoff/">RC Review Handoff</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/staging-manifest/">Staging Manifest</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/guard-calibration/">Guard Calibration</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/security-review/">Security Review</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/private-rc-publication/">Private RC Publication</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/pilot-operations-runbook/">Pilot Operations Runbook</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/pilot-execution/">Pilot Execution Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/pilot-dry-run/">Pilot Dry-Run</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/pilot-evidence-template/">Controlled RC Pilot Evidence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/rollback-execution/">Rollback Execution Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/rollback-proof-checklist/">Rollback Proof Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../compliance/rc-inventory/">Release Candidate Inventory</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item is-active">
+        
+          <span>Patterns</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../retry/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../circuit-breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../durability/">Durability</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../durability-postgres/">Durability (PostgreSQL)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../durability-redis/">Durability (Redis)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../rate-limiting/">Rate Limiting</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../quality-gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../agent-events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../policy/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../usage-tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../governance/">Governance Plane</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item is-active">
+        
+          <a href="./">MCP Tools</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../typed-outputs/">Typed Outputs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../memory/">Session Memory</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../pilot-profile/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>API Reference</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../../api/orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/agent_events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/agent_lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/circuit_breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/checkpoint/">Checkpoint</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/policy_engine/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/quality_gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/rate_limit/">Rate Limit</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/retry_policy/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/usage_tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/guardrails/">Guardrails</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/governance/">Governance</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/handoffs/">Handoffs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/sinks/">Sinks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/persistence/">Persistence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/scheduler/">Scheduler</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/otel/">Telemetry</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/mcp/">MCP</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/output_spec/">Typed Outputs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/memory/">Session Memory</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../api/pilot/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../changelog/">Changelog</a>
+        
+        
+      </li>
+    
+  </ul>
+      </nav>
+      <main class="content" id="content">
+        
+          <h1 id="mcp-tool-integration">MCP tool integration<a class="headerlink" href="#mcp-tool-integration" title="Permanent link">&para;</a></h1>
+<p><code>techrevati-runtime</code> can drive tools exposed by a <a href="https://modelcontextprotocol.io">Model Context
+Protocol</a> server. Install the optional extra:</p>
+<pre><code class="language-bash">pip install 'techrevati-runtime[mcp]'
+</code></pre>
+<p>The runtime has <strong>no tool registry</strong> — <code>run_tool</code> / <code>arun_tool</code> execute
+caller-supplied callables. <code>MCPToolAdapter</code> therefore registers nothing: it wraps
+a connected <code>mcp.ClientSession</code> and hands back coroutine factories that slot
+straight into <code>arun_tool</code>, so MCP tool calls still pass the permission, guardrail,
+governance, and hook checks.</p>
+<pre><code class="language-python">from mcp import ClientSession
+from mcp.client.stdio import StdioServerParameters, stdio_client
+
+from techrevati.runtime import AgentSession
+from techrevati.runtime.mcp import MCPToolAdapter
+
+async def main() -&gt; None:
+    params = StdioServerParameters(command=&quot;my-mcp-server&quot;, args=[])
+    async with stdio_client(params) as (read, write):
+        async with ClientSession(read, write) as mcp_session:
+            await mcp_session.initialize()
+            adapter = MCPToolAdapter(mcp_session)
+
+            for spec in await adapter.list_tools():
+                print(spec.name, &quot;-&quot;, spec.description)
+
+            agent = AgentSession(role=&quot;researcher&quot;, phase=&quot;gather&quot;)
+            async with agent.asession() as session:
+                result = await session.arun_tool(
+                    &quot;search&quot;, adapter.tool(&quot;search&quot;, {&quot;q&quot;: &quot;EU AI Act&quot;})
+                )
+                print(result)
+</code></pre>
+<h2 id="result-normalization">Result normalization<a class="headerlink" href="#result-normalization" title="Permanent link">&para;</a></h2>
+<p><code>adapter.tool(name, arguments)</code> returns a factory; each call invokes the MCP tool
+once and normalizes its <code>CallToolResult</code>:</p>
+<ul>
+<li><code>structuredContent</code> is returned as-is when present;</li>
+<li>otherwise, if <strong>every</strong> content block is text, they are joined into a single
+  string;</li>
+<li>otherwise the raw content list is returned — non-text blocks (images, audio,
+  embedded resources), <strong>including those mixed with text</strong>, are preserved rather
+  than silently dropped, and the caller decides how to handle them;</li>
+<li>an error result raises <code>MCPToolError</code>.</li>
+</ul>
+<p><code>adapter.list_tools()</code> walks the MCP <code>nextCursor</code> pagination to completion, so it
+returns every advertised tool, not just the first page.</p>
+<h2 id="lifecycle-ownership">Lifecycle ownership<a class="headerlink" href="#lifecycle-ownership" title="Permanent link">&para;</a></h2>
+<p>The adapter does <strong>not</strong> own the MCP connection — you manage <code>stdio_client</code> /
+<code>sse_client</code> and <code>ClientSession</code> lifetimes (and call <code>initialize()</code>). The adapter
+only bridges <code>call_tool</code> into the runtime's tool path. The runtime core stays
+zero-dependency; the <code>mcp</code> package is imported behind a guard and is only needed
+when this module is used.</p>
+        
+      </main>
+    </div>
+    <footer class="site-footer">
+      <span>Copyright 2026 Techrevati doo</span>
+    </footer>
+  </body>
+</html>

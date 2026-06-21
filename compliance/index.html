@@ -57,8 +57,82 @@
     
       <li class="nav-item">
         
+          <a href="../migrating-from-0.3.x/">Migrating from 0.3.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../consuming-as-a-library/">Consuming as a Library</a>
         
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>EU AI Act</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/">Overview</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/audit-log/">Audit Log (Art. 12)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/human-oversight/">Human Oversight (Art. 14)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/risk-management/">Risk Management (Art. 9)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/cybersecurity/">Cybersecurity (Art. 15)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/incident-reporting/">Incident Reporting (Art. 26/73)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/transparency/">Transparency (Art. 13)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/conformity-checklist/">Conformity Self-Check (Art. 16)</a>
+        
+        
+      </li>
+    
+  </ul>
         
       </li>
     
@@ -236,6 +310,20 @@
     
       <li class="nav-item">
         
+          <a href="../patterns/durability-postgres/">Durability (PostgreSQL)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/durability-redis/">Durability (Redis)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../patterns/rate-limiting/">Rate Limiting</a>
         
         
@@ -307,6 +395,27 @@
       <li class="nav-item">
         
           <a href="../patterns/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/mcp/">MCP Tools</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/typed-outputs/">Typed Outputs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/memory/">Session Memory</a>
         
         
       </li>
@@ -478,6 +587,27 @@
     
       <li class="nav-item">
         
+          <a href="../api/mcp/">MCP</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/output_spec/">Typed Outputs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/memory/">Session Memory</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../api/pilot/">Pilot Profile</a>
         
         
@@ -554,8 +684,41 @@ data handling, user disclosures, monitoring, incident response, and records.</p>
 <td>Release workflow, distribution checker, SBOM artifacts</td>
 <td>Wheel/sdist validation, metadata check, CycloneDX SBOM</td>
 </tr>
+<tr>
+<td>Tamper-evident record-keeping (Art. 12)</td>
+<td><code>AuditLogSink</code> (<code>SqliteAuditBackend</code>)</td>
+<td>Hash-chained records; <code>verify_chain()</code> detects edits/deletes/reorders</td>
+</tr>
+<tr>
+<td>Human oversight (Art. 14)</td>
+<td><code>HumanOversightInterface</code>, <code>ReviewQueue</code></td>
+<td><code>oversight.review_requested</code> / <code>oversight.review_resolved</code> with reviewer id</td>
+</tr>
+<tr>
+<td>Risk management (Art. 9)</td>
+<td><code>RiskRegistry</code>, <code>Risk</code>, <code>ResidualRiskLevel</code></td>
+<td>Residual-risk register; deployment blocked on <code>UNACCEPTABLE</code></td>
+</tr>
+<tr>
+<td>Robustness (Art. 15)</td>
+<td><code>OutputIntegrityGuardrail</code>, <code>InputSanitizationHook</code></td>
+<td>Blocked tool I/O carrying control/escape bytes</td>
+</tr>
+<tr>
+<td>Incident reporting (Art. 26/73)</td>
+<td><code>IncidentReportingSink</code>, <code>SeriousIncidentDetector</code></td>
+<td><code>IncidentReport</code> with 15-day reporting deadline</td>
+</tr>
+<tr>
+<td>Transparency (Art. 13)</td>
+<td><code>TransparencyReport</code>, <code>AccuracyDeclaration</code></td>
+<td>Instructions-for-use markdown / dict</td>
+</tr>
 </tbody>
 </table>
+<p>For the full EU AI Act compliance kit (the <code>EUAIActComplianceKit</code> facade,
+article-by-article guidance, and the audit-log threat model) see the dedicated
+<a href="../eu-ai-act/">EU AI Act</a> section.</p>
 <h2 id="review-checklist">Review Checklist<a class="headerlink" href="#review-checklist" title="Permanent link">&para;</a></h2>
 <ol>
 <li>Configure <code>GovernancePlane</code> with hard-stop limits for unattended sessions.</li>

@@ -57,8 +57,82 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.3.x/">Migrating from 0.3.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
         
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>EU AI Act</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/">Overview</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/audit-log/">Audit Log (Art. 12)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/human-oversight/">Human Oversight (Art. 14)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/risk-management/">Risk Management (Art. 9)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/cybersecurity/">Cybersecurity (Art. 15)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/incident-reporting/">Incident Reporting (Art. 26/73)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/transparency/">Transparency (Art. 13)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../eu-ai-act/conformity-checklist/">Conformity Self-Check (Art. 16)</a>
+        
+        
+      </li>
+    
+  </ul>
         
       </li>
     
@@ -236,6 +310,20 @@
     
       <li class="nav-item">
         
+          <a href="../../patterns/durability-postgres/">Durability (PostgreSQL)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/durability-redis/">Durability (Redis)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../patterns/rate-limiting/">Rate Limiting</a>
         
         
@@ -307,6 +395,27 @@
       <li class="nav-item">
         
           <a href="../../patterns/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/mcp/">MCP Tools</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/typed-outputs/">Typed Outputs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../patterns/memory/">Session Memory</a>
         
         
       </li>
@@ -478,6 +587,27 @@
     
       <li class="nav-item">
         
+          <a href="../mcp/">MCP</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../output_spec/">Typed Outputs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../memory/">Session Memory</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../pilot/">Pilot Profile</a>
         
         
@@ -508,6 +638,23 @@ failures still close the parent span.</p>
 fragments, tool arguments, or exception text into <code>AgentEvent.detail</code>. Use
 <code>OpenTelemetrySink(include_event_detail=True)</code> only after detail values are
 sanitized and telemetry retention is approved.</p>
+<h2 id="genai-semantic-conventions">GenAI semantic conventions<a class="headerlink" href="#genai-semantic-conventions" title="Permanent link">&para;</a></h2>
+<p>The sink emits OpenTelemetry GenAI semantic-convention signals:</p>
+<ul>
+<li><strong>Spans</strong> carry <code>gen_ai.operation.name</code>, <code>gen_ai.provider.name</code>, and
+  <code>gen_ai.agent.name</code>, with per-tool child spans nested under the agent/phase
+  parent (concurrent calls to the same tool each get their own span via a
+  per-key LIFO stack).</li>
+<li><strong>Metrics</strong> (<code>OpenTelemetryUsageSink</code>): a <code>gen_ai.client.token.usage</code> histogram
+  discriminated by <code>gen_ai.token.type</code> (<code>input</code>/<code>output</code>) and
+  <code>gen_ai.request.model</code>, plus a <code>techrevati.cost.usd</code> counter (no standard GenAI
+  cost metric exists yet).</li>
+<li><strong>Message bodies</strong>: if a caller places <code>gen_ai.input.messages</code> /
+  <code>gen_ai.output.messages</code> in <code>AgentEvent.data</code>, they are emitted as span events
+  of the same name — but only when <code>include_event_detail=True</code>, since message
+  content is sensitive. The runtime does not own the model call, so it never
+  fabricates these; they appear only when the caller supplies them.</li>
+</ul>
 
 
 <div class="doc doc-object doc-module">

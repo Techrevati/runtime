@@ -57,8 +57,82 @@
     
       <li class="nav-item">
         
+          <a href="../migrating-from-0.3.x/">Migrating from 0.3.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../consuming-as-a-library/">Consuming as a Library</a>
         
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>EU AI Act</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/">Overview</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/audit-log/">Audit Log (Art. 12)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/human-oversight/">Human Oversight (Art. 14)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/risk-management/">Risk Management (Art. 9)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/cybersecurity/">Cybersecurity (Art. 15)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/incident-reporting/">Incident Reporting (Art. 26/73)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/transparency/">Transparency (Art. 13)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/conformity-checklist/">Conformity Self-Check (Art. 16)</a>
+        
+        
+      </li>
+    
+  </ul>
         
       </li>
     
@@ -236,6 +310,20 @@
     
       <li class="nav-item">
         
+          <a href="../patterns/durability-postgres/">Durability (PostgreSQL)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/durability-redis/">Durability (Redis)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../patterns/rate-limiting/">Rate Limiting</a>
         
         
@@ -307,6 +395,27 @@
       <li class="nav-item">
         
           <a href="../patterns/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/mcp/">MCP Tools</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/typed-outputs/">Typed Outputs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/memory/">Session Memory</a>
         
         
       </li>
@@ -478,6 +587,27 @@
     
       <li class="nav-item">
         
+          <a href="../api/mcp/">MCP</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/output_spec/">Typed Outputs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/memory/">Session Memory</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../api/pilot/">Pilot Profile</a>
         
         
@@ -505,22 +635,20 @@ on the telemetry sink's wire format or on <code>Orchestrator</code> being the ca
 class name.</p>
 <h2 id="required-action-items">Required action items<a class="headerlink" href="#required-action-items" title="Permanent link">&para;</a></h2>
 <h3 id="1-prefer-agentsession-over-orchestrator">1. Prefer <code>AgentSession</code> over <code>Orchestrator</code><a class="headerlink" href="#1-prefer-agentsession-over-orchestrator" title="Permanent link">&para;</a></h3>
-<p>The canonical class name is now <code>AgentSession</code>. <code>Orchestrator</code> is still
-exported as a deprecated compatibility subclass and constructs the same
-kind of session, but it will be removed no earlier than 0.4.0. Update
-imports at your convenience:</p>
-<pre><code class="language-python"># Old (still works through 0.3.x):
-from techrevati.runtime import Orchestrator
-orch = Orchestrator(role=&quot;writer&quot;, phase=&quot;draft&quot;)
+<p>The canonical class name is now <code>AgentSession</code>. The old <code>Orchestrator</code> name was
+a deprecated compatibility alias through the 0.3.x line and was <strong>removed in
+0.4.0</strong> (see the <a href="../migrating-from-0.3.x/">0.4.0 migration guide</a>). Update
+imports:</p>
+<pre><code class="language-python"># Old 0.1.x name (deprecated in 0.2.x, REMOVED in 0.4.0):
+#   Orchestrator(role=&quot;writer&quot;, phase=&quot;draft&quot;)
 
-# New (recommended):
+# Current:
 from techrevati.runtime import AgentSession
+
 agent = AgentSession(role=&quot;writer&quot;, phase=&quot;draft&quot;)
 </code></pre>
-<p>The constructor signature is identical. <code>Orchestrator(...)</code> returns an
-<code>AgentSession</code> subclass instance, so <code>isinstance(x, AgentSession)</code>
-remains true. Prefer <code>AgentSession</code> for new code so upgrades do not
-emit deprecation warnings.</p>
+<p>The constructor signature is identical to the old <code>Orchestrator</code>, so the call
+site is a one-line rename. Use <code>AgentSession</code> everywhere in current code.</p>
 <h3 id="2-telemetry-sink-wire-format-one-shot-nested">2. Telemetry sink wire format: one-shot -&gt; nested<a class="headerlink" href="#2-telemetry-sink-wire-format-one-shot-nested" title="Permanent link">&para;</a></h3>
 <p>The telemetry sink in 0.1.x emitted one independent span per
 <code>AgentEvent</code>. In 0.2.0 it opens a long-lived parent span on

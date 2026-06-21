@@ -57,8 +57,82 @@
     
       <li class="nav-item">
         
+          <a href="../migrating-from-0.3.x/">Migrating from 0.3.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../consuming-as-a-library/">Consuming as a Library</a>
         
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>EU AI Act</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/">Overview</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/audit-log/">Audit Log (Art. 12)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/human-oversight/">Human Oversight (Art. 14)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/risk-management/">Risk Management (Art. 9)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/cybersecurity/">Cybersecurity (Art. 15)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/incident-reporting/">Incident Reporting (Art. 26/73)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/transparency/">Transparency (Art. 13)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/conformity-checklist/">Conformity Self-Check (Art. 16)</a>
+        
+        
+      </li>
+    
+  </ul>
         
       </li>
     
@@ -236,6 +310,20 @@
     
       <li class="nav-item">
         
+          <a href="../patterns/durability-postgres/">Durability (PostgreSQL)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/durability-redis/">Durability (Redis)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../patterns/rate-limiting/">Rate Limiting</a>
         
         
@@ -307,6 +395,27 @@
       <li class="nav-item">
         
           <a href="../patterns/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/mcp/">MCP Tools</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/typed-outputs/">Typed Outputs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/memory/">Session Memory</a>
         
         
       </li>
@@ -478,6 +587,27 @@
     
       <li class="nav-item">
         
+          <a href="../api/mcp/">MCP</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/output_spec/">Typed Outputs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/memory/">Session Memory</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../api/pilot/">Pilot Profile</a>
         
         
@@ -500,6 +630,60 @@
         
           <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>Author: Techrevati doo</p>
+<h2 id="040rc1-2026-06-20">0.4.0rc1 - 2026-06-20<a class="headerlink" href="#040rc1-2026-06-20" title="Permanent link">&para;</a></h2>
+<p>The EU AI Act compliance line. Release candidate on <code>feat/0.4.0</code>.</p>
+<p>Added:</p>
+<ul>
+<li><code>techrevati.runtime.compliance</code> subpackage with EU AI Act (Regulation (EU)
+  2024/1689) technical primitives:</li>
+<li><code>AuditLogSink</code> — tamper-evident, hash-chained event + usage log with
+    <code>verify_chain()</code> (optional <code>require_genesis=True</code> front-truncation check),
+    optional HMAC envelope, JSONL/CSV export, retention purge, and
+    <code>SqliteAuditBackend</code> / <code>InMemoryAuditBackend</code> (Article 12).</li>
+<li><code>HumanOversightInterface</code>, <code>ReviewQueue</code>, <code>ReviewerIdentity</code>,
+    <code>ExplanationReport</code> — pause / review / override with audit trail (Article 14).</li>
+<li><code>RiskRegistry</code>, <code>Risk</code>, <code>ResidualRiskLevel</code> — residual-risk register that
+    blocks deployment on <code>UNACCEPTABLE</code> (Article 9).</li>
+<li><code>OutputIntegrityGuardrail</code> + <code>InputSanitizationHook</code> — control/escape-byte
+    integrity checks on tool I/O (Article 15).</li>
+<li><code>IncidentReportingSink</code>, <code>SeriousIncidentDetector</code>, <code>IncidentReport</code> —
+    incident detection with 15-day reporting-deadline tracking (Articles 26/73).</li>
+<li><code>TransparencyReport</code>, <code>AccuracyDeclaration</code> — instructions-for-use rendering
+    (Article 13).</li>
+<li><code>EUAIActComplianceKit</code> facade + <code>ConformityChecklist</code> (Article 16 self-check).</li>
+<li><code>AgentSession(audit_log=...)</code> and <code>AgentSession(compliance=kit)</code> — fan audit /
+  incident sinks alongside the caller's sinks, prepend Article 15 guardrails /
+  hooks, and assert no unacceptable residual risk before a session opens.</li>
+<li><code>oversight.review_requested</code> / <code>oversight.review_resolved</code> event names.</li>
+<li><code>docs/eu-ai-act/</code> article-by-article guidance (with the audit-log threat model)
+  and an expanded compliance crosswalk.</li>
+<li>Optional <code>[mcp]</code> extra + <code>techrevati.runtime.mcp</code> module: <code>MCPToolAdapter</code>
+  bridges a connected <code>mcp.ClientSession</code>'s tools into <code>arun_tool</code> as coroutine
+  factories (no tool registry; permission/guardrail/governance/hook checks still
+  apply). Core stays zero-dependency.</li>
+<li>Typed outputs: <code>OutputSpec[T]</code> protocol + <code>JsonOutputSpec</code>, <code>RegexOutputSpec</code>,
+  <code>CallableOutputSpec</code>, and <code>OutputValidationError</code> for validating raw model text
+  into typed values.</li>
+<li>Session memory: <code>ConversationMemory</code> protocol + <code>InMemoryConversationMemory</code>,
+  <code>MemoryMessage</code>, and compaction strategies (<code>NoCompaction</code>, <code>WindowCompaction</code>,
+  <code>TokenBudgetCompaction</code>).</li>
+<li>Step-level durability: <code>StepCheckpointSaver</code> (implemented by <code>InMemorySaver</code> and
+  <code>SqliteSaver</code>) with <code>put_step</code> / <code>get_step</code> / <code>list_steps</code> + <code>StepRecord</code> for
+  in-tool-call replay (caller-keyed memoization, not deterministic replay).</li>
+<li>OTel GenAI message bodies: <code>OpenTelemetrySink</code> emits caller-supplied
+  <code>gen_ai.input.messages</code> / <code>gen_ai.output.messages</code> (from <code>AgentEvent.data</code>) as
+  span events, gated on <code>include_event_detail</code>. (The <code>gen_ai.client.token.usage</code>
+  metric and per-tool span nesting already shipped in 0.3.0.)</li>
+<li>Optional <code>[postgres]</code> and <code>[redis]</code> extras + durability recipe docs for
+  implementing <code>CheckpointSaver</code> / <code>AuditBackend</code> against PostgreSQL and Redis
+  (the zero-dependency core continues to ship SQLite reference savers only).</li>
+</ul>
+<p>Removed:</p>
+<ul>
+<li>The deprecated <code>Orchestrator</code> compatibility alias (use <code>AgentSession</code>). It has
+  emitted a <code>DeprecationWarning</code> since 0.2.1; see
+  <a href="../migrating-from-0.3.x/">docs/migrating-from-0.3.x.md</a>.</li>
+</ul>
 <h2 id="030rc1-2026-05-31">0.3.0rc1 - 2026-05-31<a class="headerlink" href="#030rc1-2026-05-31" title="Permanent link">&para;</a></h2>
 <p>Release candidate for the 0.3.0 line.</p>
 <p>Added:</p>
