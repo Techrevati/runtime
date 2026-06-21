@@ -57,6 +57,7 @@ jobs:
     needs: verify
     permissions:
       contents: write
+      id-token: write
     steps:
       - name: Set up Python
         with:
@@ -107,6 +108,9 @@ jobs:
           repository-url: __PRIVATE_REPOSITORY_URL__
           user: ${{{{ secrets.PRIVATE_PACKAGE_USERNAME }}}}
           password: ${{{{ secrets.PRIVATE_PACKAGE_PASSWORD }}}}
+      - name: Publish to the package index (Trusted Publishing)
+        with:
+          packages-dir: pypi-dist
       - name: Create release
         with:
           files: |
@@ -158,9 +162,11 @@ def test_release_workflow_rejects_token_publish_config() -> None:
     assert any("forbidden" in failure for failure in failures)
 
 
-def test_release_workflow_rejects_id_token_publish_permission() -> None:
+def test_release_workflow_requires_id_token_for_trusted_publishing() -> None:
+    # id-token: write is now REQUIRED for OIDC trusted publishing; removing it
+    # must fail (the inverse of the old policy, which forbade it).
     module = _load_release_workflow_module()
-    workflow = VALID_WORKFLOW + "\n      id-token: write\n"
+    workflow = VALID_WORKFLOW.replace("      id-token: write\n", "")
     failures = module._check_release_workflow(workflow)
     assert any("id-token" in failure for failure in failures)
 

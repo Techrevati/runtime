@@ -186,8 +186,10 @@ jobs:
     timeout-minutes: 15
     needs: verify
     permissions:
-      # contents: write so the release action can create the release.
+      # contents: write so the release action can create the repository release;
+      # id-token: write for package-index trusted publishing (OIDC — no token).
       contents: write
+      id-token: write
 
     steps:
       # actions/checkout v4
@@ -260,6 +262,42 @@ jobs:
       - name: Verify release evidence
         run: python scripts/check_release_evidence.py dist
 
+      - name: Create release
+        # softprops/action-gh-release v2.6.2 — the durable evidence record is
+        # created before any index push, so a publish failure cannot lose it.
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65
+        with:
+          prerelease: ${{ contains(github.ref_name, 'rc') || contains(github.ref_name, 'dev') }}
+          generate_release_notes: true
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
+            dist/sbom.cyclonedx.json
+            dist/sbom.cyclonedx.xml
+            dist/SHA256SUMS
+
+      - name: Stage package-index artifacts
+        # The public package index is the primary distribution channel. Upload
+        # only wheel + sdist; the SBOM stays on the repository release.
+        run: |
+          mkdir -p pypi-dist
+          cp dist/*.whl dist/*.tar.gz pypi-dist/
+
+      - name: Check staged package-index artifacts
+        run: |
+          python scripts/check_distribution.py pypi-dist
+          python -m twine check pypi-dist/*.whl pypi-dist/*.tar.gz
+
+      - name: Publish to the package index (Trusted Publishing)
+        # Final releases only — rc/dev tags stay on the repository pre-release
+        # channel (a public-index upload is permanent, never re-uploadable).
+        if: ${{ !contains(github.ref_name, 'rc') && !contains(github.ref_name, 'dev') }}
+        # pypa/gh-action-pypi-publish release/v1 — OIDC trusted publishing, no
+        # stored token; the index attaches a provenance attestation per upload.
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b
+        with:
+          packages-dir: pypi-dist
+
       - name: Check private package repository configuration
         id: private_registry
         env:
@@ -289,16 +327,3 @@ jobs:
           repository-url: ${{ secrets.PRIVATE_PACKAGE_REPOSITORY_URL }}
           user: ${{ secrets.PRIVATE_PACKAGE_USERNAME }}
           password: ${{ secrets.PRIVATE_PACKAGE_PASSWORD }}
-
-      - name: Create release
-        # softprops/action-gh-release v2.6.2
-        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65
-        with:
-          prerelease: ${{ contains(github.ref_name, 'rc') || contains(github.ref_name, 'dev') }}
-          generate_release_notes: true
-          files: |
-            dist/*.whl
-            dist/*.tar.gz
-            dist/sbom.cyclonedx.json
-            dist/sbom.cyclonedx.xml
-            dist/SHA256SUMS

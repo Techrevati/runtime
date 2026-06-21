@@ -120,6 +120,11 @@ version match the reviewed project metadata when run from the repository root.
 The SBOM and checksum manifest are attached to the release for downstream
 review; they are not uploaded as package artifacts.
 
+Releases are published to the public package index via OIDC **trusted
+publishing** — no long-lived API token is stored in the project, and the index
+records a PEP 740 provenance attestation for each upload, viewable on the
+package's index page.
+
 ## Supported Versions
 
 | Version | Supported |
