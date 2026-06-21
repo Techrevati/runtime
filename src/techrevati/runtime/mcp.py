@@ -92,16 +92,31 @@ class MCPToolAdapter:
         self._session = session
 
     async def list_tools(self) -> list[MCPToolSpec]:
-        """List the tools the connected MCP server advertises."""
-        result = await self._session.list_tools()
-        return [
-            MCPToolSpec(
-                name=tool.name,
-                description=tool.description,
-                input_schema=dict(tool.inputSchema or {}),
+        """List every tool the MCP server advertises, following pagination.
+
+        The MCP ``tools/list`` response is paginated; this walks ``nextCursor``
+        until the server stops returning one, so tools beyond the first page are
+        not silently dropped. A seen-cursor guard avoids an infinite loop if a
+        misbehaving server repeats a cursor.
+        """
+        specs: list[MCPToolSpec] = []
+        cursor: str | None = None
+        seen: set[str] = set()
+        while True:
+            result = await self._session.list_tools(cursor=cursor)
+            specs.extend(
+                MCPToolSpec(
+                    name=tool.name,
+                    description=tool.description,
+                    input_schema=dict(tool.inputSchema or {}),
+                )
+                for tool in result.tools
             )
-            for tool in result.tools
-        ]
+            cursor = result.nextCursor
+            if cursor is None or cursor in seen:
+                break
+            seen.add(cursor)
+        return specs
 
     def tool(
         self, name: str, arguments: dict[str, Any] | None = None
@@ -124,9 +139,15 @@ class MCPToolAdapter:
     def _unwrap(name: str, result: CallToolResult) -> Any:
         """Normalize a ``CallToolResult`` into a plain Python value.
 
-        Prefers ``structuredContent``; otherwise joins text content blocks;
-        otherwise returns the raw content list. Raises :class:`MCPToolError` when
-        the server flags an error.
+        Order of preference:
+
+        1. ``structuredContent`` when the server provides it.
+        2. a single joined string when *every* content block is text.
+        3. otherwise the raw content list — so non-text blocks (images, audio,
+           embedded resources), **including those mixed with text**, are never
+           silently dropped; the caller decides how to handle them.
+
+        Raises :class:`MCPToolError` when the server flags an error.
         """
         if result.isError:
             texts = [
@@ -138,11 +159,7 @@ class MCPToolAdapter:
             raise MCPToolError(f"MCP tool {name!r} failed: {detail}")
         if result.structuredContent is not None:
             return result.structuredContent
-        texts = [
-            str(getattr(block, "text", ""))
-            for block in result.content
-            if getattr(block, "type", None) == "text"
-        ]
-        if texts:
-            return "\n".join(texts)
-        return result.content
+        blocks = result.content
+        if blocks and all(getattr(b, "type", None) == "text" for b in blocks):
+            return "\n".join(str(getattr(b, "text", "")) for b in blocks)
+        return blocks

@@ -44,9 +44,15 @@ async def main() -> None:
 once and normalizes its `CallToolResult`:
 
 - `structuredContent` is returned as-is when present;
-- otherwise text content blocks are joined into a single string;
-- otherwise the raw content list is returned;
+- otherwise, if **every** content block is text, they are joined into a single
+  string;
+- otherwise the raw content list is returned — non-text blocks (images, audio,
+  embedded resources), **including those mixed with text**, are preserved rather
+  than silently dropped, and the caller decides how to handle them;
 - an error result raises `MCPToolError`.
+
+`adapter.list_tools()` walks the MCP `nextCursor` pagination to completion, so it
+returns every advertised tool, not just the first page.
 
 ## Lifecycle ownership
 

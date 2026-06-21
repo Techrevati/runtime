@@ -11,6 +11,7 @@ pytest.importorskip("mcp")
 
 from mcp.types import (  # noqa: E402
     CallToolResult,
+    ImageContent,
     ListToolsResult,
     TextContent,
     Tool,
@@ -29,20 +30,35 @@ class FakeSession:
 
     def __init__(self) -> None:
         self.calls: list[tuple[str, dict[str, Any] | None]] = []
+        self.list_cursors: list[str | None] = []
 
-    async def list_tools(self) -> ListToolsResult:
+    async def list_tools(self, cursor: str | None = None) -> ListToolsResult:
+        # Two-page response so the adapter must follow nextCursor.
+        self.list_cursors.append(cursor)
+        if cursor is None:
+            return ListToolsResult(
+                tools=[
+                    Tool(
+                        name="search",
+                        description="Search the web",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {"q": {"type": "string"}},
+                        },
+                    ),
+                    Tool(name="noop", description=None, inputSchema={"type": "object"}),
+                ],
+                nextCursor="page2",
+            )
         return ListToolsResult(
             tools=[
                 Tool(
-                    name="search",
-                    description="Search the web",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {"q": {"type": "string"}},
-                    },
+                    name="summarize",
+                    description="Summarize text",
+                    inputSchema={"type": "object"},
                 ),
-                Tool(name="noop", description=None, inputSchema={"type": "object"}),
-            ]
+            ],
+            nextCursor=None,
         )
 
     async def call_tool(
@@ -57,6 +73,14 @@ class FakeSession:
             return CallToolResult(
                 content=[], structuredContent={"answer": 42}, isError=False
             )
+        if name == "mixed":
+            return CallToolResult(
+                content=[
+                    TextContent(type="text", text="caption"),
+                    ImageContent(type="image", data="aGk=", mimeType="image/png"),
+                ],
+                isError=False,
+            )
         return CallToolResult(
             content=[TextContent(type="text", text=f"result for {name}")],
             isError=False,
@@ -67,10 +91,29 @@ class FakeSession:
 async def test_list_tools_returns_specs() -> None:
     adapter = MCPToolAdapter(FakeSession())
     specs = await adapter.list_tools()
-    assert [s.name for s in specs] == ["search", "noop"]
+    # Includes the tool on page 2 — pagination is followed, not dropped.
+    assert [s.name for s in specs] == ["search", "noop", "summarize"]
     assert isinstance(specs[0], MCPToolSpec)
     assert specs[0].description == "Search the web"
     assert specs[0].input_schema["type"] == "object"
+
+
+@pytest.mark.asyncio
+async def test_list_tools_follows_pagination_cursor() -> None:
+    session = FakeSession()
+    specs = await MCPToolAdapter(session).list_tools()
+    assert [s.name for s in specs] == ["search", "noop", "summarize"]
+    # The adapter requested the first page (None) then followed nextCursor.
+    assert session.list_cursors == [None, "page2"]
+
+
+@pytest.mark.asyncio
+async def test_unwrap_mixed_content_preserves_non_text() -> None:
+    # text + image must not collapse to text-only (no silent drop of the image).
+    result = await MCPToolAdapter(FakeSession()).tool("mixed")()
+    assert isinstance(result, list)
+    assert len(result) == 2
+    assert {b.type for b in result} == {"text", "image"}
 
 
 @pytest.mark.asyncio
