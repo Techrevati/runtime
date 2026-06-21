@@ -27,13 +27,13 @@ dependencies = []
 [project.optional-dependencies]
 dev = [
     # Pinned to match .pre-commit-config.yaml so local and CI lint agree.
-    "pytest==9.0.3",
+    "pytest==9.1.0",
     "pytest-cov==7.1.0",
-    "pytest-asyncio==1.3.0",
-    "pytest-randomly==4.0.1",
+    "pytest-asyncio==1.4.0",
+    "pytest-randomly==4.1.0",
     "hypothesis==6.155.2",
-    "mypy==1.18.2",
-    "ruff==0.14.5",
+    "mypy==2.1.0",
+    "ruff==0.15.17",
     # Optional integrations need to be importable so we can type-check
     # and test the optional modules under mypy --strict.
     "opentelemetry-api==1.42.1",
@@ -49,7 +49,7 @@ docs = [
     "mkdocs==1.6.1",
     "mkdocstrings[python]==1.0.4",
     "mkdocstrings-python==2.0.4",
-    "ruff==0.14.5",
+    "ruff==0.15.17",
 ]
 release = [
     "build==1.5.0",
