@@ -57,7 +57,7 @@ release = [
     "twine==6.2.0",
 ]
 audit = [
-    "pip-audit==2.10.0",
+    "pip-audit==2.10.1",
 ]
 otel = [
     "opentelemetry-api>=1.27,<2",
