@@ -265,7 +265,7 @@ jobs:
       - name: Create release
         # softprops/action-gh-release v2.6.2 — the durable evidence record is
         # created before any index push, so a publish failure cannot lose it.
-        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65
+        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b
         with:
           prerelease: ${{ contains(github.ref_name, 'rc') || contains(github.ref_name, 'dev') }}
           generate_release_notes: true
