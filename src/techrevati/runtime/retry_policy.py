@@ -14,6 +14,7 @@ import asyncio
 import json
 import logging
 import random
+import re
 from collections.abc import Awaitable, Callable
 from copy import deepcopy
 from dataclasses import dataclass, field
@@ -525,7 +526,10 @@ def backoff_delay(
     - ``"full"`` — ``uniform(0, cap_exp)``: maximum spread, lowest contention.
     - ``"equal"`` — ``cap_exp/2 + uniform(0, cap_exp/2)``: half deterministic.
     - ``"decorrelated"`` (default) — ``uniform(base, prev_delay * 3)``: AWS's
-      fastest algorithm. Callers passing 0 for ``prev_delay`` get ``base``.
+      fastest algorithm. Growth comes only from feeding the previous delay back
+      through ``prev_delay``; ``attempt`` is ignored in this mode. With
+      ``prev_delay=0`` the range is ``uniform(base, base * 3)``, so a loop that
+      never passes ``prev_delay`` does not back off further between attempts.
 
     Backwards compatibility: ``jitter=True`` (bool) maps to ``"full"`` and
     ``jitter=False`` maps to ``"none"``. The ``base ** attempt + 25% noise``
@@ -613,6 +617,11 @@ def _classify_by_type(error: BaseException) -> FailureScenario | None:
     return None
 
 
+def _has_status_code(text: str, code: str) -> bool:
+    """Match ``code`` as a whole number, not inside ``14290`` or ``req_84010``."""
+    return re.search(rf"(?<!\d){code}(?!\d)", text) is not None
+
+
 def classify_exception(error: Exception) -> FailureScenario:
     """Map a Python exception to a FailureScenario for recovery.
 
@@ -649,43 +658,45 @@ def classify_exception(error: Exception) -> FailureScenario:
     if "timeout" in error_str or "timed out" in error_str:
         return FailureScenario.LLM_TIMEOUT
 
+    # Checked before rate limits: these name the context window itself, and
+    # overflow messages routinely carry token counts and "rate limit" advice.
+    if any(
+        kw in error_str
+        for kw in ("context length", "maximum context", "context_length_exceeded")
+    ):
+        return FailureScenario.CONTEXT_OVERFLOW
+
     if (
         "rate limit" in error_str
-        or "429" in error_str
+        or _has_status_code(error_str, "429")
         or "too many requests" in error_str
     ):
         return FailureScenario.LLM_ERROR
 
-    if any(
-        kw in error_str
-        for kw in (
-            "context length",
-            "token limit",
-            "maximum context",
-            "too many tokens",
-            "context_length_exceeded",
-        )
-    ):
+    # Checked after rate limits: per-minute quota errors use the same words.
+    if any(kw in error_str for kw in ("token limit", "too many tokens")):
         return FailureScenario.CONTEXT_OVERFLOW
 
     if "corrupt" in error_str or "malformed" in error_str:
         return FailureScenario.MEMORY_CORRUPTION
 
-    if any(
-        kw in error_str
-        for kw in (
-            "connection refused",
-            "connection reset",
-            "503",
-            "502",
-            "service unavailable",
-            "bad gateway",
+    if (
+        any(
+            kw in error_str
+            for kw in (
+                "connection refused",
+                "connection reset",
+                "service unavailable",
+                "bad gateway",
+            )
         )
+        or _has_status_code(error_str, "503")
+        or _has_status_code(error_str, "502")
     ):
         return FailureScenario.PROVIDER_FAILURE
 
     if (
-        "401" in error_str
+        _has_status_code(error_str, "401")
         or "unauthorized" in error_str
         or "authentication" in error_str
     ):

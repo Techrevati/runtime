@@ -161,9 +161,8 @@ def test_sqlite_list_before_handles_equal_timestamps(tmp_path: Path) -> None:
 
 
 def test_inmem_and_sqlite_agree_on_equal_timestamp_ordering(tmp_path: Path) -> None:
-    # Regression: with equal created_at, InMemorySaver ordered by insertion
-    # order while SqliteSaver ordered by id (DESC) — the two reference savers
-    # returned different orders for the same inputs, breaking interchangeability.
+    # Both reference savers must order the same way. Newest-first by insertion:
+    # a tie on created_at must not fall back to the random id.
     ids = ["aaaa", "cccc", "bbbb"]  # insertion order != id-desc order
     inmem = InMemorySaver()
     sql = SqliteSaver(tmp_path / "agree.db")
@@ -182,12 +181,12 @@ def test_inmem_and_sqlite_agree_on_equal_timestamp_ordering(tmp_path: Path) -> N
         assert (
             [cp.id for cp in inmem.list("t")]
             == [cp.id for cp in sql.list("t")]
-            == ["cccc", "bbbb", "aaaa"]
+            == ["bbbb", "cccc", "aaaa"]
         )
         assert (
             [cp.id for cp in inmem.list("t", before="cccc")]
             == [cp.id for cp in sql.list("t", before="cccc")]
-            == ["bbbb", "aaaa"]
+            == ["aaaa"]
         )
     finally:
         sql.close()
@@ -412,7 +411,7 @@ def test_sqlite_saver_closes_connection_when_wal_setup_fails(
 
     conn = BrokenConnection()
     monkeypatch.setattr(
-        "techrevati.runtime.checkpoint.sqlite3.connect",
+        "techrevati.runtime._internal.sqlite3.connect",
         lambda *args, **kwargs: conn,
     )
 

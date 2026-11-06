@@ -16,6 +16,9 @@ from __future__ import annotations
 
 import math
 import sqlite3
+import time
+from contextlib import suppress
+from pathlib import Path
 
 _METADATA_SCHEMA = """
 CREATE TABLE IF NOT EXISTS techrevati_runtime_metadata (
@@ -23,6 +26,12 @@ CREATE TABLE IF NOT EXISTS techrevati_runtime_metadata (
     schema_version INTEGER NOT NULL
 );
 """
+
+# Switching a fresh database to WAL needs an exclusive lock and SQLite does not
+# always run the busy handler for it, so concurrent first opens fail immediately
+# with "database is locked" unless retried here.
+_WAL_RETRY_SECONDS = 5.0
+_WAL_RETRY_INTERVAL_SECONDS = 0.05
 
 
 def _validate_bool(field_name: str, value: bool) -> bool:
@@ -107,21 +116,58 @@ def _validate_model(model: str) -> str:
     return model.strip()
 
 
+def _is_sqlite_lock_error(exc: sqlite3.OperationalError) -> bool:
+    message = str(exc).lower()
+    return "locked" in message or "busy" in message
+
+
+def _open_wal(path: str | Path) -> sqlite3.Connection:
+    """Open a sqlite connection in WAL mode before any schema mutations.
+
+    WAL is a no-op for ``:memory:``; requesting it there is harmless. Lock
+    contention from concurrent first opens is retried for a bounded time; any
+    other failure closes the connection and propagates.
+    """
+    conn = sqlite3.connect(str(path), check_same_thread=False)
+    deadline = time.monotonic() + _WAL_RETRY_SECONDS
+    while True:
+        try:
+            conn.execute("PRAGMA journal_mode=WAL")
+        except sqlite3.OperationalError as exc:
+            if _is_sqlite_lock_error(exc) and time.monotonic() < deadline:
+                time.sleep(_WAL_RETRY_INTERVAL_SECONDS)
+                continue
+            with suppress(Exception):
+                conn.close()
+            raise
+        except Exception:
+            with suppress(Exception):
+                conn.close()
+            raise
+        return conn
+
+
 def _ensure_schema_version(
     conn: sqlite3.Connection, *, component: str, version: int
 ) -> None:
+    """Record ``component``'s schema version, or reject an unsupported one.
+
+    Safe under concurrent first opens: the insert ignores a row another process
+    committed first, and the version is compared against whichever row won.
+    """
     conn.executescript(_METADATA_SCHEMA)
-    row = conn.execute(
-        "SELECT schema_version FROM techrevati_runtime_metadata WHERE component = ?",
-        (component,),
-    ).fetchone()
+    select = (
+        "SELECT schema_version FROM techrevati_runtime_metadata WHERE component = ?"
+    )
+    row = conn.execute(select, (component,)).fetchone()
     if row is None:
-        conn.execute(
-            "INSERT INTO techrevati_runtime_metadata"
-            " (component, schema_version) VALUES (?, ?)",
-            (component, version),
-        )
-        return
+        with conn:
+            conn.execute(
+                "INSERT OR IGNORE INTO techrevati_runtime_metadata"
+                " (component, schema_version) VALUES (?, ?)",
+                (component, version),
+            )
+        row = conn.execute(select, (component,)).fetchone()
     observed = int(row[0])
     if observed != version:
         raise RuntimeError(

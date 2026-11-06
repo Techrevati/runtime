@@ -154,7 +154,11 @@ def _select_denied_names(
 ) -> set[str] | None:
     try:
         _validate_attempt(attempt)
-        denied = set(_normalize_provider_names("exclude", exclude))
+        if isinstance(exclude, (str, bytes)):
+            raise TypeError("exclude must be a sequence of provider names")
+        # A per-call deny list may legitimately repeat a name (a provider that
+        # failed twice), unlike the configured provider list.
+        denied = {_validate_provider_name("exclude", name) for name in exclude}
         normalized_current = _normalize_current_provider(current)
     except (TypeError, ValueError):
         return None

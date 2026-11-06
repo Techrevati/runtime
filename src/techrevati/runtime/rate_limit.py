@@ -58,6 +58,9 @@ class RateLimitExceededError(Exception):
             f"rate limit exceeded on '{bucket_name}': requested {tokens:g} tokens"
         )
 
+    def __reduce__(self) -> tuple[type[RateLimitExceededError], tuple[str, float]]:
+        return (type(self), (self.bucket_name, self.tokens))
+
 
 def _validate_bucket_name(field_name: str, value: str) -> str:
     if not isinstance(value, str):
@@ -97,7 +100,14 @@ def _validate_clock(clock: Callable[[], float]) -> Callable[[], float]:
 
 
 def _clock_now(clock: Callable[[], float]) -> float:
-    return _validate_amount("clock", clock(), allow_zero=True)
+    """Read the clock. Any finite value is valid: the epoch is arbitrary."""
+    value = clock()
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise TypeError("clock must be a finite number")
+    now = float(value)
+    if not math.isfinite(now):
+        raise ValueError("clock must be finite")
+    return now
 
 
 @dataclass
@@ -203,6 +213,33 @@ class TokenBucket:
             # clock.advance + a fake sleeper to keep the suite fast.
             time.sleep(min(wait, 0.05))
 
+    def debit(self, tokens: float) -> None:
+        """Record ``tokens`` that were already spent, without waiting.
+
+        Unlike ``acquire``, this cannot refuse: the spend already happened, so
+        the balance may go negative (even past ``-capacity``). Later acquires
+        wait until refill has paid the debt.
+        """
+        tokens = _validate_amount("tokens", tokens, allow_zero=True)
+        with self._lock:
+            self._refill()
+            self._tokens -= tokens
+
+    def _settle(self, amount: float, *, timeout: float | None) -> None:
+        """Wait until any debt is repaid; ``amount`` only labels the error."""
+        deadline = self.clock() + timeout if timeout is not None else None
+        while True:
+            with self._lock:
+                self._refill()
+                if self._tokens >= 0:
+                    return
+                wait = -self._tokens / self.refill_per_second
+            if deadline is not None:
+                remaining = deadline - self.clock()
+                if remaining <= 0 or wait > remaining:
+                    raise RateLimitExceededError(self.name, amount)
+            time.sleep(min(wait, 0.05))
+
 
 @dataclass
 class AsyncTokenBucket:
@@ -282,6 +319,28 @@ class AsyncTokenBucket:
                     raise RateLimitExceededError(self.name, tokens)
             await asyncio.sleep(min(wait, 0.05))
 
+    async def debit(self, tokens: float) -> None:
+        """Async sibling of ``TokenBucket.debit``; the balance may go negative."""
+        tokens = _validate_amount("tokens", tokens, allow_zero=True)
+        async with self._lock:
+            self._refill()
+            self._tokens -= tokens
+
+    async def _settle(self, amount: float, *, timeout: float | None) -> None:
+        """Wait until any debt is repaid; ``amount`` only labels the error."""
+        deadline = self.clock() + timeout if timeout is not None else None
+        while True:
+            async with self._lock:
+                self._refill()
+                if self._tokens >= 0:
+                    return
+                wait = -self._tokens / self.refill_per_second
+            if deadline is not None:
+                remaining = deadline - self.clock()
+                if remaining <= 0 or wait > remaining:
+                    raise RateLimitExceededError(self.name, amount)
+            await asyncio.sleep(min(wait, 0.05))
+
 
 @dataclass
 class RateLimiter:
@@ -331,18 +390,35 @@ class RateLimiter:
         output_tokens: int,
         timeout: float | None = None,
     ) -> None:
-        """Block on input/output TPM buckets after a turn completes."""
+        """Charge a completed turn's tokens, then wait out any resulting debt.
+
+        The tokens are already spent, so every configured bucket is debited
+        first and the amount may exceed ``capacity`` (the balance goes
+        negative). ``timeout`` is one budget shared across the buckets. On
+        timeout ``RateLimitExceededError`` is raised and the debits stand,
+        because the provider has counted those tokens either way.
+        """
         input_amount = _validate_amount("input_tokens", input_tokens, allow_zero=True)
         output_amount = _validate_amount(
             "output_tokens", output_tokens, allow_zero=True
         )
         timeout = _validate_timeout(timeout)
-        in_b = self.buckets.get("input_tpm")
-        if in_b is not None and input_amount > 0:
-            in_b.acquire(input_amount, timeout=timeout)
-        out_b = self.buckets.get("output_tpm")
-        if out_b is not None and output_amount > 0:
-            out_b.acquire(output_amount, timeout=timeout)
+        charges = [
+            (bucket, amount)
+            for bucket, amount in (
+                (self.buckets.get("input_tpm"), input_amount),
+                (self.buckets.get("output_tpm"), output_amount),
+            )
+            if bucket is not None and amount > 0
+        ]
+        for bucket, amount in charges:
+            bucket.debit(amount)
+        remaining = timeout
+        for bucket, amount in charges:
+            started = bucket.clock()
+            bucket._settle(amount, timeout=remaining)
+            if remaining is not None:
+                remaining = max(0.0, remaining - (bucket.clock() - started))
 
 
 @dataclass
@@ -386,12 +462,22 @@ class AsyncRateLimiter:
             "output_tokens", output_tokens, allow_zero=True
         )
         timeout = _validate_timeout(timeout)
-        in_b = self.buckets.get("input_tpm")
-        if in_b is not None and input_amount > 0:
-            await in_b.acquire(input_amount, timeout=timeout)
-        out_b = self.buckets.get("output_tpm")
-        if out_b is not None and output_amount > 0:
-            await out_b.acquire(output_amount, timeout=timeout)
+        charges = [
+            (bucket, amount)
+            for bucket, amount in (
+                (self.buckets.get("input_tpm"), input_amount),
+                (self.buckets.get("output_tpm"), output_amount),
+            )
+            if bucket is not None and amount > 0
+        ]
+        for bucket, amount in charges:
+            await bucket.debit(amount)
+        remaining = timeout
+        for bucket, amount in charges:
+            started = bucket.clock()
+            await bucket._settle(amount, timeout=remaining)
+            if remaining is not None:
+                remaining = max(0.0, remaining - (bucket.clock() - started))
 
 
 # Keep AsyncRateLimiter discoverable through the package without

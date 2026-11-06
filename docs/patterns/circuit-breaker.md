@@ -21,6 +21,8 @@ except CircuitOpenError:
 
 Each consecutive failure increments an internal counter. At `failure_threshold` failures, the breaker opens and immediately raises `CircuitOpenError` without calling `fn`. After `recovery_timeout_seconds`, the next call moves the breaker to `HALF_OPEN`; a successful call closes it again, a failure re-opens it.
 
+In `HALF_OPEN` at most `half_open_max_probes` probes are issued per cycle, and the circuit closes once every admitted probe has succeeded. A cycle whose probes have not reported after another `recovery_timeout_seconds` is abandoned and a new probe is admitted, so a hung call cannot block recovery forever (with `recovery_timeout_seconds=0` there is no such window). A result from an abandoned or failed cycle is ignored.
+
 ## API
 
 ```python
@@ -49,4 +51,5 @@ CircuitBreaker(
 ## Notes
 
 - `failure_threshold` is consecutive failures. A single success resets the counter.
-- The HALF_OPEN probe is *one* request. If you need N probes, wrap in your own counter.
+- The HALF_OPEN probe is one request by default. Set `half_open_max_probes` to spread recovery over N requests.
+- A probe that takes longer than `recovery_timeout_seconds` counts as hung: its late result is ignored.

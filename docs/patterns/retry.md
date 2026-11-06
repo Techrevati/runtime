@@ -51,7 +51,9 @@ Wrapped causes are inspected too, so a `RuntimeError` raised from a disk,
 filesystem, or dependency I/O error still maps to `DEPENDENCY_TIMEOUT` instead
 of being reported as an LLM failure.
 
-String matching covers common provider and dependency messages. Database,
+String matching covers common provider and dependency messages. Status codes
+match only as whole numbers, so `14290 tokens` is not a 429 and `req_84010` is
+not a 401. Database,
 SQLite, disk, filesystem, read-only, and no-space-left errors are classified as
 dependency failures so terminal audit events can distinguish runtime
 infrastructure problems from model failures.
@@ -64,7 +66,7 @@ infrastructure problems from model failures.
 
 ## Helpers
 
-- `backoff_delay(attempt, base=2.0, jitter=True)` — exponential delay with optional jitter
+- `backoff_delay(attempt, base=2.0, jitter="decorrelated", cap=60.0, prev_delay=0.0)` — delay with selectable jitter. The default mode ignores `attempt` and grows only when you pass the previous delay back as `prev_delay`
 - `next_provider(available_providers, current)` — pick the next fallback
 - `smaller_context_budget(current_chars, reduction=0.75)` — shrink a context budget
 
