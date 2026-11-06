@@ -45,8 +45,8 @@ def _doc_text() -> str:
             "workflow run commit",
             "If the branch changes after remote CI passes",
             "## Required Jobs",
-            "test matrix for Python 3.11, 3.12, and 3.13",
-            "build matrix for Python 3.11, 3.12, and 3.13",
+            "test matrix for Python 3.11, 3.12, 3.13, and 3.14",
+            "build matrix for Python 3.11, 3.12, 3.13, and 3.14",
             "zero-dependency wheel smoke",
             "all verify-time guard scripts",
             "documentation build and public branding checks",
@@ -67,7 +67,7 @@ def _doc_text() -> str:
 def _ci_workflow_text() -> str:
     return "\n".join(
         (
-            "python-version: ['3.11', '3.12', '3.13']",
+            "python-version: ['3.11', '3.12', '3.13', '3.14']",
             "python scripts/check_remote_ci_validation.py",
             "python scripts/check_module_coverage.py --threshold 88",
             "pip install --no-index --no-deps --find-links dist techrevati-runtime",
@@ -79,7 +79,7 @@ def _ci_workflow_text() -> str:
 def _release_workflow_text() -> str:
     return "\n".join(
         (
-            "python-version: ['3.11', '3.12', '3.13']",
+            "python-version: ['3.11', '3.12', '3.13', '3.14']",
             "python scripts/check_remote_ci_validation.py",
             "python scripts/check_release_tag.py",
             "python scripts/check_distribution.py dist",
@@ -152,7 +152,7 @@ def test_remote_ci_validation_rejects_missing_ci_guard(
     module = _load_remote_ci_validation_module()
     _write_fixture(tmp_path)
     (tmp_path / ".github" / "workflows" / "ci.yml").write_text(
-        "python-version: ['3.11', '3.12', '3.13']",
+        "python-version: ['3.11', '3.12', '3.13', '3.14']",
         encoding="utf-8",
     )
 

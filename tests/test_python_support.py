@@ -25,6 +25,7 @@ def _pyproject(**project_overrides: Any) -> dict[str, Any]:
             "Programming Language :: Python :: 3.11",
             "Programming Language :: Python :: 3.12",
             "Programming Language :: Python :: 3.13",
+            "Programming Language :: Python :: 3.14",
             "Typing :: Typed",
         ],
     }
@@ -79,9 +80,9 @@ def test_python_support_extracts_workflow_versions() -> None:
 with:
   python-version: '3.11'
 matrix:
-  python-version: ['3.11', '3.12', '3.13']
+  python-version: ['3.11', '3.12', '3.13', '3.14']
 """
     assert module._literal_python_versions(text) == [
         ("3.11",),
-        ("3.11", "3.12", "3.13"),
+        ("3.11", "3.12", "3.13", "3.14"),
     ]

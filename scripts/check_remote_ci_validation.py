@@ -36,8 +36,8 @@ DOC_REQUIRED_SNIPPETS = (
     "reviewed commit SHA",
     "workflow run commit",
     "If the branch changes after remote CI passes",
-    "test matrix for Python 3.11, 3.12, and 3.13",
-    "build matrix for Python 3.11, 3.12, and 3.13",
+    "test matrix for Python 3.11, 3.12, 3.13, and 3.14",
+    "build matrix for Python 3.11, 3.12, 3.13, and 3.14",
     "zero-dependency wheel smoke",
     "all verify-time guard scripts",
     "documentation build and public branding checks",
@@ -50,7 +50,7 @@ DOC_REQUIRED_SNIPPETS = (
 )
 
 CI_WORKFLOW_REQUIRED_SNIPPETS = (
-    "python-version: ['3.11', '3.12', '3.13']",
+    "python-version: ['3.11', '3.12', '3.13', '3.14']",
     "python scripts/check_remote_ci_validation.py",
     "python scripts/check_module_coverage.py --threshold 88",
     "pip install --no-index --no-deps --find-links dist techrevati-runtime",
@@ -58,7 +58,7 @@ CI_WORKFLOW_REQUIRED_SNIPPETS = (
 )
 
 RELEASE_WORKFLOW_REQUIRED_SNIPPETS = (
-    "python-version: ['3.11', '3.12', '3.13']",
+    "python-version: ['3.11', '3.12', '3.13', '3.14']",
     "python scripts/check_remote_ci_validation.py",
     "python scripts/check_release_tag.py",
     "python scripts/check_distribution.py dist",

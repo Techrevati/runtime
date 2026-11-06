@@ -57,9 +57,9 @@ and must be collected again.
 
 The remote CI run must include:
 
-- test matrix for Python 3.11, 3.12, and 3.13,
-- build matrix for Python 3.11, 3.12, and 3.13,
-- zero-dependency wheel smoke for Python 3.11, 3.12, and 3.13,
+- test matrix for Python 3.11, 3.12, 3.13, and 3.14,
+- build matrix for Python 3.11, 3.12, 3.13, and 3.14,
+- zero-dependency wheel smoke for Python 3.11, 3.12, 3.13, and 3.14,
 - lint, format, strict typing, and full tests,
 - total and per-module coverage gates,
 - all verify-time guard scripts,

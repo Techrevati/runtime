@@ -24,17 +24,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.11', '3.12', '3.13']
+        python-version: ['3.11', '3.12', '3.13', '3.14']
 
     steps:
-      # actions/checkout v4
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      # actions/checkout v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
 
       - name: Set up Python ${{ matrix.python-version }}
-        # actions/setup-python v5
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        # actions/setup-python v7
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
@@ -192,14 +192,14 @@ jobs:
       id-token: write
 
     steps:
-      # actions/checkout v4
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      # actions/checkout v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
 
       - name: Set up Python
-        # actions/setup-python v5
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        # actions/setup-python v7
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: '3.11'
 
@@ -263,9 +263,9 @@ jobs:
         run: python scripts/check_release_evidence.py dist
 
       - name: Create release
-        # softprops/action-gh-release v2.6.2 — the durable evidence record is
+        # softprops/action-gh-release v3.0.4 — the durable evidence record is
         # created before any index push, so a publish failure cannot lose it.
-        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65
+        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3
         with:
           prerelease: ${{ contains(github.ref_name, 'rc') || contains(github.ref_name, 'dev') }}
           generate_release_notes: true
