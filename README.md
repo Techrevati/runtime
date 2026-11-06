@@ -8,8 +8,8 @@ budget enforcement, role-based tool gating, guardrails, handoffs, policy
 evaluation, checkpointing, rate limiting, streaming, hooks, and telemetry
 integration.
 
-This branch is `0.5.0rc1`; `pip install` resolves the latest published release. The
-`0.x` API surface is still unstable, so pin exact versions when you depend on a
+The package is currently `0.5.0`. The `0.x`
+API surface is still unstable, so pin exact versions when you depend on a
 specific behavior.
 
 ```bash
