@@ -4,7 +4,9 @@
     "input_per_million": "float",
     "output_per_million": "float",
     "cache_write_per_million": "float (optional, default 0.0)",
-    "cache_read_per_million": "float (optional, default 0.0)"
+    "cache_read_per_million": "float (optional, default 0.0)",
+    "cache_write_5min_per_million": "float (optional, default 0.0)",
+    "cache_write_1h_per_million": "float (optional, default 0.0)"
   },
   "models": {}
 }

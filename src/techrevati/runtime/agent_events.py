@@ -2,13 +2,16 @@
 Agent Events — Typed lifecycle events with a failure taxonomy.
 
 Provides a structured event schema for agent execution. Events are
-JSON-serializable and include both an 'event' (full path) and 'type'
-(short tail) field so they can be routed by either consumers.
+JSON-serializable and carry both an 'event' (full path) and a legacy 'type'
+(short tail) field. Route on 'event': 'type' is kept for backward compatibility
+and is ambiguous ('failed' is both ``agent.failed`` and
+``agent.recovery.failed``).
 """
 
 from __future__ import annotations
 
 import json
+import math
 from copy import deepcopy
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
@@ -35,6 +38,9 @@ class AgentEventName(str, Enum):
     AGENT_TOOL_COMPLETED = "agent.tool_completed"
     AGENT_COMPLETED = "agent.completed"
     AGENT_FAILED = "agent.failed"
+    # One model turn (scoped to the turn, not the agent's whole run)
+    AGENT_TURN_COMPLETED = "agent.turn.completed"
+    AGENT_TURN_FAILED = "agent.turn.failed"
     # Phase lifecycle
     PHASE_STARTED = "phase.started"
     PHASE_COMPLETED = "phase.completed"
@@ -119,6 +125,40 @@ def _validate_failed_event_status(
 
 def _now_iso() -> str:
     return datetime.now(UTC).isoformat()
+
+
+def _validate_duration_seconds(value: float) -> float:
+    duration = _validate_finite_number("duration_seconds", value)
+    if duration < 0:
+        raise ValueError("duration_seconds must be >= 0")
+    return duration
+
+
+def _finite_only(value: Any) -> Any:
+    if isinstance(value, float) and not math.isfinite(value):
+        return str(value)
+    if isinstance(value, dict):
+        return {k: _finite_only(v) for k, v in value.items()}
+    if isinstance(value, list | tuple):
+        return [_finite_only(v) for v in value]
+    return value
+
+
+def _strict_json_dumps(value: Any, *, default: Any = None) -> str:
+    """Serialize to strict JSON, spelling non-finite floats as strings.
+
+    ``json.dumps`` would otherwise emit bare ``NaN`` / ``Infinity``, which other
+    JSON parsers reject. Other ``ValueError`` causes (such as circular references)
+    still propagate.
+    """
+    try:
+        return json.dumps(value, ensure_ascii=False, allow_nan=False, default=default)
+    except ValueError as exc:
+        if "Out of range float" not in str(exc):
+            raise
+    return json.dumps(
+        _finite_only(value), ensure_ascii=False, allow_nan=False, default=default
+    )
 
 
 def _coerce_event_name(value: AgentEventName | str) -> AgentEventName:
@@ -209,7 +249,15 @@ class AgentEvent:
     # -- Builder methods (return new instances) --
 
     def with_failure_class(self, fc: AgentFailureClass) -> AgentEvent:
-        return replace(self, failure_class=fc)
+        failure_class = _coerce_failure_class(fc)
+        if self.event == AgentEventName.AGENT_FAILED and failure_class is not None:
+            # Status mirrors the class on failed events (cancelled vs failed).
+            return replace(
+                self,
+                failure_class=failure_class,
+                status=_status_for_failed_event(failure_class),
+            )
+        return replace(self, failure_class=failure_class)
 
     def with_detail(self, detail: str) -> AgentEvent:
         return replace(self, detail=detail)
@@ -310,6 +358,54 @@ class AgentEvent:
             phase=phase,
             failure_class=failure_class,
             detail=detail,
+        )
+
+    @classmethod
+    def turn_completed(
+        cls,
+        role: str,
+        phase: str,
+        *,
+        model: str,
+        duration_seconds: float,
+        data: dict[str, Any] | None = None,
+    ) -> AgentEvent:
+        """One model turn finished; ``model`` may be empty when not supplied."""
+        return cls(
+            event=AgentEventName.AGENT_TURN_COMPLETED,
+            status=AgentEventStatus.COMPLETED,
+            role=role,
+            phase=phase,
+            data={
+                **(data or {}),
+                "model": _validate_optional_str("model", model) or "",
+                "duration_seconds": _validate_duration_seconds(duration_seconds),
+            },
+        )
+
+    @classmethod
+    def turn_failed(
+        cls,
+        role: str,
+        phase: str,
+        *,
+        model: str,
+        duration_seconds: float,
+        error_type: str,
+        data: dict[str, Any] | None = None,
+    ) -> AgentEvent:
+        """One model turn failed; the agent itself may still recover and continue."""
+        return cls(
+            event=AgentEventName.AGENT_TURN_FAILED,
+            status=AgentEventStatus.FAILED,
+            role=role,
+            phase=phase,
+            data={
+                **(data or {}),
+                "model": _validate_optional_str("model", model) or "",
+                "duration_seconds": _validate_duration_seconds(duration_seconds),
+                "error_type": _validate_non_empty_str("error_type", error_type),
+            },
         )
 
     @classmethod
@@ -533,8 +629,8 @@ class AgentEvent:
         return d
 
     def to_json(self) -> str:
-        """JSON string representation."""
-        return json.dumps(self.to_dict(), ensure_ascii=False)
+        """Strict JSON; non-finite floats in ``data`` become strings ("nan", "inf")."""
+        return _strict_json_dumps(self.to_dict())
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> AgentEvent:

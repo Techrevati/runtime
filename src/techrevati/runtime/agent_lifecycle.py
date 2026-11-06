@@ -80,6 +80,9 @@ class InvalidTransitionError(Exception):
         self.target = target
         super().__init__(f"Invalid transition: {current.value} → {target.value}")
 
+    def __reduce__(self) -> tuple[Any, ...]:
+        return (type(self), (self.current, self.target))
+
 
 def _now_iso() -> str:
     return datetime.now(UTC).isoformat()
@@ -298,6 +301,23 @@ class AgentRegistry:
         project_id = _validate_required_project_id(project_id)
         with self._lock:
             return [w for w in self._workers.values() if w.project_id == project_id]
+
+    def evict_terminal(self) -> int:
+        """Forget workers in a terminal state; return how many were removed.
+
+        A registry otherwise keeps every worker it ever created. Long-lived
+        processes opening many sessions on one ``AgentSession`` should call this
+        periodically, after reading any terminal workers they still need.
+        """
+        with self._lock:
+            terminal = [
+                worker_id
+                for worker_id, worker in self._workers.items()
+                if worker.is_terminal
+            ]
+            for worker_id in terminal:
+                del self._workers[worker_id]
+            return len(terminal)
 
     def clear(self) -> None:
         """Clear all workers (for testing)."""

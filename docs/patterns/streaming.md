@@ -73,6 +73,10 @@ async with session_factory.asession() as session:
 
 Use the classmethod constructors (`StreamEvent.text`, `StreamEvent.final`,
 …) to build events in custom plumbing — they enforce the payload shape.
+Event fields are frozen, but `payload` is a plain dict: treat it as read-only when
+fanning an event out, and use `to_dict()` for a private deep copy. `to_json()`
+emits strict JSON and renders non-JSON values such as MCP content blocks through
+their `model_dump`, or else `str`.
 
 ## Cancellation
 

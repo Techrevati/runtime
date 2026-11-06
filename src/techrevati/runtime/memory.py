@@ -11,6 +11,12 @@ context window, so memory applies a **compaction strategy** after each append:
 - :class:`TokenBudgetCompaction` — drop oldest messages until an estimated token
   budget is met (system messages retained first).
 
+Both limiting strategies share two guarantees, even when that means exceeding the
+limit: the newest message always survives (it is usually the question being
+asked), and the kept window never starts on a ``role="tool"`` message, whose
+originating call would otherwise be gone. Messages are selected by position, so
+appending the same ``MemoryMessage`` instance repeatedly is safe.
+
 The runtime does not own the model call, so memory is caller-driven: append what
 you send and receive, then read ``messages()`` to build the next prompt.
 
@@ -92,6 +98,24 @@ def _default_estimator(text: str) -> int:
     return max(1, (len(text) + 3) // 4)
 
 
+def _window_start(messages: list[MemoryMessage], order: list[int], start: int) -> int:
+    """Return a cut into ``order`` whose first kept message is not a tool result.
+
+    Moves forward past orphaned tool results. If that would discard everything
+    kept (the window holds only tool results), moves backward instead to pull in
+    the message that issued them, because the newest message has to survive.
+    """
+    forward = start
+    while forward < len(order) and messages[order[forward]].role == "tool":
+        forward += 1
+    if forward < len(order):
+        return forward
+    backward = start
+    while backward > 0 and messages[order[backward]].role == "tool":
+        backward -= 1
+    return backward
+
+
 @dataclass(frozen=True)
 class NoCompaction:
     """Keep every message."""
@@ -102,7 +126,11 @@ class NoCompaction:
 
 @dataclass(frozen=True)
 class WindowCompaction:
-    """Keep the most recent ``max_messages`` (system messages retained first)."""
+    """Keep the most recent ``max_messages`` (system messages retained first).
+
+    The newest message survives even if system messages alone fill the window,
+    so the result can exceed ``max_messages``; see the module docstring.
+    """
 
     max_messages: int
     keep_system: bool = True
@@ -114,15 +142,19 @@ class WindowCompaction:
     def compact(self, messages: list[MemoryMessage]) -> list[MemoryMessage]:
         if len(messages) <= self.max_messages:
             return list(messages)
-        if not self.keep_system:
-            return list(messages[-self.max_messages :])
-        system = [m for m in messages if m.role == "system"]
-        rest = [m for m in messages if m.role != "system"]
-        budget = max(0, self.max_messages - len(system))
-        kept_rest = rest[-budget:] if budget else []
-        # Preserve original ordering.
-        kept = set(map(id, system)) | set(map(id, kept_rest))
-        return [m for m in messages if id(m) in kept]
+        retained = {
+            i for i, m in enumerate(messages) if self.keep_system and m.role == "system"
+        }
+        order = [i for i in range(len(messages)) if i not in retained]
+        budget = self.max_messages - len(retained)
+        if budget <= 0:
+            # A retained system message as newest already satisfies "newest
+            # survives"; otherwise the newest non-system message takes one slot.
+            budget = 0 if len(messages) - 1 in retained else 1
+        if budget and order:
+            start = max(0, len(order) - budget)
+            retained.update(order[_window_start(messages, order, start) :])
+        return [m for i, m in enumerate(messages) if i in retained]
 
 
 @dataclass(frozen=True)
@@ -130,7 +162,9 @@ class TokenBudgetCompaction:
     """Drop oldest messages until the estimated token budget is met.
 
     System messages are retained first; if they alone exceed the budget they are
-    all kept (correctness over budget — never silently drop instructions).
+    all kept (correctness over budget — never silently drop instructions). The
+    newest message is kept on the same principle, even when it alone exceeds the
+    budget; see the module docstring.
     """
 
     max_tokens: int
@@ -149,22 +183,24 @@ class TokenBudgetCompaction:
         if total <= self.max_tokens:
             return list(messages)
 
-        system = [m for m in messages if m.role == "system"] if self.keep_system else []
-        system_ids = set(map(id, system))
-        budget = self.max_tokens - sum(self._cost(m) for m in system)
+        retained = {
+            i for i, m in enumerate(messages) if self.keep_system and m.role == "system"
+        }
+        budget = self.max_tokens - sum(self._cost(messages[i]) for i in retained)
+        order = [i for i in range(len(messages)) if i not in retained]
 
-        kept_recent: list[MemoryMessage] = []
+        start = len(order)
         used = 0
-        for message in reversed(messages):
-            if id(message) in system_ids:
-                continue
-            cost = self._cost(message)
-            if used + cost > budget:
+        for position in range(len(order) - 1, -1, -1):
+            index = order[position]
+            cost = self._cost(messages[index])
+            if used + cost > budget and index != len(messages) - 1:
                 break
-            kept_recent.append(message)
+            start = position
             used += cost
-        keep_ids = system_ids | set(map(id, kept_recent))
-        return [m for m in messages if id(m) in keep_ids]
+        if start < len(order):
+            retained.update(order[_window_start(messages, order, start) :])
+        return [m for i, m in enumerate(messages) if i in retained]
 
 
 class InMemoryConversationMemory:

@@ -40,6 +40,7 @@ class AgentRegistry:
     def list_active() -> list[AgentWorker]
     def get_by_role_phase(role: str, phase: str) -> AgentWorker | None
     def get_by_project(project_id: int) -> list[AgentWorker]
+    def evict_terminal() -> int  # forget finished workers; returns the count
     def clear() -> None  # testing
 
 class AgentWorker:
@@ -61,3 +62,8 @@ class AgentWorker:
 ```
 
 `AgentWorkerEvent` records the seq, kind, status, detail, and an ISO 8601 timestamp.
+
+A registry keeps every worker it creates, including finished ones. A long-lived
+process that opens many sessions on one `AgentSession` should call
+`registry.evict_terminal()` periodically, after reading any finished workers it
+still needs.

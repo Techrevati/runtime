@@ -30,4 +30,16 @@ Compaction strategies:
   first; if they alone exceed the budget they are all kept — correctness over
   budget, never silently dropping instructions.
 
+Both limiting strategies guarantee two things, even when that means exceeding the
+limit:
+
+- **The newest message always survives.** It is usually the question being asked,
+  so an oversized message is kept over the budget rather than dropped. The result
+  can therefore be larger than `max_messages` or `max_tokens`; check the size
+  yourself if a hard ceiling matters.
+- **The kept window never starts on a `role="tool"` message**, whose originating
+  call would be gone. The cut moves forward past such results. If the window holds
+  nothing but tool results, it moves backward to include the message that issued
+  them. This relies on tool results using the role `tool`.
+
 Write a custom strategy by implementing `CompactionStrategy.compact`.
