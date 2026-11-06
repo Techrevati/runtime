@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -645,6 +659,8 @@ except CircuitOpenError:
     result = fallback()
 </code></pre>
 <p>Each consecutive failure increments an internal counter. At <code>failure_threshold</code> failures, the breaker opens and immediately raises <code>CircuitOpenError</code> without calling <code>fn</code>. After <code>recovery_timeout_seconds</code>, the next call moves the breaker to <code>HALF_OPEN</code>; a successful call closes it again, a failure re-opens it.</p>
+<p>In <code>HALF_OPEN</code> at most <code>half_open_max_probes</code> probes are issued per cycle, and the circuit closes once every admitted probe has succeeded. A cycle whose probes have not reported after another <code>recovery_timeout_seconds</code> is abandoned and a new probe is admitted, so a hung call cannot block recovery forever (with <code>recovery_timeout_seconds=0</code> there is no such window). A downstream that never answers therefore gets at most one new probe per window, and those calls can pile up until they return.</p>
+<p>A success from an abandoned probe closes the circuit, because no failure has been seen since it started; this lets a downstream slower than <code>recovery_timeout_seconds</code> recover under load. Its failure is ignored. Any result from a call admitted before the latest trip is ignored too.</p>
 <h2 id="api">API<a class="headerlink" href="#api" title="Permanent link">&para;</a></h2>
 <pre><code class="language-python">CircuitBreaker(
     name: str,
@@ -695,7 +711,8 @@ except CircuitOpenError:
 <h2 id="notes">Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>failure_threshold</code> is consecutive failures. A single success resets the counter.</li>
-<li>The HALF_OPEN probe is <em>one</em> request. If you need N probes, wrap in your own counter.</li>
+<li>The HALF_OPEN probe is one request by default. Set <code>half_open_max_probes</code> to spread recovery over N requests.</li>
+<li>A probe that takes longer than <code>recovery_timeout_seconds</code> no longer holds its slot: its late success still closes the circuit, its late failure is ignored.</li>
 </ul>
         
       </main>

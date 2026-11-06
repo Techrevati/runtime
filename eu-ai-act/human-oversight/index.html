@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -666,14 +680,40 @@ if decision.decision == &quot;reject&quot;:
     ...
 </code></pre>
 <p>The interface emits <code>oversight.review_requested</code> then <code>oversight.review_resolved</code>
-(with the reviewer id) to the audit log. On an aborting timeout it raises
+to the audit log. The resolved record carries the reviewer id, reason, any
+modifications, whether it timed out, and a SHA-256 of <code>context</code>, which binds the
+decision to what was reviewed. On an aborting timeout it raises
 <code>ReviewTimeoutError</code>; with <code>proceed_with_warning</code> it returns a system-signed
-approval and records the warning.</p>
+approval and records <code>timed_out</code> plus the configured <code>on_timeout</code>.</p>
+<p>The gate enforces <code>timeout_seconds</code> itself, so a hung channel cannot hold a review
+open. It fails closed with <code>InvalidReviewDecisionError</code> on:</p>
+<ul>
+<li>a <code>decision_id</code> that was already used on this interface. Ids are remembered in
+  memory (the most recent 65,536), so make them unique per decision and do not
+  rely on this check across restarts;</li>
+<li>a <code>decided_at</code> outside the review window (with 5 minutes of clock tolerance), or
+  without a timezone;</li>
+<li>a decision with no usable reviewer or <code>decided_at</code>;</li>
+<li>a queue claiming the reserved <code>system</code> reviewer, which only timeouts may use.
+  Case, Unicode form, and invisible characters do not get around this.</li>
+</ul>
+<p>A queue failure or cancellation closes the trail with <code>decision: "error"</code> or
+<code>"cancelled"</code> and propagates. The id is released, so that review can be retried,
+and the same applies if the audit record of a decision cannot be written; that
+attempt is logged, if the log accepts it, with <code>attempted_decision</code> and the reviewer
+id. A retry can therefore get a different answer from the same channel. A refused
+decision is recorded as <code>"error"</code> and its id stays used. An id with surrounding
+whitespace is rejected.</p>
+<p>Inside <code>EUAIActComplianceKit</code>, an interface with no audit log of its own records
+to the kit's log.</p>
 <h2 id="manual-override-article-144d">Manual override (Article 14(4)(d))<a class="headerlink" href="#manual-override-article-144d" title="Permanent link">&para;</a></h2>
 <pre><code class="language-python">reviewer = ReviewerIdentity(id=&quot;alice@corp&quot;, role=&quot;approver&quot;,
                             authentication_method=&quot;oauth&quot;)
 oversight.override(&quot;halt — anomalous outputs&quot;, reviewer, action=&quot;stop&quot;)
 </code></pre>
+<p>The audit record carries the action and reason. Only <code>stop</code>, <code>modify_next_turn</code>,
+and <code>skip_governance</code> are accepted. <code>override</code> records the decision; acting on it
+is the caller's responsibility.</p>
 <h2 id="explaining-a-turn-article-144c">Explaining a turn (Article 14(4)(c))<a class="headerlink" href="#explaining-a-turn-article-144c" title="Permanent link">&para;</a></h2>
 <p><code>ExplanationReport.from_events(turn_id, events)</code> produces a reviewer-readable
 summary (role, phase, tools invoked, failures, final status) with <code>to_markdown()</code>.</p>

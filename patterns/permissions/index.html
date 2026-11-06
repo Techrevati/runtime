@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -668,6 +682,19 @@ if not outcome.allowed:
 <li><strong>Allowed list.</strong> If <code>allowed_tools</code> is set, the tool must be in it.</li>
 <li><strong>Default-allow.</strong> If none of the above triggers a denial, allow.</li>
 </ol>
+<p>A role is identified by its <strong>exact</strong> name. A name that matches a configured role
+only after folding case, Unicode compatibility form (NFKC), or invisible characters,
+such as <code>ADMIN</code> when <code>admin</code> is configured, is <strong>denied</strong> whatever
+<code>default_allow_unknown_roles</code> says. Treating it as <code>admin</code> would grant access its
+caller was not given, and treating it as unknown could escape <code>admin</code>'s deny list.</p>
+<p>Tool names match regardless of those spellings, so <code>DELETE</code> and <code>delete</code> followed by
+a zero-width space or variation selector are both <code>delete</code>. Homoglyphs from other
+scripts, such as a Cyrillic <code>е</code>, stay distinct, so prefer <code>allowed_tools</code> over deny
+lists when tool names come from untrusted input. <code>tool_requirements</code> keys that
+collide after folding, tool names that are empty after folding, and two role configs
+whose names differ only by surrounding whitespace are rejected at construction.</p>
+<p>A role with no config at all is still <strong>allowed</strong> by default. Pass
+<code>default_allow_unknown_roles=False</code> to deny it, which the pilot profile already does.</p>
 <h2 id="api">API<a class="headerlink" href="#api" title="Permanent link">&para;</a></h2>
 <pre><code class="language-python">class PermissionMode(IntEnum): READ_ONLY=1, WORKSPACE_WRITE=2, FULL_ACCESS=3
 

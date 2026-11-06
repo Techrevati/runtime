@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -651,6 +665,25 @@ CLOSED (normal), OPEN (failing), and HALF_OPEN (testing) states.</p>
 and number of in-flight probes permitted in HALF_OPEN. Uses
 <code>time.monotonic</code> for duration checks so clock jumps don't affect
 behavior; the clock function is injectable for deterministic tests.</p>
+<p>Probe bookkeeping in HALF_OPEN:</p>
+<ul>
+<li>At most <code>half_open_max_probes</code> probes are issued per cycle, not merely
+  concurrently, so a cycle always finishes under sustained load: the circuit
+  closes once every admitted probe has succeeded.</li>
+<li>A cycle whose probes have not reported after <code>recovery_timeout_seconds</code> is
+  abandoned and a new probe is admitted, so a hung probe (for example a worker
+  thread orphaned by <code>run_turn(timeout=...)</code>) cannot block recovery forever.
+  With <code>recovery_timeout_seconds=0</code> there is no such window and no reclaim.</li>
+<li>Every call is stamped with the generation current at admission, and the
+  generation moves on each trip. A result from an older generation is ignored: a
+  failure has been seen since that call started, and a slow call that fails late
+  must not delay recovery.</li>
+<li>Abandoning a cycle does not move the generation, because no failure was seen. A
+  success from an abandoned probe closes the circuit, so a downstream slower than
+  <code>recovery_timeout_seconds</code> can still recover. Its failure is ignored, because
+  the current probes decide. A downstream that never answers gets at most one new
+  probe per <code>recovery_timeout_seconds</code>.</li>
+</ul>
 
 
 
@@ -789,6 +822,8 @@ behavior; the clock function is injectable for deterministic tests.</p>
 )</code></pre>
 
     <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="techrevati.runtime.circuit_breaker._BreakerStateMachine">_BreakerStateMachine</span></code></p>
 
 
 
@@ -801,9 +836,10 @@ failure_threshold:
 recovery_timeout_seconds:
     Duration the circuit stays open before allowing probes.
 half_open_max_probes:
-    Concurrent probe calls allowed in HALF_OPEN. Default 1 (Polly
+    Probe calls issued per HALF_OPEN cycle. Default 1 (Polly
     convention); raising to N spreads recovery risk over multiple
-    in-flight calls (Resilience4j defaults to 10).
+    calls (Resilience4j defaults to 10). The circuit closes once every
+    admitted probe has succeeded.
 clock:
     Monotonic time source. Defaults to <code>time.monotonic</code>. Override
     in tests to make timing-dependent behavior deterministic.</p>
@@ -842,9 +878,9 @@ clock:
     <div class="doc doc-contents ">
 
         <p>Execute fn with breaker protection. Raises CircuitOpenError if open.</p>
-<p>In HALF_OPEN state, at most <code>half_open_max_probes</code> concurrent
-calls are admitted; excess callers receive <code>CircuitOpenError</code>
-until in-flight probes complete.</p>
+<p>In HALF_OPEN state, at most <code>half_open_max_probes</code> calls are admitted
+per cycle; excess callers receive <code>CircuitOpenError</code> until the cycle
+completes or expires.</p>
 
 
     </div>
@@ -976,6 +1012,8 @@ until in-flight probes complete.</p>
 )</code></pre>
 
     <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="techrevati.runtime.circuit_breaker._BreakerStateMachine">_BreakerStateMachine</span></code></p>
 
 
 

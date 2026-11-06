@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -655,6 +669,18 @@ memory.add(MemoryMessage(&quot;assistant&quot;, reply))
   messages until an estimated token budget is met. System messages are retained
   first; if they alone exceed the budget they are all kept — correctness over
   budget, never silently dropping instructions.</li>
+</ul>
+<p>Both limiting strategies guarantee two things, even when that means exceeding the
+limit:</p>
+<ul>
+<li><strong>The newest message always survives.</strong> It is usually the question being asked,
+  so an oversized message is kept over the budget rather than dropped. The result
+  can therefore be larger than <code>max_messages</code> or <code>max_tokens</code>; check the size
+  yourself if a hard ceiling matters.</li>
+<li><strong>The kept window never starts on a <code>role="tool"</code> message</strong>, whose originating
+  call would be gone. The cut moves forward past such results. If the window holds
+  nothing but tool results, it moves backward to include the message that issued
+  them. This relies on tool results using the role <code>tool</code>.</li>
 </ul>
 <p>Write a custom strategy by implementing <code>CompactionStrategy.compact</code>.</p>
         

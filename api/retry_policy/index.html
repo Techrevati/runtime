@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -1137,7 +1151,10 @@ can rely on it.</p>
 <li><code>"full"</code> — <code>uniform(0, cap_exp)</code>: maximum spread, lowest contention.</li>
 <li><code>"equal"</code> — <code>cap_exp/2 + uniform(0, cap_exp/2)</code>: half deterministic.</li>
 <li><code>"decorrelated"</code> (default) — <code>uniform(base, prev_delay * 3)</code>: AWS's
-  fastest algorithm. Callers passing 0 for <code>prev_delay</code> get <code>base</code>.</li>
+  fastest algorithm. Growth comes only from feeding the previous delay back
+  through <code>prev_delay</code>; <code>attempt</code> is ignored in this mode. With
+  <code>prev_delay=0</code> the range is <code>uniform(base, base * 3)</code>, so a loop that
+  never passes <code>prev_delay</code> does not back off further between attempts.</li>
 </ul>
 <p>Backwards compatibility: <code>jitter=True</code> (bool) maps to <code>"full"</code> and
 <code>jitter=False</code> maps to <code>"none"</code>. The <code>base ** attempt + 25% noise</code>

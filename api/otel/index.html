@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -642,19 +656,47 @@ sanitized and telemetry retention is approved.</p>
 <p>The sink emits OpenTelemetry GenAI semantic-convention signals:</p>
 <ul>
 <li><strong>Spans</strong> carry <code>gen_ai.operation.name</code>, <code>gen_ai.provider.name</code>, and
-  <code>gen_ai.agent.name</code>, with per-tool child spans nested under the agent/phase
-  parent (concurrent calls to the same tool each get their own span via a
-  per-key LIFO stack).</li>
-<li><strong>Metrics</strong> (<code>OpenTelemetryUsageSink</code>): a <code>gen_ai.client.token.usage</code> histogram
-  discriminated by <code>gen_ai.token.type</code> (<code>input</code>/<code>output</code>) and
-  <code>gen_ai.request.model</code>, plus a <code>techrevati.cost.usd</code> counter (no standard GenAI
-  cost metric exists yet).</li>
+  <code>gen_ai.agent.name</code>. An <code>invoke_agent {role}</code> span nests under the open
+  <code>invoke_workflow</code> span of its phase, when there is one. Tool calls are
+  <code>execute_tool {tool}</code> children with <code>gen_ai.tool.name</code> (concurrent calls to the
+  same tool each get their own span via a per-key LIFO stack). Model turns are
+  <code>chat {model}</code> client spans backdated by the measured duration.</li>
+<li><strong>Token metrics</strong> (<code>OpenTelemetryUsageSink</code>):
+  <code>gen_ai.client.inference.usage.input_tokens</code> (including cached tokens),
+  <code>.output_tokens</code>, <code>.cache_read.input_tokens</code> and <code>.cache_write.input_tokens</code>
+  counters, plus a <code>techrevati.cost.usd</code> counter (no standard GenAI cost metric
+  exists yet).</li>
+<li><strong>Legacy token metric</strong>: the conventions have removed <code>gen_ai.client.token.usage</code>.
+  It stays on by default so existing dashboards keep working; turn it off with
+  <code>OpenTelemetryUsageSink(emit_legacy_token_metric=False)</code> once they read the
+  counters.</li>
+<li><strong>Duration metrics</strong> (<code>OpenTelemetryMetricsSink</code>, an event sink):
+  <code>gen_ai.client.inference.duration</code> and <code>gen_ai.execute_tool.duration</code> histograms
+  in seconds, with <code>error.type</code> on failure. The conventions' bucket boundaries are
+  applied as an advisory on OpenTelemetry API versions that support it; older ones
+  use the SDK's default buckets.</li>
 <li><strong>Message bodies</strong>: if a caller places <code>gen_ai.input.messages</code> /
   <code>gen_ai.output.messages</code> in <code>AgentEvent.data</code>, they are emitted as span events
   of the same name — but only when <code>include_event_detail=True</code>, since message
   content is sensitive. The runtime does not own the model call, so it never
   fabricates these; they appear only when the caller supplies them.</li>
 </ul>
+<p>These conventions now live in the
+<a href="https://github.com/open-telemetry/semantic-conventions-genai"><code>semantic-conventions-genai</code></a>
+repository and are still marked <em>Development</em>, so names can change.</p>
+<p>Two required attributes cannot be known exactly by the runtime:</p>
+<ul>
+<li><code>gen_ai.provider.name</code>: the runtime does not make the model call. Pass the real
+  provider as <code>provider_name</code>; the default <code>techrevati</code> only marks the data's source.</li>
+<li><code>gen_ai.token.modality</code>: always <code>unknown</code>, as the conventions require when
+  <code>UsageSnapshot</code> does not split tokens by modality.</li>
+</ul>
+<h2 id="process-exit">Process exit<a class="headerlink" href="#process-exit" title="Permanent link">&para;</a></h2>
+<p>Spans still open at normal interpreter exit are ended with
+<code>error.type=abrupt_termination</code>. That hook does not run on a default SIGTERM,
+<code>os._exit</code> or a hard crash, and a span ended there only reaches the exporter if the
+<code>TracerProvider</code> shuts down afterwards, so create the provider before the first
+sink. For SIGTERM, or a provider created later, call <code>sink.shutdown()</code> yourself.</p>
 
 
 <div class="doc doc-object doc-module">
@@ -678,10 +720,13 @@ to install instead of getting an obscure <code>AttributeError</code> later.</p>
 runtime sessions as first-class agent activity.</p>
 <p>What gets emitted:
 - <code>AGENT_STARTED</code> / <code>PHASE_STARTED</code> open a long-lived parent span
-  and stash it on the sink keyed by <code>(role, phase)</code>.
+  and stash it on the sink keyed by <code>(role, phase)</code>. An agent span nests under
+  the open span of its phase, when there is one.
 - <code>AGENT_TOOL_CALLED</code> opens a tool span as a child of the active
-  agent span. <code>AGENT_TOOL_COMPLETED</code> or a tool-scoped
-  <code>AGENT_FAILED</code> event closes that tool span.
+  agent span. <code>AGENT_TOOL_COMPLETED</code>, a tool-scoped <code>AGENT_FAILED</code> event, or a
+  post-execution guardrail <code>AGENT_BLOCKED</code> event closes that tool span.
+- <code>AGENT_TURN_COMPLETED</code> / <code>AGENT_TURN_FAILED</code> emit a <code>chat {model}</code> span
+  backdated by the turn's measured duration.
 - Non-terminal failure events with structured data (for example a
   catchable usage-limit overrun or tool failure) are emitted as child
   spans and do not close the agent parent.
@@ -763,6 +808,28 @@ that parent until <code>AGENT_COMPLETED</code> / <code>AGENT_FAILED</code> /
 
 
 
+<div class="doc doc-object doc-function">
+
+
+<h4 id="techrevati.runtime.otel.OpenTelemetrySink.shutdown" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">shutdown</span>
+
+
+<a href="#techrevati.runtime.otel.OpenTelemetrySink.shutdown" class="headerlink" title="Permanent link">&para;</a></h4>
+<pre class="highlight"><code class="language-python doc-signature">shutdown()</code></pre>
+
+    <div class="doc doc-contents ">
+
+        <p>End every span still open, marking it <code>abrupt_termination</code>.</p>
+<p>Call this from a SIGTERM handler or before shutting down the
+<code>TracerProvider</code>; <code>atexit</code> alone covers neither case. Idempotent, and
+the sink stays usable afterwards.</p>
+
+
+    </div>
+
+</div>
+
 
 
   </div>
@@ -785,7 +852,9 @@ that parent until <code>AGENT_COMPLETED</code> / <code>AGENT_FAILED</code> /
 
 <a href="#techrevati.runtime.otel.OpenTelemetryUsageSink" class="headerlink" title="Permanent link">&para;</a></h3>
 <pre class="highlight"><code class="language-python doc-signature">OpenTelemetryUsageSink(
-    meter=None, provider_name=DEFAULT_PROVIDER_NAME
+    meter=None,
+    provider_name=DEFAULT_PROVIDER_NAME,
+    emit_legacy_token_metric=True,
 )</code></pre>
 
     <div class="doc doc-contents ">
@@ -794,10 +863,80 @@ that parent until <code>AGENT_COMPLETED</code> / <code>AGENT_FAILED</code> /
 
         <p>UsageSink that records GenAI client metrics.</p>
 <p>Emits:
-- <code>gen_ai.client.token.usage</code> histogram with <code>gen_ai.token.type</code>
-  discriminator (<code>input</code> / <code>output</code>).
+- <code>gen_ai.client.inference.usage.input_tokens</code> (including cached tokens),
+  <code>.output_tokens</code>, <code>.cache_read.input_tokens</code> and
+  <code>.cache_write.input_tokens</code> counters, as the GenAI conventions define them.
+  <code>gen_ai.token.modality</code> is always <code>unknown</code> because <code>UsageSnapshot</code>
+  does not split tokens by modality; the conventions require that value here.
+  <code>gen_ai.operation.name</code> is always <code>chat</code>, the only inference operation
+  the session reports.
+- <code>gen_ai.client.token.usage</code> histogram with a <code>gen_ai.token.type</code>
+  discriminator (<code>input</code> / <code>output</code>). The conventions have removed this
+  metric; it stays on by default so existing dashboards keep working. Set
+  <code>emit_legacy_token_metric=False</code> once they read the counters.
 - <code>techrevati.cost.usd</code> counter (custom — no standard GenAI cost
   metric yet).</p>
+<p><code>gen_ai.provider.name</code> is required by the conventions but the runtime does
+not know who served a call, so set <code>provider_name</code> to the real provider; the
+default marks data as coming from this library instead.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="techrevati.runtime.otel.OpenTelemetryMetricsSink" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">OpenTelemetryMetricsSink</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#techrevati.runtime.otel.OpenTelemetryMetricsSink" class="headerlink" title="Permanent link">&para;</a></h3>
+<pre class="highlight"><code class="language-python doc-signature">OpenTelemetryMetricsSink(
+    meter=None, provider_name=DEFAULT_PROVIDER_NAME
+)</code></pre>
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>EventSink that records GenAI duration histograms from session events.</p>
+<p>Emits <code>gen_ai.client.inference.duration</code> for each model turn and
+<code>gen_ai.execute_tool.duration</code> for each tool call, in seconds, with the
+conventions' bucket boundaries and <code>error.type</code> on failure. Events without a
+usable <code>duration_seconds</code> are ignored. Use it next to
+:class:<code>OpenTelemetrySink</code>, for example through <code>FanoutEventSink</code>.
+<code>provider_name</code> has the same caveat as on :class:<code>OpenTelemetryUsageSink</code>.</p>
 
 
 

@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -704,6 +718,13 @@ swap between them by changing the <code>saver=</code> argument on <code>AgentSes
   test helpers that re-use a dict between turns will surprise you if
   you check identity. Build a fresh dict per turn.</li>
 </ul>
+<h2 id="ordering-and-failures">Ordering and failures<a class="headerlink" href="#ordering-and-failures" title="Permanent link">&para;</a></h2>
+<p><code>get(thread_id)</code> and <code>list</code> return checkpoints newest-first by insertion, not by
+<code>created_at</code>, so a backward wall-clock step cannot make an older turn look like
+the latest. <code>created_at</code> is informational.</p>
+<p>A write that fails on a lock raises once and rolls back; the saver stays usable
+and sees other writers' commits on the next call. Concurrent processes may open a
+new database at the same time.</p>
 <h2 id="tuning">Tuning<a class="headerlink" href="#tuning" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -754,8 +775,28 @@ caller-chosen <code>step_key</code> and skip it next time.</p>
 <p>This is opportunistic, caller-keyed memoization — <strong>not</strong> full deterministic
 workflow replay. There is no recorded event history and no automatic
 determinism enforcement; you choose the keys and what is safe to cache.</p>
+<h2 id="tool-calls">Tool calls<a class="headerlink" href="#tool-calls" title="Permanent link">&para;</a></h2>
+<p><code>run_tool</code> / <code>arun_tool</code> use the same step store through <code>idempotency_key</code>, so a
+re-run does not repeat a side effect that already completed:</p>
+<pre><code class="language-python">with agent.session(thread_id=&quot;order-7&quot;) as session:
+    session.run_tool(&quot;charge&quot;, charge, idempotency_key=&quot;charge&quot;)
+</code></pre>
+<p>The result is recorded after the tool passes its post-checks. A failed tool is not
+recorded, so a retry runs it again. <strong>The guarantee is at-least-once:</strong> a crash
+between the tool returning and the record being written re-executes it. For
+payments and similar calls, also send the key to the downstream API.</p>
+<p>A non-JSON-serializable result logs a warning and is not recorded. A custom saver
+that does not implement <code>StepCheckpointSaver</code> logs a warning and runs the tool
+normally.</p>
+<h2 id="what-a-replayed-turn-counts-towards">What a replayed turn counts towards<a class="headerlink" href="#what-a-replayed-turn-counts-towards" title="Permanent link">&para;</a></h2>
+<p>A replayed turn adds its recorded usage to the new session's tracker and
+governance state, so a restart cannot reset a budget. Sinks are skipped because
+they saw the original turn. A turn that crosses a budget is checkpointed before
+<code>BudgetExceededError</code> is raised, because it was already paid for: the retry
+replays it and raises the same error without paying again.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
+<li><a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a> — what changed in 0.5.0.</li>
 <li><a href="../../migrating-from-0.0.x/">Migrating from 0.0.x</a> — <code>thread_id</code> /
   <code>idempotency_key</code> are new in 0.2.0; older sessions keep working
   without them.</li>

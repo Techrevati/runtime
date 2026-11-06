@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -659,6 +673,7 @@ for event in worker.events:
     def list_active() -&gt; list[AgentWorker]
     def get_by_role_phase(role: str, phase: str) -&gt; AgentWorker | None
     def get_by_project(project_id: int) -&gt; list[AgentWorker]
+    def evict_terminal() -&gt; int  # forget finished workers; returns the count
     def clear() -&gt; None  # testing
 
 class AgentWorker:
@@ -679,6 +694,10 @@ class AgentWorker:
     def to_dict() -&gt; dict
 </code></pre>
 <p><code>AgentWorkerEvent</code> records the seq, kind, status, detail, and an ISO 8601 timestamp.</p>
+<p>A registry keeps every worker it creates, including finished ones. A long-lived
+process that opens many sessions on one <code>AgentSession</code> should call
+<code>registry.evict_terminal()</code> periodically, after reading any finished workers it
+still needs.</p>
         
       </main>
     </div>

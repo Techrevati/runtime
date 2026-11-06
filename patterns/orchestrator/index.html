@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -708,6 +722,59 @@ pilot failure-class distribution can separate intentional stops from defects.</p
 </code></pre>
 <p>Same parameters; <code>coro_factory</code> instead of <code>fn</code>. See
 <a href="../../api/orchestrator/"><code>AsyncOrchestrationSession</code></a>.</p>
+<h2 id="tool-calls-timeouts-replay-and-arguments">Tool calls: timeouts, replay, and arguments<a class="headerlink" href="#tool-calls-timeouts-replay-and-arguments" title="Permanent link">&para;</a></h2>
+<p><code>run_tool</code> / <code>arun_tool</code> accept three optional keywords:</p>
+<pre><code class="language-python">session.run_tool(
+    &quot;charge&quot;,
+    lambda: payments.charge(order),
+    args={&quot;order&quot;: order.id},       # visible to hooks and loop detection
+    timeout=10.0,                   # raises ToolTimeoutError
+    idempotency_key=f&quot;charge:{order.id}&quot;,  # replayed on a re-run
+)
+</code></pre>
+<ul>
+<li><code>timeout</code> cancels an async tool. A sync tool runs on a worker thread that Python
+  cannot kill, so it finishes in the background: a tool whose side effects must
+  not outlive the deadline has to enforce its own timeout too.</li>
+<li><code>idempotency_key</code> needs a <code>saver</code> and a <code>thread_id</code>. Permission and governance
+  checks still run on a replay, so revoking a permission takes effect immediately.
+  See <a href="../durability/#tool-calls">Durability</a> for the exact guarantee.</li>
+</ul>
+<p><code>arun_parallel_tools</code> only supplies the concurrency. To keep the checks, have each
+factory go through <code>arun_tool</code>:</p>
+<pre><code class="language-python">await session.arun_parallel_tools([
+    lambda: session.arun_tool(&quot;search&quot;, search_factory, args={&quot;q&quot;: q}),
+    lambda: session.arun_tool(&quot;fetch&quot;, fetch_factory, args={&quot;url&quot;: url}),
+])
+</code></pre>
+<h2 id="falling-back-to-another-provider">Falling back to another provider<a class="headerlink" href="#falling-back-to-another-provider" title="Permanent link">&para;</a></h2>
+<p>With a <code>provider_router</code> configured, <code>run_turn_with_fallback</code> /
+<code>arun_turn_with_fallback</code> retry a failed turn on the next model the router offers:</p>
+<pre><code class="language-python">agent = AgentSession(
+    role=&quot;writer&quot;,
+    phase=&quot;draft&quot;,
+    provider_router=StaticProviderRouter((&quot;model-a&quot;, &quot;model-b&quot;)),
+)
+with agent.session() as session:
+    text, usage, used_model = session.run_turn_with_fallback(
+        lambda model: call_model(model, prompt),
+        model=&quot;model-a&quot;,
+    )
+</code></pre>
+<p>Each attempt is a full turn, so it counts towards <code>max_iterations</code> and governance.
+By default only <code>PROVIDER_FAILURE</code> and <code>LLM_TIMEOUT</code> switch provider; pass
+<code>failover_on</code> to change that. Runtime limits, permission denials, and an open
+circuit always propagate. A circuit breaker on the session is shared by every
+model, so it should guard something they have in common, such as a gateway.</p>
+<h2 id="handing-off-to-another-role">Handing off to another role<a class="headerlink" href="#handing-off-to-another-role" title="Permanent link">&para;</a></h2>
+<p><code>handoff_to</code> reserves a worker for the target role. Pass the returned <code>Handoff</code> to
+the target's session so it runs on that worker instead of leaving it
+<code>INITIALIZING</code>:</p>
+<pre><code class="language-python">handoff = session.handoff_to(&quot;reviewer&quot;, &quot;draft ready&quot;)
+reviewer = AgentSession(role=&quot;reviewer&quot;, phase=&quot;draft&quot;, registry=agent.registry)
+with reviewer.session(handoff=handoff) as review:
+    ...
+</code></pre>
 <h2 id="when-to-use-this">When to use this<a class="headerlink" href="#when-to-use-this" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>You want a single object to compose with</strong>: the orchestrator

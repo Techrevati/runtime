@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -656,6 +670,11 @@ context window, so memory applies a <strong>compaction strategy</strong> after e
 <li>:class:<code>TokenBudgetCompaction</code> — drop oldest messages until an estimated token
   budget is met (system messages retained first).</li>
 </ul>
+<p>Both limiting strategies share two guarantees, even when that means exceeding the
+limit: the newest message always survives (it is usually the question being
+asked), and the kept window never starts on a <code>role="tool"</code> message, whose
+originating call would otherwise be gone. Messages are selected by position, so
+appending the same <code>MemoryMessage</code> instance repeatedly is safe.</p>
 <p>The runtime does not own the model call, so memory is caller-driven: append what
 you send and receive, then read <code>messages()</code> to build the next prompt.</p>
 <pre><code>memory = InMemoryConversationMemory(
@@ -902,6 +921,8 @@ memory.add(MemoryMessage("assistant", reply))
 
 
         <p>Keep the most recent <code>max_messages</code> (system messages retained first).</p>
+<p>The newest message survives even if system messages alone fill the window,
+so the result can exceed <code>max_messages</code>; see the module docstring.</p>
 
 
 
@@ -957,7 +978,9 @@ memory.add(MemoryMessage("assistant", reply))
 
         <p>Drop oldest messages until the estimated token budget is met.</p>
 <p>System messages are retained first; if they alone exceed the budget they are
-all kept (correctness over budget — never silently drop instructions).</p>
+all kept (correctness over budget — never silently drop instructions). The
+newest message is kept on the same principle, even when it alone exceeds the
+budget; see the module docstring.</p>
 
 
 

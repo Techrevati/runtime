@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -655,6 +669,8 @@ failure recovery branch:</p>
     exclude=(&quot;model-already-429d&quot;,),
 )
 </code></pre>
+<p><code>session.run_turn_with_fallback</code> does this loop for you; see
+<a href="../orchestrator/#falling-back-to-another-provider">Orchestrator</a>.</p>
 <p><code>select</code> is allowed to return <code>None</code> — that's the signal to escalate
 to the recipe's <code>EscalationPolicy</code> rather than continue retrying.</p>
 <h2 id="when-to-use">When to use<a class="headerlink" href="#when-to-use" title="Permanent link">&para;</a></h2>

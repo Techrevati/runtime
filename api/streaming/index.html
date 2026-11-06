@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -692,9 +706,9 @@ access to the existing usage tracker, governance plane, and hook chain.</p>
 
 
         <p>One event in a turn-level structured stream.</p>
-<p>Frozen so consumers can fan it out to multiple sinks without worrying
-about concurrent mutation. <code>payload</code> is a free-form dict whose
-shape is documented per <code>type</code> below.</p>
+<p>The fields are frozen, but <code>payload</code> is a plain dict: treat it as read-only
+when fanning an event out, and use <code>to_dict()</code> for a private deep copy.
+Its shape is documented per <code>type</code> below.</p>
 <table>
 <thead>
 <tr>

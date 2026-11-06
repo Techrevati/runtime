@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -842,6 +856,13 @@ own RolePermissionConfig and tool_requirements.</p>
 
 
         <p>Evaluates tool access based on role configs and tool requirements.</p>
+<p>A role is identified by its <strong>exact</strong> name. A name that only matches a
+configured role after folding case, Unicode form, or invisible characters is
+denied, whatever <code>default_allow_unknown_roles</code> says: treating it as that role
+could grant access its caller was not given, and treating it as unknown could
+escape that role's deny list.</p>
+<p>Tool names match regardless of those spellings, so a deny list cannot be escaped
+by respelling. Keys that collide after folding are rejected at construction.</p>
 
 
 

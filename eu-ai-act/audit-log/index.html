@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -649,6 +663,28 @@ assert result.valid                  # False + first_bad_sequence on tampering
 <p><code>AuditLogSink</code> implements both <code>EventSink</code> (<code>emit</code>) and <code>UsageSink</code> (<code>record</code>),
 so a session writes lifecycle events <em>and</em> per-turn usage into one chain. On
 construction it resumes from the persisted tip, so the chain survives restarts.</p>
+<p>Several sinks — threads or processes — can share one <code>SqliteAuditBackend</code>. Each
+write reads the tip and inserts inside one <code>BEGIN IMMEDIATE</code> transaction, so
+writers serialize into a single chain, and a failed write rolls back instead of
+holding the write lock. A third-party backend gets the same guarantee by adding
+<code>append_chained(build)</code>; one that only has <code>append</code> is single-writer.</p>
+<p>A write waits up to <code>SqliteAuditBackend(path, busy_timeout_seconds=30)</code> for other
+writers, then raises. Emitting is synchronous, so under extreme contention an event
+loop can block for that long; lower it if latency matters more than keeping the
+record. As measured, 32 processes writing to one file peaked at about 15 s.</p>
+<p>Event content never prevents a record, and is copied in bounded time. Only the
+offending value is replaced: a cycle becomes <code>"&lt;cycle&gt;"</code>, an unrepresentable object
+its <code>repr</code>, nesting past 100 levels or graphs past 100,000 values are truncated
+with a marker, and lone surrogates are escaped. <code>emitted_at</code> is validated before it
+becomes the record's timestamp (the raw value stays in the payload).</p>
+<p>A tampered row never stops the log. Bytes that are not valid UTF-8 and payloads too
+deep to parse read as a hash mismatch with <code>first_bad_sequence</code>, export still
+works, and new records keep chaining past an edited tip. An unusable purge marker
+reports invalid and is otherwise ignored. A row edited to the largest possible
+sequence leaves no number above it, so new records take the highest free sequence
+below it. Such records sort before the edited row, and the chain reports invalid.</p>
+<p><code>repr</code> of an arbitrary object is that object's own code. Its exceptions are
+contained, but a slow <code>__repr__</code> still runs for as long as it takes.</p>
 <h2 id="optional-hmac-envelope">Optional HMAC envelope<a class="headerlink" href="#optional-hmac-envelope" title="Permanent link">&para;</a></h2>
 <p>Pass <code>signing_key=...</code> to attach a detached HMAC over each <code>record_hash</code>. The key
 is never written to storage; verification with the wrong key (or none) fails:</p>
@@ -667,7 +703,61 @@ sink.verify_chain(signing_key=hsm_key).valid
   <code>verify_chain(require_genesis=True)</code> to additionally assert the chain starts at
   the genuine genesis (<code>prev_hash == "0" * 64</code>). To detect front-truncation <em>while</em>
   still purging, publish the chain tip to a write-once external anchor (below).</li>
-<li><code>export(fmt="jsonl")</code> / <code>export(fmt="csv")</code> stream the chain for an auditor.</li>
+<li><code>purge_expired</code> removes only the contiguous oldest prefix, comparing timestamps
+  as instants, so a backdated record cannot punch a hole in the chain. The prefix
+  stops at the first record that is not expired, so such a record can delay later
+  purges.</li>
+<li><code>export(fmt="jsonl")</code> / <code>export(fmt="csv")</code> stream the chain for an auditor. CSV
+  cells are quoted, and cells a spreadsheet would run as a formula are neutralized.</li>
+</ul>
+<h2 id="tail-truncation">Tail truncation<a class="headerlink" href="#tail-truncation" title="Permanent link">&para;</a></h2>
+<p>Deleting the <em>newest</em> rows leaves a shorter chain that is still internally valid,
+so hashes alone cannot reveal it. What detects it depends on what survives:</p>
+<table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Detected by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>The same sink that wrote the rows is still alive</td>
+<td><code>verify_chain()</code>, against the tip the sink remembers</td>
+</tr>
+<tr>
+<td>The process restarted</td>
+<td>only <code>verify_chain(expected_tip=...)</code></td>
+</tr>
+<tr>
+<td>No tip was published outside the log</td>
+<td><strong>not detected</strong></td>
+</tr>
+</tbody>
+</table>
+<p>A sink resumes from whatever tip it finds at construction, so after a restart a
+truncated log looks complete. To close that gap, publish <code>sink.tip()</code> to a
+write-once store periodically and pass it back:</p>
+<pre><code class="language-python">tip = sink.tip()                      # ChainTip(sequence, record_hash) — publish it
+sink.verify_chain(expected_tip=tip)   # invalid if the log no longer reaches that tip
+</code></pre>
+<p>A purge records the newest record it removed, so a sink can tell that from
+truncation, including a purge by another process, and the next record continues the
+chain past it. What that marker proves depends on the key:</p>
+<ul>
+<li><strong>With a <code>signing_key</code></strong>, the sink that purges signs the marker with its own HMAC
+  over the sequence and hash. A marker with a missing or invalid signature makes
+  <code>verify_chain</code> invalid. Purge through <code>AuditLogSink.purge_expired</code>: calling
+  <code>backend.purge_before</code> directly, or purging from a sink without the key, leaves an
+  unsigned marker, which keyed verifiers report. A real signed marker can be left in
+  place while the rows <em>after</em> it are deleted, so tail truncation after a restart
+  still needs <code>expected_tip</code>.</li>
+<li><strong>Without a key, a marker proves nothing.</strong> Anyone who can write to the database
+  can delete every record and insert a marker naming the real tip's sequence and
+  hash. <code>verify_chain</code> then reports valid, including with <code>require_genesis=True</code> and
+  with <code>expected_tip</code>, whose anchor is weakened to a hash the attacker can read from
+  the log before deleting it. Use a key if the log must withstand someone with
+  database write access.</li>
 </ul>
 <h2 id="threat-model-tamper-evident-not-tamper-proof">Threat model — tamper-evident, <strong>not</strong> tamper-proof<a class="headerlink" href="#threat-model-tamper-evident-not-tamper-proof" title="Permanent link">&para;</a></h2>
 <p>An adversary with write access to the backing store can rewrite the <em>entire</em>

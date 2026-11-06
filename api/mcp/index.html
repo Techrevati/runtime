@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -672,6 +686,8 @@ async with stdio_client(StdioServerParameters(command="my-mcp-server")) as (r, w
 <p>Because the tool flows through <code>arun_tool</code>, the call still passes the
 permission, guardrail, governance, and hook checks unchanged. <code>run_tool</code> /
 <code>arun_tool</code> signatures are not modified.</p>
+<p>Works with both SDK lines: a 1.x or 2.x <code>ClientSession</code>, and the 2.x high-level
+<code>mcp.Client</code>, which also handles servers that ask the client for more input.</p>
 <p>Zero-dependency invariant: the <code>mcp</code> package is imported behind a guard and is
 only needed when this module is used (install <code>techrevati-runtime[mcp]</code>).</p>
 
@@ -703,7 +719,7 @@ only needed when this module is used (install <code>techrevati-runtime[mcp]</cod
 
 
 <a href="#techrevati.runtime.mcp.MCPToolError" class="headerlink" title="Permanent link">&para;</a></h3>
-
+<pre class="highlight"><code class="language-python doc-signature">MCPToolError(message, *, tool_name=None, code=None)</code></pre>
 
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
@@ -711,7 +727,10 @@ only needed when this module is used (install <code>techrevati-runtime[mcp]</cod
 
 
 
-        <p>Raised when an MCP tool call returns an error result.</p>
+        <p>Raised when an MCP tool call fails.</p>
+<p>Covers error results, protocol errors (including request timeouts), and
+results that cannot be used as a tool's outcome. <code>tool_name</code> names the tool;
+<code>code</code> carries the protocol error code when the failure was a protocol error.</p>
 
 
 
@@ -720,6 +739,23 @@ only needed when this module is used (install <code>techrevati-runtime[mcp]</cod
 
 
 
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
 
     </div>
 
@@ -790,10 +826,11 @@ only needed when this module is used (install <code>techrevati-runtime[mcp]</cod
 
 
 
-        <p>Expose a connected <code>mcp.ClientSession</code>'s tools to <code>arun_tool</code>.</p>
-<p>The caller owns the MCP connection lifecycle (<code>stdio_client</code> / <code>sse_client</code>
-+ <code>ClientSession</code>); the adapter only bridges <code>call_tool</code> into a coroutine
-factory and normalizes the result.</p>
+        <p>Expose a connected MCP client's tools to <code>arun_tool</code>.</p>
+<p><code>session</code> is a connected <code>mcp.ClientSession</code> or, on SDK 2.x, an entered
+<code>mcp.Client</code>. It is typed loosely because the two SDK lines share no class.
+The caller owns the connection lifecycle; the adapter only bridges <code>call_tool</code>
+into a coroutine factory and normalizes the result.</p>
 
 
 
@@ -836,7 +873,8 @@ factory and normalizes the result.</p>
 <p>The MCP <code>tools/list</code> response is paginated; this walks <code>nextCursor</code>
 until the server stops returning one, so tools beyond the first page are
 not silently dropped. A seen-cursor guard avoids an infinite loop if a
-misbehaving server repeats a cursor.</p>
+misbehaving server repeats a cursor, and tools are keyed by name so that a
+repeated page does not yield duplicates. An empty cursor ends the walk.</p>
 
 
     </div>
@@ -851,13 +889,14 @@ misbehaving server repeats a cursor.</p>
 
 
 <a href="#techrevati.runtime.mcp.MCPToolAdapter.tool" class="headerlink" title="Permanent link">&para;</a></h4>
-<pre class="highlight"><code class="language-python doc-signature">tool(name, arguments=None)</code></pre>
+<pre class="highlight"><code class="language-python doc-signature">tool(name, arguments=None, *, timeout=None)</code></pre>
 
     <div class="doc doc-contents ">
 
         <p>Return a coroutine factory for <code>arun_tool(name, factory)</code>.</p>
 <p>Each call to the returned factory invokes the MCP tool once and returns
-its normalized result.</p>
+its normalized result. <code>timeout</code> is a per-call limit in seconds, enforced
+by the SDK; exceeding it raises :class:<code>MCPToolError</code>.</p>
 
 
     </div>

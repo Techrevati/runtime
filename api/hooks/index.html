@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -904,9 +918,10 @@ are awaited. Optional methods (override the ones you need):</p>
 <ul>
 <li><code>ctx.prompt</code> when it is a <code>str</code> — replaces matches with
   <code>replacement</code> (default <code>"[REDACTED]"</code>).</li>
-<li><code>ctx.prompt</code> when it is a <code>dict</code> — walks string leaves.</li>
-<li><code>ctx.prompt</code> when it is a list of message dictionaries — walks each
-  message's <code>content</code> field.</li>
+<li><code>ctx.prompt</code> when it is a <code>dict</code>, <code>list</code>, <code>tuple</code>, <code>set</code> or
+  <code>frozenset</code> — walks string leaves and string dict keys, at any depth.</li>
+<li><code>bytes</code> that decode as UTF-8 are scrubbed and re-encoded; other bytes
+  are opaque binary and pass through unchanged.</li>
 </ul>
 <p>Other shapes are skipped silently — caller can supply a custom hook
 when the schema is exotic. The hook is <strong>best-effort</strong>: it is a

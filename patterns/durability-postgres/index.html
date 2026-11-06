@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -651,12 +665,13 @@ class PostgresSaver:  # satisfies CheckpointSaver structurally
         self._conn = psycopg.connect(conninfo, autocommit=True)
         self._conn.execute(
             &quot;CREATE TABLE IF NOT EXISTS checkpoints (&quot;
+            &quot; seq BIGINT GENERATED ALWAYS AS IDENTITY,&quot;
             &quot; id TEXT PRIMARY KEY, thread_id TEXT NOT NULL, created_at TEXT NOT NULL,&quot;
             &quot; state_json JSONB NOT NULL, parent_id TEXT, metadata_json JSONB NOT NULL)&quot;
         )
         self._conn.execute(
-            &quot;CREATE INDEX IF NOT EXISTS idx_ckpt_thread_created&quot;
-            &quot; ON checkpoints (thread_id, created_at DESC)&quot;
+            &quot;CREATE INDEX IF NOT EXISTS idx_ckpt_thread_seq&quot;
+            &quot; ON checkpoints (thread_id, seq DESC)&quot;
         )
 
     def put(self, thread_id, state, *, parent_id=None, metadata=None):
@@ -666,7 +681,9 @@ class PostgresSaver:  # satisfies CheckpointSaver structurally
             state=dict(state), parent_id=parent_id, metadata=dict(metadata or {}),
         )
         self._conn.execute(
-            &quot;INSERT INTO checkpoints VALUES (%s,%s,%s,%s,%s,%s)&quot;,
+            &quot;INSERT INTO checkpoints&quot;
+            &quot; (id,thread_id,created_at,state_json,parent_id,metadata_json)&quot;
+            &quot; VALUES (%s,%s,%s,%s,%s,%s)&quot;,
             (cp.id, cp.thread_id, cp.created_at, json.dumps(cp.state),
              cp.parent_id, json.dumps(cp.metadata)),
         )
@@ -676,7 +693,7 @@ class PostgresSaver:  # satisfies CheckpointSaver structurally
         if checkpoint_id is None:
             row = self._conn.execute(
                 &quot;SELECT id,thread_id,created_at,state_json,parent_id,metadata_json&quot;
-                &quot; FROM checkpoints WHERE thread_id=%s ORDER BY created_at DESC LIMIT 1&quot;,
+                &quot; FROM checkpoints WHERE thread_id=%s ORDER BY seq DESC LIMIT 1&quot;,
                 (thread_id,),
             ).fetchone()
         else:
@@ -690,9 +707,15 @@ class PostgresSaver:  # satisfies CheckpointSaver structurally
             state=row[3], parent_id=row[4], metadata=row[5],
         )
 
-    def list(self, thread_id, *, before=None, limit=10): ...   # keyset by (created_at, id)
+    def list(self, thread_id, *, before=None, limit=10): ...   # keyset by seq DESC
     def delete(self, thread_id): ...
 </code></pre>
+<p><code>seq</code> keeps insertion order, like the SQLite saver's rowid: <code>created_at</code> is a wall
+clock and can step backwards. Identity values are assigned at insert, so two
+transactions writing the <em>same</em> thread at once can commit out of <code>seq</code> order; a
+session writes its thread serially, so this only matters if you share a thread id
+across writers. <code>CREATE TABLE IF NOT EXISTS</code> will not add <code>seq</code> to an existing
+table; migrate that table first.</p>
 <p>Wire it exactly like the SQLite saver: <code>AgentSession(saver=PostgresSaver(...))</code> with
 a <code>thread_id</code> at <code>session()</code> time.</p>
 <h2 id="auditbackend-over-psycopg-article-12">AuditBackend over psycopg (Article 12)<a class="headerlink" href="#auditbackend-over-psycopg-article-12" title="Permanent link">&para;</a></h2>

@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -684,6 +698,19 @@ it; <code>TokenBucket</code> uses <code>threading.Lock</code> + <code>time.sleep
 independent (no shared counters), so a sync and an async bucket
 pointing at the same provider must be kept in sync by you — or just
 use one shape.</p>
+<h2 id="usage-is-charged-after-the-fact">Usage is charged after the fact<a class="headerlink" href="#usage-is-charged-after-the-fact" title="Permanent link">&para;</a></h2>
+<p><code>acquire_usage</code> records tokens the provider has already counted, so it cannot
+refuse them. Every configured bucket is debited first, and the balance may go
+negative when a turn exceeds <code>capacity</code>. The call then waits until the debt is
+repaid. <code>timeout</code> is one budget shared across the buckets; on timeout
+<code>RateLimitExceededError</code> is raised and the debits stand. <code>TokenBucket.debit</code>
+exposes the same charge directly.</p>
+<p>Debt is capped at 24 hours of refill, so a bucket always recovers; tokens beyond
+the cap are forgotten. A single charge above <code>1e15</code> tokens raises <code>ValueError</code>.</p>
+<p><code>acquire</code> still refuses an amount above <code>capacity</code>, because it could never be
+served in advance.</p>
+<p>Waiters are not served in order: a large <code>acquire</code> can wait a long time while
+many small ones keep spending the refill.</p>
 <h2 id="tuning">Tuning<a class="headerlink" href="#tuning" title="Permanent link">&para;</a></h2>
 <table>
 <thead>

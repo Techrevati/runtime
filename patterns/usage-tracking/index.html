@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -672,8 +686,10 @@ way when <code>BudgetExceededError</code> escapes the context manager.</p>
 </code></pre>
 <p>Both <code>register_pricing</code> and <code>load_pricing_from_file</code> are thread-safe. Subsequent registrations overwrite earlier ones for the same key.</p>
 <h2 id="model-name-resolution">Model name resolution<a class="headerlink" href="#model-name-resolution" title="Permanent link">&para;</a></h2>
-<p><code>UsageTracker</code> resolves model names case-insensitively, with <strong>longest-prefix match</strong> as a fallback. That means a dated variant like <code>model-a-20260514</code> resolves to <code>model-a</code> if that's the most specific registered entry. Unknown models fall back to zero pricing (treated as free).</p>
+<p><code>UsageTracker</code> resolves model names case-insensitively, with <strong>longest-prefix match</strong> as a fallback. The longer id must continue at a separator (<code>-</code>, <code>:</code>, <code>@</code> or <code>/</code>), so a dated variant like <code>model-a-20260514</code> resolves to <code>model-a</code>, while a different model like <code>model-alpha</code> does not. Unknown models fall back to zero pricing (treated as free).</p>
 <p>The same resolution is exposed publicly as <code>resolve_pricing(model) -&gt; ModelPricing</code> for callers that need a model's pricing directly (e.g. cost pre-flight). It uses the same exact-then-longest-prefix logic and returns <code>ModelPricing(0.0, 0.0)</code> for unknown models — it never raises.</p>
+<p>Cache writes use the tier named by <code>UsageSnapshot.cache_ttl</code> (<code>"5m"</code> or <code>"1h"</code>, case-insensitive). With no recognized TTL they use <code>cache_write_per_million</code>. If only tiers are registered, the higher tier applies, because an over-estimate is the safe error for a budget guard.</p>
+<p>Budget and <code>cost_usd_max</code> comparisons tolerate float summation noise, so three $0.10 turns are not over a $0.30 budget. A <code>cost_usd</code> <code>UsageLimitExceededError</code> reports <code>observed</code> and <code>ceiling</code> in dollars; token and tool-call limits report counts.</p>
 <h2 id="api">API<a class="headerlink" href="#api" title="Permanent link">&para;</a></h2>
 <pre><code class="language-python">@dataclass(frozen=True)
 class ModelPricing:

@@ -1,0 +1,778 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Migrating from 0.4.x - Runtime</title>
+    <link rel="stylesheet" href="../styles/runtime.css">
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+  </head>
+  <body>
+    <header class="site-header">
+      
+        <a class="brand" href="..">Runtime</a>
+      
+    </header>
+    <div class="layout">
+      <nav class="site-nav" aria-label="Primary navigation">
+        <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <span>Home</span>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../getting-started/">Getting Started</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../tutorials/end-to-end/">End-to-End Tutorial</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../migrating-from-0.0.x/">Migrating from 0.0.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../migrating-from-0.1.x/">Migrating from 0.1.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../migrating-from-0.3.x/">Migrating from 0.3.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item is-active">
+        
+          <a href="./">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../open-items/">Open Items</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>EU AI Act</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/">Overview</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/audit-log/">Audit Log (Art. 12)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/human-oversight/">Human Oversight (Art. 14)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/risk-management/">Risk Management (Art. 9)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/cybersecurity/">Cybersecurity (Art. 15)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/incident-reporting/">Incident Reporting (Art. 26/73)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/transparency/">Transparency (Art. 13)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../eu-ai-act/conformity-checklist/">Conformity Self-Check (Art. 16)</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>Compliance</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/">Compliance Mapping</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/production-readiness/">Production Readiness</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/rc-readiness-summary/">RC Readiness Summary</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/stable-promotion/">Stable Promotion</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/remote-ci-validation/">Remote CI Validation</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/final-diff-review/">Final Diff Review</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/rc-review-handoff/">RC Review Handoff</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/staging-manifest/">Staging Manifest</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/guard-calibration/">Guard Calibration</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/security-review/">Security Review</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/private-rc-publication/">Private RC Publication</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/pilot-operations-runbook/">Pilot Operations Runbook</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/pilot-execution/">Pilot Execution Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/pilot-dry-run/">Pilot Dry-Run</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/pilot-evidence-template/">Controlled RC Pilot Evidence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/rollback-execution/">Rollback Execution Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/rollback-proof-checklist/">Rollback Proof Checklist</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../compliance/rc-inventory/">Release Candidate Inventory</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>Patterns</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/retry/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/circuit-breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/durability/">Durability</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/durability-postgres/">Durability (PostgreSQL)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/durability-redis/">Durability (Redis)</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/rate-limiting/">Rate Limiting</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/quality-gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/agent-events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/policy/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/usage-tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/governance/">Governance Plane</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/mcp/">MCP Tools</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/typed-outputs/">Typed Outputs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/memory/">Session Memory</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../patterns/pilot-profile/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <span>API Reference</span>
+        
+        
+          <ul class="nav-list">
+    
+      <li class="nav-item">
+        
+          <a href="../api/orchestrator/">Orchestrator</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/agent_events/">Agent Events</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/agent_lifecycle/">Agent Lifecycle</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/circuit_breaker/">Circuit Breaker</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/checkpoint/">Checkpoint</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/permissions/">Permissions</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/policy_engine/">Policy Engine</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/quality_gate/">Quality Gate</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/rate_limit/">Rate Limit</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/routing/">Routing</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/retry_policy/">Retry Policy</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/usage_tracking/">Usage Tracking</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/guardrails/">Guardrails</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/governance/">Governance</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/handoffs/">Handoffs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/hooks/">Hooks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/streaming/">Streaming</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/sinks/">Sinks</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/persistence/">Persistence</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/scheduler/">Scheduler</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/otel/">Telemetry</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/mcp/">MCP</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/output_spec/">Typed Outputs</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/memory/">Session Memory</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../api/pilot/">Pilot Profile</a>
+        
+        
+      </li>
+    
+  </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../changelog/">Changelog</a>
+        
+        
+      </li>
+    
+  </ul>
+      </nav>
+      <main class="content" id="content">
+        
+          <h1 id="migrating-from-04x-to-050">Migrating from 0.4.x to 0.5.0<a class="headerlink" href="#migrating-from-04x-to-050" title="Permanent link">&para;</a></h1>
+<p>0.5.0 fixes defects found in a full audit of the 0.4.0 line and adds tool timeouts,
+tool replay, loop detection, provider fallback, and support for the MCP Python SDK
+2.x. New API is additive, but several fixes change behaviour you may have relied
+on. Read this list before upgrading.</p>
+<h2 id="sessions">Sessions<a class="headerlink" href="#sessions" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Usage without a <code>model</code> now counts.</strong> <code>run_turn(fn, usage=...)</code> used to discard
+  the usage, which silently disabled <code>UsageLimits</code>. It now reaches the tracker, so a
+  limit that never fired before may fire.</li>
+<li><strong>A paid turn is booked before limits run.</strong> After a <code>BudgetExceededError</code> the
+  governance plane and the checkpoint both include that turn, and when both a budget
+  and a governance limit are crossed, <code>GovernanceBreachError</code> wins.</li>
+<li><strong>Hard limits are checked before a turn too.</strong> With <code>enforce_budget=True</code> or
+  <code>usage_limits</code>, a session already over its limit raises before calling the model. Code
+  that caught <code>BudgetExceededError</code> and carried on now gets it again before paying.</li>
+<li><strong>A replayed turn counts towards the budget</strong> of the session that replays it.</li>
+<li><strong>Rate-limit tokens are taken later.</strong> The iteration cap, governance, and
+  <code>before_model</code> hooks now run first, so a rejected turn spends no token.</li>
+<li><strong>New <code>agent.turn.completed</code> and <code>agent.turn.failed</code> events.</strong> Sinks and audit logs
+  see more records. Code that compares a whole event list needs updating.</li>
+<li><strong>Tool events carry more data.</strong> <code>tool_completed</code> and tool-failure events add
+  <code>duration_seconds</code>, and failures add <code>error_type</code>. Compare keys, not whole dicts.</li>
+<li><strong><code>complete()</code>, <code>fail()</code>, and <code>cancel()</code> emit only when the state changes.</strong> An
+  exception after <code>handoff_to</code> is logged but no longer emits <code>agent.failed</code>.</li>
+<li><strong>A <code>TimeoutError</code> raised by your own code stays a <code>TimeoutError</code>.</strong> Only the
+  session's deadline becomes <code>TurnTimeoutError</code>.</li>
+</ul>
+<h2 id="streaming">Streaming<a class="headerlink" href="#streaming" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>timeout</code> covers waiting on upstream, and can no longer cancel the consumer's task.</li>
+<li>A limit crossed after the stream ends now yields <code>error</code> + <code>final("failed")</code>.</li>
+<li>A stream that ends early books its usage if <code>usage</code> or <code>estimate_usage</code> provides it
+  and at least one chunk arrived.</li>
+<li>Leaving a stream on purpose no longer counts as a failure, and its span and metric
+  carry no <code>error.type</code>.</li>
+<li>A chunk that is not a <code>str</code> raises <code>TypeError</code> through the terminal events.</li>
+</ul>
+<h2 id="reliability-primitives">Reliability primitives<a class="headerlink" href="#reliability-primitives" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Circuit breaker:</strong> a probe silent for longer than <code>recovery_timeout_seconds</code> is
+  abandoned, and the result of any call admitted before the circuit last opened is
+  ignored. A success from an abandoned probe can still close the circuit, so a downstream
+  slower than the recovery window can recover; one new probe per window may run above
+  <code>half_open_max_probes</code> until then. <code>half_open_max_probes</code> now limits probes per
+  cycle, not just at once. <code>record_success()</code> closes a circuit that reports HALF_OPEN.</li>
+<li><strong>Rate limiter:</strong> <code>acquire_usage</code> no longer rejects an amount above capacity,
+  because it has already been spent. The balance goes negative and the call waits for
+  it to refill, which can block for longer when <code>timeout=None</code>. Debt is capped at 24
+  hours of refill, and amounts above <code>1e15</code> raise <code>ValueError</code>.</li>
+<li><strong>Failure classification:</strong> digits inside identifiers such as <code>req_84010</code> no longer
+  count as HTTP status codes, and context-overflow messages win over a stray <code>429</code>.
+  <code>prompt is too long</code> is a context overflow, and <code>Too many tokens, please wait</code> is a
+  rate limit.</li>
+<li><strong>Checkpoints:</strong> <code>get</code> and <code>list</code> order by insertion rather than timestamp, so a
+  clock step can no longer hide the latest checkpoint. A lone surrogate in a thread id
+  or step key raises <code>ValueError</code>, on <code>InMemorySaver</code> too.</li>
+</ul>
+<h2 id="pricing-and-output-parsing">Pricing and output parsing<a class="headerlink" href="#pricing-and-output-parsing" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Pricing prefixes need a separator.</strong> <code>model-a</code> still prices <code>model-a-20260514</code>,
+  but no longer prices <code>model-alpha</code>, which now costs $0 and logs the usual warning.
+  Register such models explicitly.</li>
+<li><code>UsageLimitExceededError</code> for <code>cost_usd</code> reports dollars rather than micro-dollars.</li>
+<li>A cache write on a model with only 5m and 1h tiers is charged at the higher tier
+  rather than $0.</li>
+<li><code>JsonOutputSpec</code> rejects <code>NaN</code> and <code>Infinity</code>, and rejects <code>true</code> for
+  <code>require_type=int</code>.</li>
+<li>Compaction always keeps the newest message, even if that exceeds the limit, and the
+  kept window never starts on a <code>tool</code> message.</li>
+</ul>
+<h2 id="guards-and-compliance">Guards and compliance<a class="headerlink" href="#guards-and-compliance" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>A role that only resembles a configured role is denied.</strong> With <code>admin</code> configured,
+  <code>ADMIN</code> or <code>admin</code> plus an invisible character is refused whatever
+  <code>default_allow_unknown_roles</code> says. Exact matches behave as before, and <code>writer</code> and
+  <code>WRITER</code> may be configured separately.</li>
+<li><code>tool_requirements</code> keys that collide after folding, and tool names that fold to
+  nothing, raise <code>ValueError</code> at construction.</li>
+<li>A guardrail a sync session cannot enforce is refused before the tool runs, rather
+  than skipping the check. A fully async guardrail is still skipped with a warning. A
+  guardrail with no post check passes that stage, and one with no checks raises
+  <code>TypeError</code>.</li>
+<li>Role configs whose names differ only by surrounding whitespace raise <code>ValueError</code>.</li>
+<li><code>evaluate()</code> raises <code>TypeError</code> for an async policy condition rather than treating
+  it as true. Use <code>evaluate_async</code>.</li>
+<li><strong>Human oversight rejects</strong> a repeated <code>decision_id</code>, a stale or future decision, a
+  queue posing as the system reviewer, and an unknown outcome. The gate enforces its
+  own timeout on a queue that hangs.</li>
+<li><code>verify_chain</code> on a live sink detects a deleted tail. See the
+  <a href="../eu-ai-act/audit-log/">audit log guide</a> for <code>tip()</code>, <code>expected_tip</code>, and the
+  limit after a restart.</li>
+<li><code>purge_expired</code> refuses a naive <code>now</code> and only deletes a contiguous oldest prefix. It
+  records a marker in a new <code>audit_log_purge_marker</code> table, and the chain continues
+  after a full purge rather than restarting from genesis.</li>
+<li><code>SqliteAuditBackend</code> waits up to <code>busy_timeout_seconds=30</code> for a lock (about 5 before),
+  so a write can block longer under heavy contention. Lower it for event-loop callers.</li>
+<li>Audit payloads are cut at depth 100 or 100,000 nodes, with a marker, rather than
+  dropping the event. A value that cannot be represented is replaced on its own.</li>
+<li><code>InputSanitizationHook</code> and <code>OutputIntegrityGuardrail</code> no longer reject binary such as
+  <code>b"\x00\x00\x00\x01"</code>, scan text-like bytes for escape sequences, and walk mappings
+  and re-iterable containers.</li>
+<li>With a signing key, <code>verify_chain</code> reports a purge marker with a missing or wrong
+  signature as invalid, including one left by a direct <code>backend.purge_before</code> call or a
+  sink without the key.</li>
+<li>Sets and frozensets in event data are recorded as lists, and tuple keys as JSON.</li>
+<li>A <code>decision_id</code> with surrounding whitespace raises <code>ValueError</code>.</li>
+<li>Redacted dict keys that collide get a suffix (<code>[REDACTED]#2</code>) rather than losing an
+  entry.</li>
+<li>The conformity self-check reports Article 12 as not met for an in-memory log, or
+  when the purge floor is under 183 days.</li>
+</ul>
+<h2 id="telemetry">Telemetry<a class="headerlink" href="#telemetry" title="Permanent link">&para;</a></h2>
+<ul>
+<li>The agent span is named <code>invoke_agent</code> from the start, not <code>create_agent</code>, and
+  nests under its phase span. Update trace filters that match on the old name.</li>
+<li><code>OpenTelemetryUsageSink</code> also emits the <code>gen_ai.client.inference.usage.*</code> counters.
+  <code>gen_ai.client.token.usage</code> is no longer in the semantic conventions; it stays on
+  for now and <code>emit_legacy_token_metric=False</code> turns it off.</li>
+<li>New <code>OpenTelemetryMetricsSink</code> records <code>gen_ai.client.inference.duration</code> and
+  <code>gen_ai.execute_tool.duration</code>.</li>
+</ul>
+<h2 id="mcp">MCP<a class="headerlink" href="#mcp" title="Permanent link">&para;</a></h2>
+<p>The <code>[mcp]</code> extra now accepts <code>mcp&gt;=1.10,&lt;3</code>. The floor moved because versions before
+1.10 lack <code>structuredContent</code>. <code>MCPToolAdapter</code> accepts a 1.x or 2.x <code>ClientSession</code>
+or a 2.x <code>Client</code>, and <code>tool()</code> takes a <code>timeout</code>.</p>
+        
+      </main>
+    </div>
+    <footer class="site-footer">
+      <span>Copyright 2026 Techrevati doo</span>
+    </footer>
+  </body>
+</html>

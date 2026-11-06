@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -650,6 +664,8 @@ tracer.start_span(&quot;agent.execution&quot;, attributes=event.to_otel_attribut
 <li><code>AgentEvent.blocked(role, phase, detail=None, data=None)</code></li>
 <li><code>AgentEvent.completed(role, phase, detail=None)</code></li>
 <li><code>AgentEvent.failed(role, phase, failure_class, detail=None)</code></li>
+<li><code>AgentEvent.turn_completed(role, phase, *, model, duration_seconds, data=None)</code></li>
+<li><code>AgentEvent.turn_failed(role, phase, *, model, duration_seconds, error_type, data=None)</code></li>
 <li><code>AgentEvent.tool_called(role, phase, tool)</code></li>
 <li><code>AgentEvent.tool_completed(role, phase, tool)</code></li>
 <li><code>AgentEvent.phase_started(phase)</code></li>
@@ -707,7 +723,7 @@ data.</p>
 <tbody>
 <tr>
 <td><code>to_dict()</code></td>
-<td>Dict with both <code>event</code> (full path like <code>agent.failed</code>) and <code>type</code> (short tail like <code>failed</code>)</td>
+<td>Dict with both <code>event</code> (full path like <code>agent.failed</code>) and a legacy <code>type</code> (short tail like <code>failed</code>). Route on <code>event</code>: <code>type</code> is ambiguous, since <code>failed</code> is both <code>agent.failed</code> and <code>agent.recovery.failed</code></td>
 </tr>
 <tr>
 <td><code>to_json()</code></td>
@@ -744,7 +760,10 @@ exports <code>techrevati.failure_class="cancelled"</code> without setting <code>
 <code>StatusCode.ERROR</code>, so intentional stops do not inflate error-rate alerts.
 The schema rejects inconsistent <code>agent.failed</code> cancellation payloads: a
 <code>cancelled</code> failure class must use <code>status="cancelled"</code>, and
-<code>status="cancelled"</code> must use <code>failure_class="cancelled"</code>.
+<code>status="cancelled"</code> must use <code>failure_class="cancelled"</code>. On these events
+<code>.with_failure_class(...)</code> updates the status to match.
+<code>to_json()</code> emits strict JSON: non-finite floats in <code>data</code> become the strings
+<code>"nan"</code>, <code>"inf"</code> and <code>"-inf"</code>.
 Every <code>agent.failed</code> payload must include a valid <code>failure_class</code>; missing
 failure classes are rejected during construction and <code>from_dict(...)</code>
 reconstruction.</p>

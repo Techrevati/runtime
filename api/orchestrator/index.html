@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -685,6 +699,33 @@ print(session.summary())
 
 
 
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="techrevati.runtime.orchestrator.DEFAULT_FAILOVER_SCENARIOS" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">DEFAULT_FAILOVER_SCENARIOS</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#techrevati.runtime.orchestrator.DEFAULT_FAILOVER_SCENARIOS" class="headerlink" title="Permanent link">&para;</a></h3>
+<pre class="highlight"><code class="language-python doc-signature">DEFAULT_FAILOVER_SCENARIOS = frozenset(
+    (
+        FailureScenario.PROVIDER_FAILURE,
+        FailureScenario.LLM_TIMEOUT,
+    )
+)
+</code></pre>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
 
 
 <div class="doc doc-object doc-class">
@@ -765,19 +806,37 @@ print(session.summary())
 
 
 <a href="#techrevati.runtime.orchestrator.OrchestrationSession.run_tool" class="headerlink" title="Permanent link">&para;</a></h4>
-<pre class="highlight"><code class="language-python doc-signature">run_tool(tool_name, fn, *, hook_ctx=None)</code></pre>
+<pre class="highlight"><code class="language-python doc-signature">run_tool(
+    tool_name,
+    fn,
+    *,
+    hook_ctx=None,
+    args=None,
+    timeout=None,
+    idempotency_key=None,
+)</code></pre>
 
     <div class="doc doc-contents ">
 
         <p>Execute a tool with permission + guardrail + governance + hook checks.</p>
-<p>Order: permission → governance → before_tool hooks → pre-guardrails →
-fn() → post-guardrails → after_tool hooks.</p>
+<p>Order: permission → governance → replay lookup → before_tool hooks →
+pre-guardrails → fn() → post-guardrails → after_tool hooks.</p>
 <p><code>hook_ctx</code> is a mutable context shared with the hook chain. When
 omitted the runtime synthesizes a fresh <code>HookContext</code> so hooks still
 fire — but any mutation hooks attempt on <code>ctx.args</code> is lost because
 the caller's closure does not see it. Pass a context (and close over
 <code>ctx.args</code> inside <code>fn</code>) when you want hooks to redact or rewrite
 tool inputs.</p>
+<p><code>args</code> describes the call to hooks and to
+<code>MaxRepeatedToolCallsLimit</code>; <code>fn</code> still takes no arguments.</p>
+<p><code>timeout</code> raises :class:<code>ToolTimeoutError</code>. The worker thread cannot
+be killed, so a timed-out <code>fn</code> finishes in the background.</p>
+<p>With a <code>saver</code> and <code>thread_id</code> configured, <code>idempotency_key</code>
+records the result once the call passes its checks and replays it on a
+re-run instead of repeating the side effect. A crash between <code>fn</code>
+returning and the record being written still re-executes it, so the
+guarantee is at-least-once: pair it with an idempotent tool or pass the
+same key to the downstream API.</p>
 
 
     </div>
@@ -816,8 +875,48 @@ and re-raises so the caller decides whether to retry.</p>
 <code>idempotency_key</code> is supplied, this method first looks for a
 prior checkpoint with the same key on the same thread; on a hit
 it returns the cached <code>(result, usage)</code> without calling
-<code>fn</code>. After a successful execution, a new checkpoint is
-written so a restart can replay through it.</p>
+<code>fn</code>, and counts that usage towards this session's limits.
+After a successful execution, a new checkpoint is written so a
+restart can replay through it. A turn that crosses a budget is
+checkpointed before the budget error is raised, because it was
+already paid for.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="techrevati.runtime.orchestrator.OrchestrationSession.run_turn_with_fallback" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">run_turn_with_fallback</span>
+
+
+<a href="#techrevati.runtime.orchestrator.OrchestrationSession.run_turn_with_fallback" class="headerlink" title="Permanent link">&para;</a></h4>
+<pre class="highlight"><code class="language-python doc-signature">run_turn_with_fallback(
+    fn,
+    *,
+    model,
+    usage=None,
+    estimate_usage=None,
+    timeout=None,
+    idempotency_key=None,
+    hook_ctx=None,
+    failover_on=DEFAULT_FAILOVER_SCENARIOS,
+)</code></pre>
+
+    <div class="doc doc-contents ">
+
+        <p>Run a turn, asking <code>provider_router</code> for another model on failure.</p>
+<p><code>fn</code> receives the model to call. Returns <code>(result, usage, model)</code>,
+where <code>model</code> is the one that answered. Each attempt is a full turn:
+it counts towards <code>max_iterations</code> and governance, so those still bound
+the total. Only failures in <code>failover_on</code> switch provider. A governance
+breach, budget or usage limit, permission denial, or open circuit always
+propagates, as does the last failure once the router has no candidate.</p>
+<p>A circuit breaker on the session is shared by every model, so it should
+guard something they have in common, such as a gateway.</p>
 
 
     </div>
@@ -943,7 +1042,15 @@ pause are async.</p>
   </span>
 
 <a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession.arun_tool" class="headerlink" title="Permanent link">&para;</a></h4>
-<pre class="highlight"><code class="language-python doc-signature">arun_tool(tool_name, coro_factory, *, hook_ctx=None)</code></pre>
+<pre class="highlight"><code class="language-python doc-signature">arun_tool(
+    tool_name,
+    coro_factory,
+    *,
+    hook_ctx=None,
+    args=None,
+    timeout=None,
+    idempotency_key=None,
+)</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -952,6 +1059,8 @@ pause are async.</p>
 they implement <code>AsyncGuardrail</code> and called inline when they
 are sync <code>Guardrail</code> instances. Hooks are dispatched both
 sync and async — see <code>hooks.py</code>.</p>
+<p><code>args</code>, <code>timeout</code> and <code>idempotency_key</code> work as in <code>run_tool</code>,
+except that a timed-out tool is cancelled rather than left running.</p>
 
 
     </div>
@@ -984,12 +1093,45 @@ sync and async — see <code>hooks.py</code>.</p>
     <div class="doc doc-contents ">
 
         <p>Execute one model turn with async circuit-breaker + recovery wiring.</p>
-<p><code>timeout</code> is enforced with <code>asyncio.wait_for</code>. Cancellation
+<p><code>timeout</code> is enforced with <code>asyncio.timeout</code>. Cancellation
 from outside (parent task) is propagated as CancelledError; an
 internal timeout becomes <code>TurnTimeoutError</code>.</p>
 <p><code>idempotency_key</code> behaves the same as in <code>run_turn</code>: when the
 session has a saver + thread_id configured, a prior checkpoint
-with the same key short-circuits the call.</p>
+with the same key short-circuits the call and counts its usage.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="techrevati.runtime.orchestrator.AsyncOrchestrationSession.arun_turn_with_fallback" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">arun_turn_with_fallback</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#techrevati.runtime.orchestrator.AsyncOrchestrationSession.arun_turn_with_fallback" class="headerlink" title="Permanent link">&para;</a></h4>
+<pre class="highlight"><code class="language-python doc-signature">arun_turn_with_fallback(
+    coro_factory,
+    *,
+    model,
+    usage=None,
+    estimate_usage=None,
+    timeout=None,
+    idempotency_key=None,
+    hook_ctx=None,
+    failover_on=DEFAULT_FAILOVER_SCENARIOS,
+)</code></pre>
+
+    <div class="doc doc-contents ">
+
+        <p>Async sibling of <code>run_turn_with_fallback</code>.</p>
 
 
     </div>
@@ -1015,6 +1157,7 @@ with the same key short-circuits the call.</p>
     usage=None,
     estimate_usage=None,
     timeout=None,
+    idempotency_key=None,
     hook_ctx=None,
 )</code></pre>
 
@@ -1030,13 +1173,23 @@ carrying the resolved usage snapshot.</p>
 and once after the aggregated text is computed (<code>after_model</code>).
 Per-chunk hooks are intentionally out of scope — they would invert
 the cost model of streaming.</p>
-<p>Cancellation: if the consumer breaks out of the <code>async for</code> loop,
-the upstream iterator's <code>aclose()</code> is awaited and
-<code>session._last_stream_cancelled</code> flips to <code>True</code>. The generator
-does NOT emit a <code>final("cancelled")</code> event in that case because
-the consumer is no longer listening; check the flag instead.</p>
-<p>On upstream exception: <code>error</code> + <code>final("failed")</code> events are
-yielded and the exception is re-raised so callers see it.</p>
+<p><code>timeout</code> is a deadline for the whole stream, checked only while
+waiting on upstream, so it can never fire inside the consumer's own code.
+A consumer that is slow between chunks hits it on the next pull.</p>
+<p><code>idempotency_key</code> replays a recorded turn as one text event plus the
+terminal event, without calling upstream.</p>
+<p>Cancellation: wrap the generator in <code>contextlib.aclosing</code>. When the
+consumer leaves the block early the upstream iterator's <code>aclose()</code> is
+awaited and <code>session._last_stream_cancelled</code> flips to <code>True</code>. A plain
+<code>break</code> without <code>aclosing</code> defers all of that to garbage collection.
+No <code>final("cancelled")</code> event is emitted because the consumer is no
+longer listening; check the flag instead.</p>
+<p>A stream that ends early books its usage when <code>usage</code> or
+<code>estimate_usage</code> can provide it (the latter sees the partial text),
+because the provider charges for what it already sent.</p>
+<p>On failure, including a limit crossed once the stream has finished,
+<code>error</code> + <code>final("failed")</code> events are yielded and the exception is
+re-raised so callers see it.</p>
 
 
     </div>
@@ -1068,6 +1221,9 @@ given) applies to the whole group via <code>asyncio.timeout</code>.</p>
 zero-arg callable that returns an awaitable; this matches the
 contract used elsewhere in the session API and means callers
 can build the coroutine lazily inside the group.</p>
+<p>This method only provides the concurrency. It applies no permission,
+guardrail, governance or hook checks, so have each factory go through
+<code>arun_tool</code>: <code>lambda: session.arun_tool("search", search_factory)</code>.</p>
 
 
     </div>
@@ -1211,7 +1367,7 @@ handle a future process uses to pick up where this one left off.</p>
 
 
 <a href="#techrevati.runtime.orchestrator.AgentSession.session" class="headerlink" title="Permanent link">&para;</a></h4>
-<pre class="highlight"><code class="language-python doc-signature">session(*, thread_id=None)</code></pre>
+<pre class="highlight"><code class="language-python doc-signature">session(*, thread_id=None, handoff=None)</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -1221,6 +1377,8 @@ worker → FAILED with the error classified into an AgentFailureClass.</p>
 <p>If <code>thread_id</code> is supplied and the orchestrator has a <code>saver</code>,
 the session writes a checkpoint after each turn and an
 <code>idempotency_key</code> on <code>run_turn</code> makes that turn replay-safe.</p>
+<p>Pass the <code>Handoff</code> returned by <code>handoff_to</code> as <code>handoff</code> to run
+on the worker it reserved; otherwise that worker stays INITIALIZING.</p>
 
 
     </div>
@@ -1239,7 +1397,7 @@ the session writes a checkpoint after each turn and an
   </span>
 
 <a href="#techrevati.runtime.orchestrator.AgentSession.asession" class="headerlink" title="Permanent link">&para;</a></h4>
-<pre class="highlight"><code class="language-python doc-signature">asession(*, thread_id=None)</code></pre>
+<pre class="highlight"><code class="language-python doc-signature">asession(*, thread_id=None, handoff=None)</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -1249,7 +1407,8 @@ from anywhere inside the <code>async with</code> body transitions the
 worker to CANCELLED instead of FAILED, and is re-raised.</p>
 <p>The same <code>thread_id</code> / <code>saver</code> contract from <code>session()</code>
 applies; pair with <code>arun_turn(..., idempotency_key=...)</code> for
-replay-safe async turns.</p>
+replay-safe async turns, and pass <code>handoff</code> to run on the worker a
+<code>Handoff</code> reserved.</p>
 
 
     </div>
@@ -1282,6 +1441,58 @@ replay-safe async turns.</p>
 
 
         <p>Raised when a tool is blocked by the configured PermissionEnforcer.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="techrevati.runtime.orchestrator.ToolTimeoutError" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">ToolTimeoutError</span>
+
+
+<a href="#techrevati.runtime.orchestrator.ToolTimeoutError" class="headerlink" title="Permanent link">&para;</a></h3>
+<pre class="highlight"><code class="language-python doc-signature">ToolTimeoutError(tool_name, timeout_seconds)</code></pre>
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="TurnTimeoutError (techrevati.runtime.orchestrator.TurnTimeoutError)" href="#techrevati.runtime.orchestrator.TurnTimeoutError">TurnTimeoutError</a></code></p>
+
+
+
+        <p>Raised when <code>run_tool</code> / <code>arun_tool</code> exceeds its <code>timeout</code>.</p>
+<p>Subclasses :class:<code>TurnTimeoutError</code> so a single <code>except</code> covers both.
+An async tool is cancelled. A sync tool cannot be killed, so its worker
+thread finishes in the background: a tool whose side effects must not
+outlive the deadline has to enforce its own timeout too.</p>
 
 
 

@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -772,6 +786,8 @@ how to recover (escalate to human, switch to cheaper model, abort).</p>
 different (we hit a per-session token / tool-call cap, not a $$
 cap), and recovery options diverge: token caps usually mean
 "abort this loop", not "switch to a cheaper model".</p>
+<p><code>observed</code> and <code>ceiling</code> are in the dimension's own unit: a count of
+tokens or tool calls, or US dollars for <code>limit_name="cost_usd"</code>.</p>
 
 
 
@@ -932,11 +948,13 @@ and is used when the caller's <code>UsageSnapshot.cache_ttl</code> is
     <div class="doc doc-contents ">
 
         <p>Return the per-million write rate for the given TTL hint.</p>
-<p><code>ttl=None</code> → fall back to <code>cache_write_per_million</code> (legacy
-single-tier). <code>"5m"</code> and <code>"1h"</code> resolve to the 2026
-ephemeral tiers; unknown values also fall back so a
-misconfigured <code>UsageSnapshot.cache_ttl</code> doesn't crash cost
-calculation.</p>
+<p><code>"5m"</code> and <code>"1h"</code> (case-insensitive) resolve to the 2026 ephemeral
+tiers. <code>ttl=None</code> and unrecognized values fall back to
+<code>cache_write_per_million</code> (legacy single-tier) so a misconfigured
+<code>UsageSnapshot.cache_ttl</code> doesn't crash cost calculation.</p>
+<p>When that single-tier rate is unset but tiers are registered, the higher
+tier applies: for a budget guard an over-estimate is safe, while the
+previous $0 silently let cache writes through unbilled.</p>
 
 
     </div>
@@ -1149,9 +1167,9 @@ configured, <code>UsageLimits</code> wins because it's the newer API.</p>
     <div class="doc doc-contents ">
 
         <p>Check whether pricing is registered for a model.</p>
-<p>Matches by exact name (case-insensitive) or longest-prefix, mirroring
-the resolution behavior of cost calculations. Returns False if the
-lookup falls back to the zero-cost default.</p>
+<p>Matches by exact name (case-insensitive) or longest variant prefix, mirroring
+the resolution behavior of cost calculations. Returns False if the lookup
+falls back to the zero-cost default.</p>
 
 
     </div>
@@ -1225,13 +1243,11 @@ are overwritten on conflict.</p>
     <div class="doc doc-contents ">
 
         <p>Resolve pricing for a model. Falls back to zero (local/unknown).</p>
-<p>Public utility. Tries exact match first, then longest prefix match so
-dated variants like 'model-a-20260514' map to 'model-a'. Unknown models
-return <code>ModelPricing(0.0, 0.0)</code> (zero-fallback — this never raises).</p>
-<p>Read path is guarded against concurrent <code>register_pricing</code> /
-<code>load_pricing_from_file</code> mutations: we snapshot the table under
-<code>_pricing_lock</code> and iterate the local copy, avoiding the
-<code>RuntimeError: dictionary changed size during iteration</code> window.</p>
+<p>Public utility. Tries exact match first, then the longest registered name
+that the model id extends at a separator (<code>-</code>, <code>:</code>, <code>@</code> or <code>/</code>), so
+dated variants like 'model-a-20260514' map to 'model-a' while a different
+model like 'model-alpha' does not. Unknown models return
+<code>ModelPricing(0.0, 0.0)</code> (zero-fallback — this never raises).</p>
 
 
     </div>

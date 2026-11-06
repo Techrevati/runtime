@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -645,8 +659,10 @@
 
         <p>Agent Events — Typed lifecycle events with a failure taxonomy.</p>
 <p>Provides a structured event schema for agent execution. Events are
-JSON-serializable and include both an 'event' (full path) and 'type'
-(short tail) field so they can be routed by either consumers.</p>
+JSON-serializable and carry both an 'event' (full path) and a legacy 'type'
+(short tail) field. Route on 'event': 'type' is kept for backward compatibility
+and is ambiguous ('failed' is both <code>agent.failed</code> and
+<code>agent.recovery.failed</code>).</p>
 
 
 
@@ -866,6 +882,62 @@ JSON-serializable and include both an 'event' (full path) and 'type'
 <div class="doc doc-object doc-function">
 
 
+<h4 id="techrevati.runtime.agent_events.AgentEvent.turn_completed" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">turn_completed</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#techrevati.runtime.agent_events.AgentEvent.turn_completed" class="headerlink" title="Permanent link">&para;</a></h4>
+<pre class="highlight"><code class="language-python doc-signature">turn_completed(
+    role, phase, *, model, duration_seconds, data=None
+)</code></pre>
+
+    <div class="doc doc-contents ">
+
+        <p>One model turn finished; <code>model</code> may be empty when not supplied.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="techrevati.runtime.agent_events.AgentEvent.turn_failed" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">turn_failed</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#techrevati.runtime.agent_events.AgentEvent.turn_failed" class="headerlink" title="Permanent link">&para;</a></h4>
+<pre class="highlight"><code class="language-python doc-signature">turn_failed(
+    role,
+    phase,
+    *,
+    model,
+    duration_seconds,
+    error_type,
+    data=None,
+)</code></pre>
+
+    <div class="doc doc-contents ">
+
+        <p>One model turn failed; the agent itself may still recover and continue.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h4 id="techrevati.runtime.agent_events.AgentEvent.oversight_review_requested" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">oversight_review_requested</span>
 
@@ -944,7 +1016,7 @@ JSON-serializable and include both an 'event' (full path) and 'type'
 
     <div class="doc doc-contents ">
 
-        <p>JSON string representation.</p>
+        <p>Strict JSON; non-finite floats in <code>data</code> become strings ("nan", "inf").</p>
 
 
     </div>

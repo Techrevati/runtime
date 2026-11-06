@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -931,6 +945,28 @@ AgentRegistry provides thread-safe concurrent access.</p>
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="techrevati.runtime.agent_lifecycle.AgentRegistry.evict_terminal" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">evict_terminal</span>
+
+
+<a href="#techrevati.runtime.agent_lifecycle.AgentRegistry.evict_terminal" class="headerlink" title="Permanent link">&para;</a></h4>
+<pre class="highlight"><code class="language-python doc-signature">evict_terminal()</code></pre>
+
+    <div class="doc doc-contents ">
+
+        <p>Forget workers in a terminal state; return how many were removed.</p>
+<p>A registry otherwise keeps every worker it ever created. Long-lived
+processes opening many sessions on one <code>AgentSession</code> should call this
+periodically, after reading any terminal workers they still need.</p>
+
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-function">
 

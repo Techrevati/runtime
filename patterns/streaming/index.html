@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -726,7 +740,11 @@ async with session_factory.asession() as session:
 </tbody>
 </table>
 <p>Use the classmethod constructors (<code>StreamEvent.text</code>, <code>StreamEvent.final</code>,
-…) to build events in custom plumbing — they enforce the payload shape.</p>
+…) to build events in custom plumbing — they enforce the payload shape.
+Event fields are frozen, but <code>payload</code> is a plain dict: treat it as read-only when
+fanning an event out, and use <code>to_dict()</code> for a private deep copy. <code>to_json()</code>
+emits strict JSON and renders non-JSON values such as MCP content blocks through
+their <code>model_dump</code>, or else <code>str</code>.</p>
 <h2 id="cancellation">Cancellation<a class="headerlink" href="#cancellation" title="Permanent link">&para;</a></h2>
 <p>If the consumer breaks out of the <code>async for</code> loop, <strong>wrap the
 generator with <code>contextlib.aclosing</code></strong> so cleanup runs deterministically:</p>

@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -807,6 +821,68 @@ it is read on every turn and every tool call.</p>
 
 
 
+<div class="doc doc-object doc-function">
+
+
+<h4 id="techrevati.runtime.governance.GovernanceState.record_tool_call" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">record_tool_call</span>
+
+
+<a href="#techrevati.runtime.governance.GovernanceState.record_tool_call" class="headerlink" title="Permanent link">&para;</a></h4>
+<pre class="highlight"><code class="language-python doc-signature">record_tool_call(signature=None)</code></pre>
+
+    <div class="doc doc-contents ">
+
+        <p>Count a tool call. <code>signature</code> feeds repeated-call detection.</p>
+<p><code>None</code> means the call's arguments are unknown: it still occupies a
+slot in the window but never matches another call, so tools invoked
+without <code>args</code> cannot produce a false loop detection.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="techrevati.runtime.governance.GovernanceState.repeats_of_latest_tool_call" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">repeats_of_latest_tool_call</span>
+
+
+<a href="#techrevati.runtime.governance.GovernanceState.repeats_of_latest_tool_call" class="headerlink" title="Permanent link">&para;</a></h4>
+<pre class="highlight"><code class="language-python doc-signature">repeats_of_latest_tool_call(window)</code></pre>
+
+    <div class="doc doc-contents ">
+
+        <p>Return how often the latest signature occurs in the last <code>window</code>.</p>
+<p>Zero once that call has passed its check, so an alert fires per repeated
+call rather than on every later turn.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="techrevati.runtime.governance.GovernanceState.mark_tool_call_evaluated" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">mark_tool_call_evaluated</span>
+
+
+<a href="#techrevati.runtime.governance.GovernanceState.mark_tool_call_evaluated" class="headerlink" title="Permanent link">&para;</a></h4>
+<pre class="highlight"><code class="language-python doc-signature">mark_tool_call_evaluated()</code></pre>
+
+    <div class="doc doc-contents ">
+
+        <p>Record that the latest tool call has passed its limit checks.</p>
+
+
+    </div>
+
+</div>
+
 
 
   </div>
@@ -1061,6 +1137,72 @@ safety / cost concern, not a usage telemetry concern.</p>
 
 
 
+<h3 id="techrevati.runtime.governance.MaxRepeatedToolCallsLimit" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">MaxRepeatedToolCallsLimit</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#techrevati.runtime.governance.MaxRepeatedToolCallsLimit" class="headerlink" title="Permanent link">&para;</a></h3>
+<pre class="highlight"><code class="language-python doc-signature">MaxRepeatedToolCallsLimit(
+    value,
+    scope="session",
+    on_breach="terminate",
+    name="max_repeated_tool_calls",
+    window=10,
+)</code></pre>
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="techrevati.runtime.governance._LimitBase">_LimitBase</span></code></p>
+
+
+
+        <p>Stop an agent repeating the same tool call with the same arguments.</p>
+<p><code>value</code> is how many identical calls are tolerated inside the last
+<code>window</code> tool calls, so <code>value=3</code> blocks the fourth. A tool and its
+<code>args</code> are compared in canonical form, so key order cannot hide a repeat.</p>
+<p>Calls only count when the caller passes <code>args=</code> to <code>run_tool</code> /
+<code>arun_tool</code> (or a <code>hook_ctx</code> carrying them): without arguments the
+runtime cannot tell a loop from legitimate polling. For the same reason,
+leave volatile fields such as timestamps out of the <code>args</code> you pass, or a
+loop will look like a series of different calls.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
 <h3 id="techrevati.runtime.governance.LimitOutcome" class="doc doc-heading">
             <span class="doc doc-object-name doc-class-name">LimitOutcome</span>
 
@@ -1232,6 +1374,48 @@ terminate-breach.</p>
 
 </div>
 
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="techrevati.runtime.governance.tool_call_signature" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">tool_call_signature</span>
+
+
+<a href="#techrevati.runtime.governance.tool_call_signature" class="headerlink" title="Permanent link">&para;</a></h3>
+<pre class="highlight"><code class="language-python doc-signature">tool_call_signature(tool, args)</code></pre>
+
+    <div class="doc doc-contents ">
+
+        <p>Return a stable digest of a tool call for repeated-call detection.</p>
+<p>A digest rather than the arguments themselves, so the per-session state
+never retains caller data such as personal information.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="techrevati.runtime.governance.safe_tool_call_signature" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">safe_tool_call_signature</span>
+
+
+<a href="#techrevati.runtime.governance.safe_tool_call_signature" class="headerlink" title="Permanent link">&para;</a></h3>
+<pre class="highlight"><code class="language-python doc-signature">safe_tool_call_signature(tool, args)</code></pre>
+
+    <div class="doc doc-contents ">
+
+        <p>Like :func:<code>tool_call_signature</code>, but <code>None</code> if the arguments defeat it.</p>
+<p>Telemetry about a call must never be the reason the call fails, for example
+when an argument's <code>__repr__</code> raises or its nesting is too deep to walk.</p>
+
+
+    </div>
+
+</div>
 
 
 

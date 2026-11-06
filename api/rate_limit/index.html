@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -801,6 +815,30 @@ waiting for refill; <code>None</code> waits indefinitely.</p>
 
 </div>
 
+<div class="doc doc-object doc-function">
+
+
+<h4 id="techrevati.runtime.rate_limit.TokenBucket.debit" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">debit</span>
+
+
+<a href="#techrevati.runtime.rate_limit.TokenBucket.debit" class="headerlink" title="Permanent link">&para;</a></h4>
+<pre class="highlight"><code class="language-python doc-signature">debit(tokens)</code></pre>
+
+    <div class="doc doc-contents ">
+
+        <p>Record <code>tokens</code> that were already spent, without waiting.</p>
+<p>Unlike <code>acquire</code>, this cannot refuse: the spend already happened, so
+the balance may go negative (even past <code>-capacity</code>). Later acquires
+wait until refill has paid the debt. The debt is capped at 24 hours of
+refill so it always stays repayable; anything beyond that is forgotten.
+A single debit above <code>1e15</code> tokens raises <code>ValueError</code>.</p>
+
+
+    </div>
+
+</div>
+
 
 
   </div>
@@ -856,6 +894,29 @@ variant — choose one per downstream.</p>
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="techrevati.runtime.rate_limit.AsyncTokenBucket.debit" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">debit</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#techrevati.runtime.rate_limit.AsyncTokenBucket.debit" class="headerlink" title="Permanent link">&para;</a></h4>
+<pre class="highlight"><code class="language-python doc-signature">debit(tokens)</code></pre>
+
+    <div class="doc doc-contents ">
+
+        <p>Async sibling of <code>TokenBucket.debit</code>, with the same debt cap.</p>
+
+
+    </div>
+
+</div>
 
 
 
@@ -946,7 +1007,12 @@ enforce limits.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Block on input/output TPM buckets after a turn completes.</p>
+        <p>Charge a completed turn's tokens, then wait out any resulting debt.</p>
+<p>The tokens are already spent, so every configured bucket is debited
+first and the amount may exceed <code>capacity</code> (the balance goes
+negative). <code>timeout</code> is one budget shared across the buckets. On
+timeout <code>RateLimitExceededError</code> is raised and the debits stand,
+because the provider has counted those tokens either way.</p>
 
 
     </div>

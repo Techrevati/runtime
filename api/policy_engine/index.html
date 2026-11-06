@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -1384,6 +1398,8 @@ all matching rules fire.</p>
     <div class="doc doc-contents ">
 
         <p>Evaluate all rules. Returns the flat list of matching actions.</p>
+<p>Raises <code>TypeError</code> for a condition that needs awaiting: an unawaited
+coroutine is truthy, so it would match every time. Use <code>evaluate_async</code>.</p>
 
 
     </div>

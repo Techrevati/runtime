@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -769,9 +783,14 @@ prompt into your factory, since the factory shape is unconstrained.</p>
 have no observer.</p>
 <h2 id="built-in-hooks">Built-in hooks<a class="headerlink" href="#built-in-hooks" title="Permanent link">&para;</a></h2>
 <h3 id="redactpiihook"><code>RedactPIIHook</code><a class="headerlink" href="#redactpiihook" title="Permanent link">&para;</a></h3>
-<p>Best-effort PII scrubber for strings, dicts, and message dictionaries.
-Defaults to SSN, email, credit card, IPv4, and long API-key
-heuristics; pass <code>patterns=</code> to override.</p>
+<p>Best-effort PII scrubber for strings, UTF-8 bytes, and any nesting of dicts
+(including string keys), lists, tuples, and sets. Defaults to SSN, email,
+credit card, IPv4, JWT, and long API-key heuristics; pass <code>patterns=</code> to
+override. Base64-alphabet keys are recognized by mixed case plus a digit and at
+most three inner slashes (any number from 100 characters), so ordinary file paths
+and URLs stay readable, at the cost of missing a shorter key with more slashes. A
+mixed-case path of 40+ characters with a digit and few slashes can be redacted. Dict
+keys that redact to the same text stay separate (<code>[REDACTED]</code>, <code>[REDACTED]#2</code>).</p>
 <pre><code class="language-python">RedactPIIHook(
     patterns=[r&quot;\b\d{3}-\d{2}-\d{4}\b&quot;],
     replacement=&quot;[REDACTED]&quot;,

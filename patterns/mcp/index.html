@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -635,9 +649,13 @@ Protocol</a> server. Install the optional extra:</p>
 </code></pre>
 <p>The runtime has <strong>no tool registry</strong> — <code>run_tool</code> / <code>arun_tool</code> execute
 caller-supplied callables. <code>MCPToolAdapter</code> therefore registers nothing: it wraps
-a connected <code>mcp.ClientSession</code> and hands back coroutine factories that slot
-straight into <code>arun_tool</code>, so MCP tool calls still pass the permission, guardrail,
-governance, and hook checks.</p>
+a connected client and hands back coroutine factories that slot straight into
+<code>arun_tool</code>, so MCP tool calls still pass the permission, guardrail, governance,
+and hook checks.</p>
+<p>The adapter works with a <code>ClientSession</code> on both SDK lines (1.x and 2.x) and with
+the 2.x high-level <code>mcp.Client</code>. On 2.x, prefer <code>Client</code>: it negotiates the protocol
+version and answers servers that ask for more input, while a <code>ClientSession</code> you
+initialize yourself uses the pre-2026 handshake and cannot answer those requests.</p>
 <pre><code class="language-python">from mcp import ClientSession
 from mcp.client.stdio import StdioServerParameters, stdio_client
 
@@ -671,13 +689,19 @@ once and normalizes its <code>CallToolResult</code>:</p>
 <li>otherwise the raw content list is returned — non-text blocks (images, audio,
   embedded resources), <strong>including those mixed with text</strong>, are preserved rather
   than silently dropped, and the caller decides how to handle them;</li>
-<li>an error result raises <code>MCPToolError</code>.</li>
+<li>a failure raises <code>MCPToolError</code>, with <code>tool_name</code> set. This covers error results,
+  protocol errors (<code>code</code> then holds the protocol error code, and the SDK's
+  exception is the <code>__cause__</code>), and results that are not a finished tool result,
+  such as the <code>InputRequiredResult</code> a 2.x <code>ClientSession</code> returns when the server
+  needs client input.</li>
 </ul>
-<p><code>adapter.list_tools()</code> walks the MCP <code>nextCursor</code> pagination to completion, so it
-returns every advertised tool, not just the first page.</p>
+<p><code>adapter.tool(name, arguments, timeout=30.0)</code> sets a per-call limit in seconds,
+enforced by the SDK; exceeding it raises <code>MCPToolError</code>.</p>
+<p><code>adapter.list_tools()</code> walks the MCP pagination to completion, so it returns every
+advertised tool, not just the first page.</p>
 <h2 id="lifecycle-ownership">Lifecycle ownership<a class="headerlink" href="#lifecycle-ownership" title="Permanent link">&para;</a></h2>
-<p>The adapter does <strong>not</strong> own the MCP connection — you manage <code>stdio_client</code> /
-<code>sse_client</code> and <code>ClientSession</code> lifetimes (and call <code>initialize()</code>). The adapter
+<p>The adapter does <strong>not</strong> own the MCP connection — you manage the transport and
+client lifetimes (including <code>initialize()</code> on a <code>ClientSession</code>). The adapter
 only bridges <code>call_tool</code> into the runtime's tool path. The runtime core stays
 zero-dependency; the <code>mcp</code> package is imported behind a guard and is only needed
 when this module is used.</p>

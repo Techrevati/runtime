@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -699,7 +713,11 @@ timeouts, connection errors, JSON decode errors, and local <code>OSError</code> 
 Wrapped causes are inspected too, so a <code>RuntimeError</code> raised from a disk,
 filesystem, or dependency I/O error still maps to <code>DEPENDENCY_TIMEOUT</code> instead
 of being reported as an LLM failure.</p>
-<p>String matching covers common provider and dependency messages. Database,
+<p>String matching covers common provider and dependency messages. Status codes
+match only as standalone numbers, so <code>14290 tokens</code>, <code>req_84010</code>, a hex id such as
+<code>7a503bc3</code> and <code>took 401ms</code> are not statuses, while <code>HTTP 429</code>, <code>status 503</code> and
+<code>error code: 401</code> are. Throttling messages are rate limits; <code>prompt is too long</code>
+is context overflow. Database,
 SQLite, disk, filesystem, read-only, and no-space-left errors are classified as
 dependency failures so terminal audit events can distinguish runtime
 infrastructure problems from model failures.</p>
@@ -711,7 +729,7 @@ infrastructure problems from model failures.</p>
 </ul>
 <h2 id="helpers">Helpers<a class="headerlink" href="#helpers" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>backoff_delay(attempt, base=2.0, jitter=True)</code> — exponential delay with optional jitter</li>
+<li><code>backoff_delay(attempt, base=2.0, jitter="decorrelated", cap=60.0, prev_delay=0.0)</code> — delay with selectable jitter. The default mode ignores <code>attempt</code> and grows only when you pass the previous delay back as <code>prev_delay</code></li>
 <li><code>next_provider(available_providers, current)</code> — pick the next fallback</li>
 <li><code>smaller_context_budget(current_chars, reduction=0.75)</code> — shrink a context budget</li>
 </ul>

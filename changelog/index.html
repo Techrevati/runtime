@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../open-items/">Open Items</a>
         
         
       </li>
@@ -630,6 +644,95 @@
         
           <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>Author: Techrevati doo</p>
+<h2 id="050rc1-2026-11-06">0.5.0rc1 - 2026-11-06<a class="headerlink" href="#050rc1-2026-11-06" title="Permanent link">&para;</a></h2>
+<p>The hardening line: every defect below was reproduced by an executed proof before
+it was fixed. See <a href="../migrating-from-0.4.x/">Migrating from 0.4.x</a> for what changes
+for existing callers.</p>
+<p>Added:</p>
+<ul>
+<li><code>run_tool</code> / <code>arun_tool</code> accept <code>args</code>, <code>timeout</code> (<code>ToolTimeoutError</code>), and
+  <code>idempotency_key</code>, which replays a completed tool call instead of repeating its
+  side effect (at-least-once).</li>
+<li><code>MaxRepeatedToolCallsLimit</code> stops an agent repeating the same tool call.</li>
+<li><code>run_turn_with_fallback</code> / <code>arun_turn_with_fallback</code> drive <code>provider_router</code>.</li>
+<li><code>arun_turn_stream(idempotency_key=...)</code>.</li>
+<li><code>session(handoff=...)</code> / <code>asession(handoff=...)</code> run on the worker a <code>Handoff</code>
+  reserved.</li>
+<li><code>agent.turn.completed</code> / <code>agent.turn.failed</code> events, <code>chat</code> spans,
+  <code>OpenTelemetryMetricsSink</code>, and the <code>gen_ai.client.inference.usage.*</code> counters.</li>
+<li>MCP Python SDK 2.x support alongside 1.x, plus a per-call <code>timeout</code>.</li>
+<li>Audit log <code>tip()</code>, <code>ChainTip</code>, and <code>verify_chain(expected_tip=...)</code>.</li>
+<li><code>AgentRegistry.evict_terminal()</code>, <code>TokenBucket.debit()</code>.</li>
+<li>Audit purge markers, signed under the sink's key.</li>
+<li>Python 3.14 support.</li>
+</ul>
+<p>Fixed, security and audit integrity:</p>
+<ul>
+<li>Two audit writers on one SQLite file could wedge it and silently lose every later
+  record. Appends are now atomic and writers serialize into one chain.</li>
+<li>Quadratic regular expressions in <code>PromptInjectionGuardrail</code> and <code>RedactPIIHook</code> let
+  untrusted content stall the event loop.</li>
+<li>Prompt-injection and pattern guardrails were bypassed by any structured output,
+  because <code>str()</code> escaped the newlines their patterns match on.</li>
+<li>A role name differing by case or an invisible character bypassed its deny list.</li>
+<li>Async policy conditions always matched under <code>And</code> / <code>Or</code> and in sync <code>evaluate</code>.</li>
+<li>The human-oversight gate accepted replayed, stale, spoofed, and invalid decisions,
+  and did not enforce its timeout on a hanging queue.</li>
+<li>The oversight trail omitted the reason and action, and recorded nothing if a queue
+  raised. The compliance kit's log now receives oversight events.</li>
+<li>Unserializable event content dropped audit records while the action proceeded, and
+  could suppress incident notification. Hashes of existing records are unchanged.</li>
+<li>A deleted audit tail was not detected on a live sink.</li>
+<li>Tampered rows crashed verification rather than reporting invalid. CSV export did
+  not escape timestamps. Purge compared timestamp strings across UTC offsets.</li>
+<li>PII redaction skipped tuples, sets, dict keys, and bytes, and missed standard base64
+  keys and JWT headers. Combined patterns lost backreferences.</li>
+</ul>
+<p>Fixed, accounting and durability:</p>
+<ul>
+<li>A turn that crossed a budget or usage limit, or whose <code>after_model</code> hook failed, was
+  missing from the checkpoint and from governance cost, so the retry paid again and
+  <code>MaxBudgetLimit</code> could never trip.</li>
+<li>A replayed turn did not restore its spend, so a restart reset the budget.</li>
+<li>Usage above a rate-limit bucket's capacity raised after the model call and lost the
+  turn.</li>
+<li>Usage passed without <code>model=</code> was discarded, which disabled <code>UsageLimits</code>.</li>
+<li>A failed SQLite write left a transaction open: every later write failed and reads
+  went stale until restart (<code>SqliteSaver</code>, <code>SqliteEventSink</code>, <code>SqliteUsageSink</code>).</li>
+<li>Concurrent cold starts of a new SQLite file crashed with <code>IntegrityError</code>.</li>
+<li>JSON-valid state with a lone surrogate failed on <code>SqliteSaver</code> and aborted the turn.</li>
+<li>Pricing prefixes had no name boundary: <code>gpt-4</code> priced <code>gpt-4o-mini</code> and suppressed
+  the missing-price warning.</li>
+<li>Cache writes could cost $0 on a tiered model. Float sums could falsely exceed a
+  budget at its exact boundary.</li>
+</ul>
+<p>Fixed, runtime behaviour:</p>
+<ul>
+<li><code>arun_turn_stream(timeout=)</code> cancelled the consumer's task, even after the consumer
+  had left the stream, because the timeout scope spanned a <code>yield</code>.</li>
+<li>A hung half-open probe blocked the circuit indefinitely, a stale probe result could
+  close it, and it could stay half-open under sustained load despite successes.</li>
+<li>Context-overflow errors containing a token count such as <code>14290</code> were classified as
+  rate limits, and digits inside identifiers as HTTP statuses.</li>
+<li>Duplicate names in a router's <code>exclude</code> made every router return <code>None</code>.</li>
+<li>A timed-out <code>pause_for_input</code> stranded the worker and made session exit raise.</li>
+<li><code>run_turn(timeout=)</code> lost context variables, including tracing context, in its
+  worker thread. A <code>TimeoutError</code> raised by user code was reported as the deadline.</li>
+<li>Compaction identified messages by object identity, so a reused instance defeated
+  both limits, and it could delete the newest message.</li>
+<li><code>JsonOutputSpec</code> leaked <code>RecursionError</code> and <code>ValueError</code>, and accepted <code>NaN</code>.</li>
+<li>Orphan spans were lost under a batch processor at exit. <code>OpenTelemetrySink.shutdown()</code>
+  closes them explicitly.</li>
+<li><code>execute_tool</code> spans lacked <code>gen_ai.tool.name</code>, tool spans stayed open after a
+  post-guardrail block or cancellation, and cache tokens never reached metrics.</li>
+<li>Runtime exceptions did not survive <code>pickle</code> or <code>copy</code>.</li>
+<li><code>mkdocs build</code> failed with current <code>pymdown-extensions</code>; <code>mkdocstrings</code> is updated.</li>
+</ul>
+<p>Changed:</p>
+<ul>
+<li>Toolchain updated (ruff 0.17, mypy 2.4, pytest 9.2, hypothesis, OpenTelemetry 1.45,
+  and pinned actions for checkout, setup-python, and the release publisher).</li>
+</ul>
 <h2 id="040-2026-06-20">0.4.0 - 2026-06-20<a class="headerlink" href="#040-2026-06-20" title="Permanent link">&para;</a></h2>
 <p>The EU AI Act compliance line.</p>
 <p>Added:</p>

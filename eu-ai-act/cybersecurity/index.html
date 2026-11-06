@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -638,9 +652,20 @@ system's use, outputs, or performance. The runtime already ships
 <code>PromptInjectionGuardrail</code>, <code>CircuitBreaker</code>, and <code>RateLimiter</code>; the compliance
 kit adds two integrity primitives.</p>
 <h2 id="outputintegrityguardrail-tool-outputs">OutputIntegrityGuardrail (tool outputs)<a class="headerlink" href="#outputintegrityguardrail-tool-outputs" title="Permanent link">&para;</a></h2>
-<p>A <code>Guardrail</code> (runs at <code>post</code>) that flags NUL bytes, C0 / ANSI control escape
-sequences (used to smuggle terminal payloads), and oversized output. It walks
-nested <code>str</code> / <code>dict</code> / <code>list</code> structures.</p>
+<p>A <code>Guardrail</code> (runs at <code>post</code>) that flags NUL bytes, C0 / C1 / ANSI control escape
+sequences (used to smuggle terminal payloads), DEL, and oversized output. It walks
+nested <code>str</code> / <code>bytes</code> / <code>dict</code> / <code>list</code> / <code>tuple</code> / <code>set</code> structures, including
+dict keys, and <code>max_chars</code> caps the payload's total size across all of them.</p>
+<p>Any mapping or re-iterable container is walked; one-shot iterators are left
+unconsumed, and a payload of more than 1,000,000 values is rejected rather than
+assumed clean. Objects of other types are not inspected.</p>
+<p>Bytes that are valid UTF-8 and at least half printable are scanned as text. Other
+bytes may be binary, where control bytes are ordinary, so only a complete CSI or OSC
+escape sequence counts, and only if the value is at least half printable or at most
+64 bytes long. Random data contains such a sequence about every 90 KB, so scanning
+long binary values would reject images at random. The cost is a known gap: a
+terminal sequence hidden in more than 64 bytes of mostly non-printable padding is
+not detected.</p>
 <pre><code class="language-python">from techrevati.runtime.compliance import OutputIntegrityGuardrail
 
 guardrail = OutputIntegrityGuardrail(max_chars=100_000)
@@ -649,7 +674,9 @@ guardrail = OutputIntegrityGuardrail(max_chars=100_000)
 <h2 id="inputsanitizationhook-prompts-tool-args">InputSanitizationHook (prompts &amp; tool args)<a class="headerlink" href="#inputsanitizationhook-prompts-tool-args" title="Permanent link">&para;</a></h2>
 <p>A <code>Hook</code> (not a Guardrail) — only hooks see <code>ctx.prompt</code> and <code>ctx.args</code>; the
 <code>Guardrail.check_pre</code> signature does not receive tool inputs. It scans before the
-model call and before tool execution, raising <code>InputSanitizationError</code> on a hit.</p>
+model call and before tool execution, raising <code>InputSanitizationError</code> on a hit.
+It can only scan what the session is given: tool arguments captured in a closure
+are invisible to it.</p>
 <pre><code class="language-python">from techrevati.runtime.compliance import InputSanitizationHook
 
 hook = InputSanitizationHook(max_chars=100_000)

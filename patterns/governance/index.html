@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -709,7 +723,7 @@ scopes fail closed until they are implemented end-to-end.</p>
 as immutable limit configuration. Each <code>session()</code> / <code>asession()</code> call
 receives a fresh <code>GovernanceState</code>, so counters do not leak between
 separate sessions opened from the same factory.</p>
-<h2 id="the-four-built-in-limits">The four built-in limits<a class="headerlink" href="#the-four-built-in-limits" title="Permanent link">&para;</a></h2>
+<h2 id="the-five-built-in-limits">The five built-in limits<a class="headerlink" href="#the-five-built-in-limits" title="Permanent link">&para;</a></h2>
 <h3 id="maxiterationslimit"><code>MaxIterationsLimit</code><a class="headerlink" href="#maxiterationslimit" title="Permanent link">&para;</a></h3>
 <p>Caps total turns in the session. Distinct from
 <code>AgentSession.max_iterations</code> — that one raises a recoverable
@@ -735,6 +749,23 @@ forever" failure modes that per-step retry budgets alone do not.</p>
 <code>UsageLimits.tool_calls_max</code> only in being terminal.</p>
 <pre><code class="language-python">MaxToolCallsLimit(value=100, on_breach=&quot;alert&quot;)
 </code></pre>
+<h3 id="maxrepeatedtoolcallslimit"><code>MaxRepeatedToolCallsLimit</code><a class="headerlink" href="#maxrepeatedtoolcallslimit" title="Permanent link">&para;</a></h3>
+<p>Stops the classic stuck agent: the same tool with the same arguments, over and
+over. <code>value</code> is how many identical calls are tolerated inside the last <code>window</code>
+tool calls, so <code>value=3</code> blocks the fourth. Because it counts within a window
+rather than consecutively, it also catches an agent alternating between two
+calls.</p>
+<pre><code class="language-python">plane = GovernancePlane(limits=(MaxRepeatedToolCallsLimit(value=3, window=10),))
+
+with AgentSession(role=&quot;r&quot;, phase=&quot;p&quot;, governance=plane).session() as session:
+    session.run_tool(&quot;search&quot;, lambda: search(q), args={&quot;q&quot;: q})
+</code></pre>
+<p>Only calls that pass <code>args=</code> (or a <code>hook_ctx</code> carrying them) are compared. Without
+arguments the runtime cannot tell a loop from legitimate polling, so those calls
+never trip the limit. Argument key order does not matter, and only a digest is
+kept. Leave volatile fields such as timestamps out of the <code>args</code> you pass, or
+pass just the fields that identify the call, otherwise a loop looks like a series
+of different calls. Start with <code>on_breach="alert"</code> if your agent polls.</p>
 <h2 id="on_breach-modes"><code>on_breach</code> modes<a class="headerlink" href="#on_breach-modes" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -808,6 +839,11 @@ session dies.</p>
 <td><code>MaxConsecutiveFailuresLimit.value</code></td>
 <td>2–5</td>
 <td>Below 2 is twitchy; above 5 hides real reliability bugs.</td>
+</tr>
+<tr>
+<td><code>MaxRepeatedToolCallsLimit.value</code></td>
+<td>3–5 in a window of 10</td>
+<td>Published agent tools use similar values. Raise it for tools that are polled with identical arguments.</td>
 </tr>
 <tr>
 <td><code>MaxToolCallsLimit.value</code></td>

@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -648,7 +662,11 @@ with agent.session() as session:
 <ul>
 <li><strong><code>JsonOutputSpec</code></strong> — parse JSON, optionally enforce <code>required_keys</code> and a
   top-level <code>require_type</code>; <code>strip_fences=True</code> (default) unwraps Markdown code
-  fences models often add.</li>
+  fences models often add. Everything outside strict JSON raises
+  <code>OutputValidationError</code>, including <code>NaN</code> / <code>Infinity</code>, pathologically nested
+  input, and integers over the interpreter's digit limit. JSON <code>true</code> does not
+  satisfy <code>require_type=int</code>. An opening fence line carrying anything but a
+  language tag is not treated as a fence.</li>
 <li><strong><code>RegexOutputSpec</code></strong> — match a regex and return its named groups as a dict.</li>
 <li><strong><code>CallableOutputSpec</code></strong> — wrap any <code>Callable[[str], T]</code>; its exceptions are
   normalized to <code>OutputValidationError</code>.</li>

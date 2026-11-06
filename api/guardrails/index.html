@@ -64,7 +64,21 @@
     
       <li class="nav-item">
         
+          <a href="../../migrating-from-0.4.x/">Migrating from 0.4.x</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
           <a href="../../consuming-as-a-library/">Consuming as a Library</a>
+        
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          <a href="../../open-items/">Open Items</a>
         
         
       </li>
@@ -652,9 +666,9 @@ automatically around <code>run_tool</code> / <code>arun_tool</code> and raises
 <p>This is content gating — orthogonal to <code>PermissionEnforcer</code> which
 answers "is this role allowed to use this tool at all?". Permissions
 are role × tool; guardrails are value × context.</p>
-<p>Output checks are mandatory; input/pre-call checks are optional and default to
-<code>GuardrailOutcome(allowed=True)</code> if a guardrail does not implement
-them, matching the structural Protocol pattern.</p>
+<p>A guardrail may implement one stage only; the other stage then passes. A guardrail
+a session cannot enforce (async checks only in part, on a sync session) is refused
+before the tool runs.</p>
 
 
 
@@ -1019,8 +1033,12 @@ handlers that read them keep working unchanged.</p>
 
         <p>Regex deny-list guardrail. Sub-200ms per check for ~100 patterns.</p>
 <p>Composes one compiled regex from the deny-list (alternation) so a
-check is one regex search, not N searches. <code>stages</code> selects which
-side of the tool call to gate; pass <code>("pre", "post")</code> for both.</p>
+check is one regex search, not N searches; patterns with capture groups
+or inline flags run separately (see <code>_compile_patterns</code>). Structured
+output is scanned leaf by leaf. <code>stages</code> selects which side of the
+tool call to gate; pass <code>("pre", "post")</code> for both.</p>
+<p>The built-in patterns run in linear time. A caller's pattern is run as
+given, so avoid nested or adjacent unbounded quantifiers on untrusted text.</p>
 <p>Used standalone for caller-defined deny-lists (e.g., "block any
 tool name matching <code>rm.*</code>") and as the substrate for
 <code>PromptInjectionGuardrail</code> below.</p>
