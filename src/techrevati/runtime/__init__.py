@@ -318,7 +318,6 @@ __all__ = [
     "UsageSink",
     "UsageSnapshot",
     "UsageTracker",
-    "tool_call_signature",
     "WeightedProviderRouter",
     "__version__",
     "aattempt_recovery",
@@ -332,4 +331,5 @@ __all__ = [
     "register_pricing",
     "resolve_pricing",
     "smaller_context_budget",
+    "tool_call_signature",
 ]
