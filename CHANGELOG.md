@@ -2,7 +2,7 @@
 
 Author: Techrevati doo
 
-## 0.5.0rc1 - 2026-11-06
+## 0.5.0 - 2026-11-06
 
 The hardening line: every defect below was reproduced by an executed proof before
 it was fixed. See [Migrating from 0.4.x](migrating-from-0.4.x.md) for what changes
