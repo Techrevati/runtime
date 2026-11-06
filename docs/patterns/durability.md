@@ -81,6 +81,16 @@ swap between them by changing the `saver=` argument on `AgentSession`.
   test helpers that re-use a dict between turns will surprise you if
   you check identity. Build a fresh dict per turn.
 
+## Ordering and failures
+
+`get(thread_id)` and `list` return checkpoints newest-first by insertion, not by
+`created_at`, so a backward wall-clock step cannot make an older turn look like
+the latest. `created_at` is informational.
+
+A write that fails on a lock raises once and rolls back; the saver stays usable
+and sees other writers' commits on the next call. Concurrent processes may open a
+new database at the same time.
+
 ## Tuning
 
 | Knob | Default | Why touch it |
@@ -114,8 +124,36 @@ This is opportunistic, caller-keyed memoization — **not** full deterministic
 workflow replay. There is no recorded event history and no automatic
 determinism enforcement; you choose the keys and what is safe to cache.
 
+## Tool calls
+
+`run_tool` / `arun_tool` use the same step store through `idempotency_key`, so a
+re-run does not repeat a side effect that already completed:
+
+```python
+with agent.session(thread_id="order-7") as session:
+    session.run_tool("charge", charge, idempotency_key="charge")
+```
+
+The result is recorded after the tool passes its post-checks. A failed tool is not
+recorded, so a retry runs it again. **The guarantee is at-least-once:** a crash
+between the tool returning and the record being written re-executes it. For
+payments and similar calls, also send the key to the downstream API.
+
+A non-JSON-serializable result logs a warning and is not recorded. A custom saver
+that does not implement `StepCheckpointSaver` logs a warning and runs the tool
+normally.
+
+## What a replayed turn counts towards
+
+A replayed turn adds its recorded usage to the new session's tracker and
+governance state, so a restart cannot reset a budget. Sinks are skipped because
+they saw the original turn. A turn that crosses a budget is checkpointed before
+`BudgetExceededError` is raised, because it was already paid for: the retry
+replays it and raises the same error without paying again.
+
 ## See also
 
+- [Migrating from 0.4.x](../migrating-from-0.4.x.md) — what changed in 0.5.0.
 - [Migrating from 0.0.x](../migrating-from-0.0.x.md) — `thread_id` /
   `idempotency_key` are new in 0.2.0; older sessions keep working
   without them.

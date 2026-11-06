@@ -88,6 +88,74 @@ async with agent.asession() as session:
 Same parameters; `coro_factory` instead of `fn`. See
 [`AsyncOrchestrationSession`](../api/orchestrator.md).
 
+## Tool calls: timeouts, replay, and arguments
+
+`run_tool` / `arun_tool` accept three optional keywords:
+
+```python
+session.run_tool(
+    "charge",
+    lambda: payments.charge(order),
+    args={"order": order.id},       # visible to hooks and loop detection
+    timeout=10.0,                   # raises ToolTimeoutError
+    idempotency_key=f"charge:{order.id}",  # replayed on a re-run
+)
+```
+
+- `timeout` cancels an async tool. A sync tool runs on a worker thread that Python
+  cannot kill, so it finishes in the background: a tool whose side effects must
+  not outlive the deadline has to enforce its own timeout too.
+- `idempotency_key` needs a `saver` and a `thread_id`. Permission and governance
+  checks still run on a replay, so revoking a permission takes effect immediately.
+  See [Durability](durability.md#tool-calls) for the exact guarantee.
+
+`arun_parallel_tools` only supplies the concurrency. To keep the checks, have each
+factory go through `arun_tool`:
+
+```python
+await session.arun_parallel_tools([
+    lambda: session.arun_tool("search", search_factory, args={"q": q}),
+    lambda: session.arun_tool("fetch", fetch_factory, args={"url": url}),
+])
+```
+
+## Falling back to another provider
+
+With a `provider_router` configured, `run_turn_with_fallback` /
+`arun_turn_with_fallback` retry a failed turn on the next model the router offers:
+
+```python
+agent = AgentSession(
+    role="writer",
+    phase="draft",
+    provider_router=StaticProviderRouter(("model-a", "model-b")),
+)
+with agent.session() as session:
+    text, usage, used_model = session.run_turn_with_fallback(
+        lambda model: call_model(model, prompt),
+        model="model-a",
+    )
+```
+
+Each attempt is a full turn, so it counts towards `max_iterations` and governance.
+By default only `PROVIDER_FAILURE` and `LLM_TIMEOUT` switch provider; pass
+`failover_on` to change that. Runtime limits, permission denials, and an open
+circuit always propagate. A circuit breaker on the session is shared by every
+model, so it should guard something they have in common, such as a gateway.
+
+## Handing off to another role
+
+`handoff_to` reserves a worker for the target role. Pass the returned `Handoff` to
+the target's session so it runs on that worker instead of leaving it
+`INITIALIZING`:
+
+```python
+handoff = session.handoff_to("reviewer", "draft ready")
+reviewer = AgentSession(role="reviewer", phase="draft", registry=agent.registry)
+with reviewer.session(handoff=handoff) as review:
+    ...
+```
+
 ## When to use this
 
 - **You want a single object to compose with**: the orchestrator

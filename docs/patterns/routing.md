@@ -33,6 +33,9 @@ next_provider = session.provider_router.select(
 )
 ```
 
+`session.run_turn_with_fallback` does this loop for you; see
+[Orchestrator](orchestrator.md#falling-back-to-another-provider).
+
 `select` is allowed to return `None` — that's the signal to escalate
 to the recipe's `EscalationPolicy` rather than continue retrying.
 

@@ -32,6 +32,8 @@ from __future__ import annotations
 
 import asyncio
 import concurrent.futures
+import contextvars
+import functools
 import json
 import logging
 import math
@@ -39,7 +41,7 @@ import time
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterator, Sequence
 from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass, field
-from typing import Any, TypeVar
+from typing import Any, NamedTuple, TypeVar
 
 from techrevati.runtime._classify import (
     _is_prompt_rejection_exception,
@@ -58,7 +60,7 @@ from techrevati.runtime.agent_lifecycle import (
     AgentStatus,
     AgentWorker,
 )
-from techrevati.runtime.checkpoint import CheckpointSaver
+from techrevati.runtime.checkpoint import CheckpointSaver, StepCheckpointSaver
 from techrevati.runtime.circuit_breaker import (
     AsyncCircuitBreaker,
     CircuitBreaker,
@@ -66,7 +68,11 @@ from techrevati.runtime.circuit_breaker import (
 )
 from techrevati.runtime.compliance.audit_log import AuditLogSink
 from techrevati.runtime.compliance.kit import EUAIActComplianceKit
-from techrevati.runtime.governance import GovernanceBreachError, GovernancePlane
+from techrevati.runtime.governance import (
+    GovernanceBreachError,
+    GovernancePlane,
+    tool_call_signature,
+)
 from techrevati.runtime.guardrails import (
     AsyncGuardrail,
     Guardrail,
@@ -146,6 +152,9 @@ class PermissionDeniedError(Exception):
         self.outcome = outcome
         super().__init__(outcome.reason or "permission denied")
 
+    def __reduce__(self) -> tuple[Any, ...]:
+        return (type(self), (self.outcome,))
+
 
 class TurnTimeoutError(Exception):
     """Raised when a sync or async turn exceeds the configured timeout.
@@ -158,6 +167,27 @@ class TurnTimeoutError(Exception):
     def __init__(self, timeout_seconds: float) -> None:
         self.timeout_seconds = timeout_seconds
         super().__init__(f"turn exceeded timeout of {timeout_seconds:.3f}s")
+
+    def __reduce__(self) -> tuple[Any, ...]:
+        return (type(self), (self.timeout_seconds,))
+
+
+class ToolTimeoutError(TurnTimeoutError):
+    """Raised when ``run_tool`` / ``arun_tool`` exceeds its ``timeout``.
+
+    Subclasses :class:`TurnTimeoutError` so a single ``except`` covers both.
+    An async tool is cancelled. A sync tool cannot be killed, so its worker
+    thread finishes in the background: a tool whose side effects must not
+    outlive the deadline has to enforce its own timeout too.
+    """
+
+    def __init__(self, tool_name: str, timeout_seconds: float) -> None:
+        super().__init__(timeout_seconds)
+        self.tool_name = tool_name
+        self.args = (f"tool {tool_name!r} exceeded timeout of {timeout_seconds:.3f}s",)
+
+    def __reduce__(self) -> tuple[Any, ...]:
+        return (type(self), (self.tool_name, self.timeout_seconds))
 
 
 class MaxIterationsExceededError(Exception):
@@ -173,6 +203,53 @@ class MaxIterationsExceededError(Exception):
             f"session reached max_iterations={max_iterations}; "
             "raise the cap or shorten the loop"
         )
+
+    def __reduce__(self) -> tuple[Any, ...]:
+        return (type(self), (self.max_iterations,))
+
+
+# Failures worth retrying on another provider. Anything else, such as a context
+# overflow, would fail the same way on the next provider too.
+DEFAULT_FAILOVER_SCENARIOS: frozenset[FailureScenario] = frozenset(
+    (FailureScenario.PROVIDER_FAILURE, FailureScenario.LLM_TIMEOUT)
+)
+
+
+class _ReplayedTurn(NamedTuple):
+    result: Any
+    usage: UsageSnapshot
+    model: str
+
+
+class _ReplayedTool(NamedTuple):
+    result: Any
+
+
+def _call_with_deadline(
+    fn: Callable[[], T], timeout: float, on_timeout: Callable[[], Exception]
+) -> T:
+    """Run ``fn`` on a one-shot worker thread and wait at most ``timeout``.
+
+    The caller's context variables travel with the call, so tracing spans and
+    similar ambient state behave the same with and without a deadline.
+
+    ``with ThreadPoolExecutor()`` is deliberately avoided: its ``__exit__`` waits
+    for the worker, which would block the deadline until ``fn`` returned. Python
+    cannot kill a thread, so on a timeout the worker finishes in the background.
+    ``concurrent.futures.wait`` keeps a ``TimeoutError`` raised by ``fn`` itself
+    distinct from the deadline expiring.
+    """
+    ex = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+    try:
+        context = contextvars.copy_context()
+        future = ex.submit(context.run, fn)
+        done, _ = concurrent.futures.wait((future,), timeout=timeout)
+        if not done:
+            future.cancel()
+            raise on_timeout()
+        return future.result()
+    finally:
+        ex.shutdown(wait=False, cancel_futures=True)
 
 
 def _validate_budget_usd(value: float | None) -> float | None:
@@ -382,7 +459,7 @@ class AgentSession:
 
     @contextmanager
     def session(
-        self, *, thread_id: str | None = None
+        self, *, thread_id: str | None = None, handoff: Handoff | None = None
     ) -> Iterator[OrchestrationSession]:
         """Open a single-agent sync session.
 
@@ -392,10 +469,13 @@ class AgentSession:
         If ``thread_id`` is supplied and the orchestrator has a ``saver``,
         the session writes a checkpoint after each turn and an
         ``idempotency_key`` on ``run_turn`` makes that turn replay-safe.
+
+        Pass the ``Handoff`` returned by ``handoff_to`` as ``handoff`` to run
+        on the worker it reserved; otherwise that worker stays INITIALIZING.
         """
         thread_id = _validate_optional_non_empty_str("thread_id", thread_id)
         self._assert_compliance_deployable()
-        worker = self._start_worker()
+        worker = self._start_worker(handoff)
         session = OrchestrationSession(
             worker=worker,
             tracker=UsageTracker(),
@@ -445,7 +525,7 @@ class AgentSession:
 
     @asynccontextmanager
     async def asession(
-        self, *, thread_id: str | None = None
+        self, *, thread_id: str | None = None, handoff: Handoff | None = None
     ) -> AsyncIterator[AsyncOrchestrationSession]:
         """Open a single-agent async session.
 
@@ -455,11 +535,12 @@ class AgentSession:
 
         The same ``thread_id`` / ``saver`` contract from ``session()``
         applies; pair with ``arun_turn(..., idempotency_key=...)`` for
-        replay-safe async turns.
+        replay-safe async turns, and pass ``handoff`` to run on the worker a
+        ``Handoff`` reserved.
         """
         thread_id = _validate_optional_non_empty_str("thread_id", thread_id)
         self._assert_compliance_deployable()
-        worker = self._start_worker()
+        worker = self._start_worker(handoff)
         session = AsyncOrchestrationSession(
             worker=worker,
             tracker=UsageTracker(),
@@ -509,13 +590,34 @@ class AgentSession:
             if not worker.is_terminal:
                 session.complete()
 
-    def _start_worker(self) -> AgentWorker:
-        """Create a worker and walk it from IDLE to RUNNING."""
+    def _start_worker(self, handoff: Handoff | None = None) -> AgentWorker:
+        """Create a worker, or adopt a handoff's, and walk it to RUNNING."""
+        if handoff is not None:
+            return self._adopt_handoff_worker(handoff)
         worker = self.registry.create(
             role=self.role, phase=self.phase, project_id=self.project_id
         )
         worker.transition(AgentStatus.INITIALIZING)
         worker.transition(AgentStatus.RUNNING)
+        return worker
+
+    def _adopt_handoff_worker(self, handoff: Handoff) -> AgentWorker:
+        if handoff.target_role != self.role:
+            raise ValueError(
+                f"handoff targets role {handoff.target_role!r}, "
+                f"this session runs {self.role!r}"
+            )
+        worker = (
+            self.registry.get(handoff.target_worker_id)
+            if handoff.target_worker_id
+            else None
+        )
+        if worker is None or worker.status != AgentStatus.INITIALIZING:
+            raise ValueError(
+                "handoff has no pending worker in this registry; "
+                "was it already adopted, or issued by another registry?"
+            )
+        worker.transition(AgentStatus.RUNNING, detail="handoff adopted")
         return worker
 
 
@@ -549,6 +651,7 @@ class _SessionBase:
     _started_at: float = field(default_factory=time.monotonic, init=False, repr=False)
     _iteration_count: int = field(default=0, init=False, repr=False)
     _last_stream_cancelled: bool = field(default=False, init=False, repr=False)
+    _last_turn_model: str = field(default="", init=False, repr=False)
 
     def __post_init__(self) -> None:
         self.role = _validate_non_empty_str("role", self.role)
@@ -691,8 +794,8 @@ class _SessionBase:
 
     def _restore_idempotent_turn(
         self, idempotency_key: str | None
-    ) -> tuple[Any, UsageSnapshot] | None:
-        """Return a cached (result, usage) if this idempotency_key already ran."""
+    ) -> _ReplayedTurn | None:
+        """Return the recorded turn if this idempotency_key already ran."""
         if not (idempotency_key and self.thread_id and self.saver is not None):
             return None
         # Bounded scan over the most recent checkpoints. 100 is plenty for a
@@ -700,10 +803,88 @@ class _SessionBase:
         # cache the lookup outside the runtime.
         for cp in self.saver.list(self.thread_id, limit=100):
             if cp.metadata.get("idempotency_key") == idempotency_key:
-                result = cp.state.get("result")
-                usage_data = cp.state.get("usage") or {}
-                return result, UsageSnapshot.from_dict(usage_data)
+                return _ReplayedTurn(
+                    result=cp.state.get("result"),
+                    usage=UsageSnapshot.from_dict(cp.state.get("usage") or {}),
+                    model=str(cp.metadata.get("model") or ""),
+                )
         return None
+
+    def _replay_turn(self, replayed: _ReplayedTurn) -> tuple[Any, UsageSnapshot]:
+        """Count a recorded turn against this session and return its result.
+
+        The money was spent, so a resumed session has to see it, or a restart
+        would reset the budget. Sinks are skipped because they saw the original
+        turn; re-recording there would double-count it.
+        """
+        self.tracker.record_turn(replayed.model, replayed.usage)
+        cost = self.tracker.cost_for_turn(replayed.model, replayed.usage)
+        self._last_turn_model = replayed.model
+        self._record_governance_outcome(success=True, cost_usd=cost)
+        logger.info(
+            "turn_replayed",
+            extra={
+                "role": self.role,
+                "phase": self.phase,
+                "project_id": self.project_id,
+                "model": replayed.model,
+            },
+        )
+        self._enforce_turn_limits()
+        return replayed.result, replayed.usage
+
+    def _step_saver(self) -> StepCheckpointSaver | None:
+        if not self.thread_id or self.saver is None:
+            return None
+        if isinstance(self.saver, StepCheckpointSaver):
+            return self.saver
+        logger.warning(
+            "tool idempotency_key ignored: %s does not implement StepCheckpointSaver",
+            type(self.saver).__name__,
+        )
+        return None
+
+    def _restore_tool_step(
+        self, tool_name: str, idempotency_key: str | None
+    ) -> _ReplayedTool | None:
+        """Return the recorded result if this tool call already completed."""
+        if not idempotency_key:
+            return None
+        saver = self._step_saver()
+        if saver is None or self.thread_id is None:
+            return None
+        record = saver.get_step(self.thread_id, f"tool:{tool_name}:{idempotency_key}")
+        if record is None:
+            return None
+        logger.info(
+            "tool_replayed",
+            extra={"role": self.role, "phase": self.phase, "tool": tool_name},
+        )
+        return _ReplayedTool(record.state.get("result"))
+
+    def _persist_tool_step(
+        self, tool_name: str, idempotency_key: str | None, result: Any
+    ) -> None:
+        """Record a completed tool call. JSON-serializable results only."""
+        if not idempotency_key:
+            return
+        saver = self._step_saver()
+        if saver is None or self.thread_id is None:
+            return
+        try:
+            payload = json.loads(json.dumps(result))
+        except (TypeError, ValueError):
+            logger.warning(
+                "tool step skipped: result of %s is not JSON-serializable, "
+                "so a re-run will execute it again",
+                tool_name,
+            )
+            return
+        saver.put_step(
+            self.thread_id,
+            f"tool:{tool_name}:{idempotency_key}",
+            {"result": payload},
+        )
 
     def _persist_turn_checkpoint(
         self,
@@ -824,8 +1005,9 @@ class _SessionBase:
     # -- Lifecycle --
 
     def complete(self, detail: str | None = None) -> None:
-        if not self.worker.is_terminal:
-            self.worker.transition(AgentStatus.COMPLETED, detail=detail)
+        if self.worker.is_terminal:
+            return
+        self.worker.transition(AgentStatus.COMPLETED, detail=detail)
         self._emit_event(AgentEvent.completed(self.role, self.phase, detail=detail))
 
     def fail(
@@ -833,11 +1015,16 @@ class _SessionBase:
         detail: str,
         failure_class: AgentFailureClass = AgentFailureClass.UNKNOWN,
     ) -> None:
+        """Mark the worker FAILED, unless it already reached a terminal state.
+
+        An exception after ``handoff_to`` is logged but emits no ``agent.failed``:
+        the worker completed, and the audit trail must not claim both.
+        """
         if not self.worker.is_terminal:
             self.worker.transition(AgentStatus.FAILED, detail=detail)
-        self._emit_event(
-            AgentEvent.failed(self.role, self.phase, failure_class, detail=detail)
-        )
+            self._emit_event(
+                AgentEvent.failed(self.role, self.phase, failure_class, detail=detail)
+            )
         logger.info(
             "session_failed",
             extra={
@@ -851,8 +1038,9 @@ class _SessionBase:
 
     def cancel(self, detail: str | None = None) -> None:
         """Mark the worker as cancelled (e.g. from asyncio.CancelledError)."""
-        if not self.worker.is_terminal:
-            self.worker.transition(AgentStatus.CANCELLED, detail=detail)
+        if self.worker.is_terminal:
+            return
+        self.worker.transition(AgentStatus.CANCELLED, detail=detail)
         self._emit_event(
             AgentEvent.failed(
                 self.role,
@@ -1002,15 +1190,101 @@ class _SessionBase:
             guardrails=[violation.guardrail for violation in err.violations],
         )
 
-    def _emit_tool_failed(self, tool_name: str) -> None:
+    def _emit_tool_failed(
+        self,
+        tool_name: str,
+        *,
+        started: float,
+        exc: BaseException,
+        failure_class: AgentFailureClass = AgentFailureClass.TOOL_ERROR,
+    ) -> None:
         self._emit_event(
             AgentEvent.failed(
                 self.role,
                 self.phase,
-                AgentFailureClass.TOOL_ERROR,
+                failure_class,
                 detail=f"tool execution failed: {tool_name}",
-            ).with_data({"tool": tool_name})
+            ).with_data(
+                {
+                    "tool": tool_name,
+                    "duration_seconds": time.monotonic() - started,
+                    "error_type": type(exc).__name__,
+                }
+            )
         )
+
+    def _emit_tool_completed(self, tool_name: str, *, started: float) -> None:
+        self._emit_event(
+            AgentEvent.tool_completed(self.role, self.phase, tool_name).with_data(
+                {
+                    "tool": tool_name,
+                    "duration_seconds": time.monotonic() - started,
+                }
+            )
+        )
+
+    def _emit_turn_failed(
+        self, model: str, *, started: float, exc: BaseException
+    ) -> None:
+        self._emit_event(
+            AgentEvent.turn_failed(
+                self.role,
+                self.phase,
+                model=model,
+                duration_seconds=time.monotonic() - started,
+                error_type=type(exc).__name__,
+            )
+        )
+
+    def _begin_tool(
+        self,
+        tool_name: str,
+        hook_ctx: HookContext | None,
+        args: dict[str, Any] | None,
+    ) -> HookContext:
+        """Authorize and count a tool call, then resolve its hook context."""
+        outcome = self.authorize(tool_name)
+        if not outcome.allowed:
+            self._emit_tool_blocked(tool_name, kind="permission")
+            raise PermissionDeniedError(outcome)
+        known_args = args
+        if known_args is None and hook_ctx is not None and hook_ctx.args:
+            known_args = hook_ctx.args
+        self._check_governance_pre_tool(
+            None if known_args is None else tool_call_signature(tool_name, known_args)
+        )
+        return self._resolve_hook_ctx(hook_ctx, tool=tool_name, args=args)
+
+    def _next_fallback_model(
+        self,
+        exc: Exception,
+        *,
+        current: str,
+        tried: Sequence[str],
+        failover_on: frozenset[FailureScenario],
+    ) -> str | None:
+        """Return the provider to try next, or None if ``exc`` must propagate."""
+        if self.provider_router is None or isinstance(exc, _NO_FAILOVER_ERRORS):
+            return None
+        scenario = classify_exception(exc)
+        if scenario not in failover_on:
+            return None
+        candidate = self.provider_router.select(
+            scenario=scenario,
+            attempt=len(tried),
+            current=current,
+            exclude=tuple(tried),
+        )
+        if candidate is None or candidate in tried:
+            return None
+        self._emit_event(
+            AgentEvent.recovery_attempted(
+                self.role,
+                self.phase,
+                detail=f"{scenario.value}: failover {current} -> {candidate}",
+            )
+        )
+        return candidate
 
     def _check_governance_pre_turn(self) -> None:
         """Tick the turn counter and enforce limits before fn runs."""
@@ -1019,17 +1293,17 @@ class _SessionBase:
         self.governance.state.record_turn_start()
         self._enforce_governance()
 
-    def _check_governance_pre_tool(self) -> None:
+    def _check_governance_pre_tool(self, signature: str | None = None) -> None:
         """Tick the tool counter and enforce limits before tool fn runs."""
         if self.governance is None:
             return
-        self.governance.state.record_tool_call()
+        self.governance.state.record_tool_call(signature)
         self._enforce_governance()
 
-    def _record_governance_turn_outcome(
+    def _record_governance_outcome(
         self, *, success: bool, cost_usd: float | None = None
     ) -> None:
-        """Update success/failure streak + cost after a turn completes."""
+        """Update success/failure streak + cost. Never raises a breach."""
         if self.governance is None:
             return
         if success:
@@ -1038,7 +1312,12 @@ class _SessionBase:
             self.governance.state.record_failure()
         if cost_usd is not None:
             self.governance.state.record_cost(cost_usd)
-        # Post-turn enforcement: a cost or failure-streak breach surfaces here.
+
+    def _record_governance_turn_outcome(
+        self, *, success: bool, cost_usd: float | None = None
+    ) -> None:
+        """Record the outcome, then surface any cost or failure-streak breach."""
+        self._record_governance_outcome(success=success, cost_usd=cost_usd)
         self._enforce_governance()
 
     def handoff_to(
@@ -1069,12 +1348,16 @@ class _SessionBase:
         run_before_handoff(self.hooks, ctx)
         return self._issue_handoff_from_ctx(ctx)
 
-    def _apply_usage_and_check_budget(
-        self, model: str, snapshot: UsageSnapshot
-    ) -> None:
+    def _record_turn_usage(self, model: str, snapshot: UsageSnapshot) -> float:
+        """Add a turn's usage to the tracker and sink; return its cost.
+
+        A turn with no ``model`` still counts towards token limits. It has no
+        price, and sinks need a model name to label the record, so it stops at
+        the tracker.
+        """
+        self.tracker.record_turn(model, snapshot)
+        cost = self.tracker.cost_for_turn(model, snapshot)
         if model:
-            self.tracker.record_turn(model, snapshot)
-            cost = self.tracker.cost_for_turn(model, snapshot)
             try:
                 self.usage_sink.record(model, snapshot, cost)
             except Exception as exc:
@@ -1088,7 +1371,83 @@ class _SessionBase:
                         "error_type": type(exc).__name__,
                     },
                 )
+        return cost
 
+    def _settle_turn(
+        self,
+        *,
+        result: Any,
+        snapshot: UsageSnapshot,
+        model: str,
+        idempotency_key: str | None,
+        started: float,
+    ) -> None:
+        """Book a finished model call, before any limit may reject it.
+
+        The call has already been paid for. Accounting and the checkpoint come
+        first so that a limit raising afterwards can neither hide the spend from
+        later checks nor make a retry of the same idempotency key pay twice.
+        """
+        cost = self._record_turn_usage(model, snapshot)
+        self._last_turn_model = model
+        self._persist_turn_checkpoint(
+            result=result,
+            usage=snapshot,
+            model=model,
+            idempotency_key=idempotency_key,
+        )
+        self._record_governance_outcome(success=True, cost_usd=cost)
+        self._emit_event(
+            AgentEvent.turn_completed(
+                self.role,
+                self.phase,
+                model=model,
+                duration_seconds=time.monotonic() - started,
+                data={
+                    "input_tokens": snapshot.input_tokens,
+                    "output_tokens": snapshot.output_tokens,
+                    "cost_usd": cost,
+                },
+            )
+        )
+
+    def _account_unfinished_turn(
+        self,
+        model: str,
+        output: Any,
+        usage: UsageSnapshot | None,
+        estimate_usage: Callable[[Any], UsageSnapshot] | None,
+    ) -> None:
+        """Book a call that was paid for but will not return a result.
+
+        Covers a failing ``after_model`` hook and a stream that ended early. It
+        runs while another exception is on its way out, so it never raises:
+        limits see the spend on the next pre-turn check.
+        """
+        cost: float | None = None
+        try:
+            if usage is not None or estimate_usage is not None:
+                snapshot = self._resolve_usage(output, usage, estimate_usage)
+                cost = self._record_turn_usage(model, snapshot)
+        except Exception as exc:
+            logger.error(
+                "could not account for an unfinished turn",
+                extra={
+                    "role": self.role,
+                    "phase": self.phase,
+                    "project_id": self.project_id,
+                    "error_type": type(exc).__name__,
+                },
+            )
+        self._record_governance_outcome(success=False, cost_usd=cost)
+
+    def _enforce_turn_limits(self) -> None:
+        """Raise if the booked usage crossed a limit.
+
+        Governance goes first: its breach is terminal, while a budget error is
+        recoverable and would otherwise hide the breach until the next turn.
+        """
+        self._enforce_governance()
         budget = self.budget_usd
         if budget is not None and self.tracker.is_over_budget(budget):
             self._emit_event(
@@ -1154,11 +1513,14 @@ class OrchestrationSession(_SessionBase):
         fn: Callable[[], T],
         *,
         hook_ctx: HookContext | None = None,
+        args: dict[str, Any] | None = None,
+        timeout: float | None = None,
+        idempotency_key: str | None = None,
     ) -> T:
         """Execute a tool with permission + guardrail + governance + hook checks.
 
-        Order: permission → governance → before_tool hooks → pre-guardrails →
-        fn() → post-guardrails → after_tool hooks.
+        Order: permission → governance → replay lookup → before_tool hooks →
+        pre-guardrails → fn() → post-guardrails → after_tool hooks.
 
         ``hook_ctx`` is a mutable context shared with the hook chain. When
         omitted the runtime synthesizes a fresh ``HookContext`` so hooks still
@@ -1166,13 +1528,25 @@ class OrchestrationSession(_SessionBase):
         the caller's closure does not see it. Pass a context (and close over
         ``ctx.args`` inside ``fn``) when you want hooks to redact or rewrite
         tool inputs.
+
+        ``args`` describes the call to hooks and to
+        ``MaxRepeatedToolCallsLimit``; ``fn`` still takes no arguments.
+
+        ``timeout`` raises :class:`ToolTimeoutError`. The worker thread cannot
+        be killed, so a timed-out ``fn`` finishes in the background.
+
+        With a ``saver`` and ``thread_id`` configured, ``idempotency_key``
+        records the result once the call passes its checks and replays it on a
+        re-run instead of repeating the side effect. A crash between ``fn``
+        returning and the record being written still re-executes it, so the
+        guarantee is at-least-once: pair it with an idempotent tool or pass the
+        same key to the downstream API.
         """
-        outcome = self.authorize(tool_name)
-        if not outcome.allowed:
-            self._emit_tool_blocked(tool_name, kind="permission")
-            raise PermissionDeniedError(outcome)
-        self._check_governance_pre_tool()
-        ctx = self._resolve_hook_ctx(hook_ctx, tool=tool_name)
+        ctx = self._begin_tool(tool_name, hook_ctx, args)
+        replayed = self._restore_tool_step(tool_name, idempotency_key)
+        if replayed is not None:
+            cached: T = replayed.result
+            return cached
         run_before_tool(self.hooks, ctx)
         try:
             run_pre_checks(self.guardrails, role=self.role, tool=tool_name)
@@ -1180,10 +1554,17 @@ class OrchestrationSession(_SessionBase):
             self._emit_guardrail_blocked(exc)
             raise
         self._emit_event(AgentEvent.tool_called(self.role, self.phase, tool_name))
+        started = time.monotonic()
         try:
-            result_raw: T = fn()
-        except Exception:
-            self._emit_tool_failed(tool_name)
+            result_raw: T = (
+                fn()
+                if timeout is None
+                else _call_with_deadline(
+                    fn, timeout, lambda: ToolTimeoutError(tool_name, timeout)
+                )
+            )
+        except Exception as exc:
+            self._emit_tool_failed(tool_name, started=started, exc=exc)
             raise
         try:
             run_post_checks(self.guardrails, result_raw, role=self.role, tool=tool_name)
@@ -1191,7 +1572,8 @@ class OrchestrationSession(_SessionBase):
             self._emit_guardrail_blocked(exc)
             raise
         result: T = run_after_tool(self.hooks, ctx, result_raw)
-        self._emit_event(AgentEvent.tool_completed(self.role, self.phase, tool_name))
+        self._persist_tool_step(tool_name, idempotency_key, result)
+        self._emit_tool_completed(tool_name, started=started)
         return result
 
     def run_turn(
@@ -1219,90 +1601,121 @@ class OrchestrationSession(_SessionBase):
         ``idempotency_key`` is supplied, this method first looks for a
         prior checkpoint with the same key on the same thread; on a hit
         it returns the cached ``(result, usage)`` without calling
-        ``fn``. After a successful execution, a new checkpoint is
-        written so a restart can replay through it.
+        ``fn``, and counts that usage towards this session's limits.
+        After a successful execution, a new checkpoint is written so a
+        restart can replay through it. A turn that crosses a budget is
+        checkpointed before the budget error is raised, because it was
+        already paid for.
         """
-        cached = self._restore_idempotent_turn(idempotency_key)
-        if cached is not None:
-            cached_result, cached_usage = cached
-            # Iteration count still ticks so the cap reflects logical
-            # progress through the loop, not just live executions.
-            self._check_iteration_cap()
-            self._check_governance_pre_turn()
-            return cached_result, cached_usage
-
-        if self.rate_limiter is not None:
-            self.rate_limiter.acquire_pre_call()
-
+        replayed = self._restore_idempotent_turn(idempotency_key)
+        # Iteration count ticks on a replay too, so the cap reflects logical
+        # progress through the loop, not just live executions.
         self._check_iteration_cap()
         self._check_governance_pre_turn()
+        if replayed is not None:
+            return self._replay_turn(replayed)
+
         ctx = self._resolve_hook_ctx(hook_ctx, model=model)
         # Hooks run BEFORE the model call so they can mutate ctx.prompt
         # in place. Caller's fn() must close over ctx.prompt to see the
         # mutated value — see docs/patterns/hooks.md for the pattern.
         run_before_model(self.hooks, ctx)
-        cost_before = self.tracker.total_cost()
+        if self.rate_limiter is not None:
+            self.rate_limiter.acquire_pre_call()
+        started = time.monotonic()
         try:
-            result = self._invoke_fn(fn, timeout=timeout)
-        except CircuitOpenError:
-            self._record_governance_turn_outcome(success=False)
-            raise
-        except TurnTimeoutError as exc:
-            _record_recovery_event(self, exc)
+            raw = self._invoke_fn(fn, timeout=timeout)
+        except CircuitOpenError as exc:
+            self._emit_turn_failed(model, started=started, exc=exc)
             self._record_governance_turn_outcome(success=False)
             raise
         except Exception as exc:
+            self._emit_turn_failed(model, started=started, exc=exc)
             _record_recovery_event(self, exc)
             self._record_governance_turn_outcome(success=False)
             raise
 
-        result = run_after_model(self.hooks, ctx, result)
-        snapshot = self._resolve_usage(result, usage, estimate_usage)
+        try:
+            result = run_after_model(self.hooks, ctx, raw)
+            snapshot = self._resolve_usage(result, usage, estimate_usage)
+        except Exception:
+            self._account_unfinished_turn(model, raw, usage, estimate_usage)
+            raise
+        self._settle_turn(
+            result=result,
+            snapshot=snapshot,
+            model=model,
+            idempotency_key=idempotency_key,
+            started=started,
+        )
         if self.rate_limiter is not None:
             self.rate_limiter.acquire_usage(
                 input_tokens=snapshot.input_tokens,
                 output_tokens=snapshot.output_tokens,
             )
-        self._apply_usage_and_check_budget(model, snapshot)
-        self._persist_turn_checkpoint(
-            result=result,
-            usage=snapshot,
-            model=model,
-            idempotency_key=idempotency_key,
-        )
-        cost_delta = self.tracker.total_cost() - cost_before
-        self._record_governance_turn_outcome(success=True, cost_usd=cost_delta)
+        self._enforce_turn_limits()
         return result, snapshot
+
+    def run_turn_with_fallback(
+        self,
+        fn: Callable[[str], T],
+        *,
+        model: str,
+        usage: UsageSnapshot | None = None,
+        estimate_usage: Callable[[T], UsageSnapshot] | None = None,
+        timeout: float | None = None,
+        idempotency_key: str | None = None,
+        hook_ctx: HookContext | None = None,
+        failover_on: frozenset[FailureScenario] = DEFAULT_FAILOVER_SCENARIOS,
+    ) -> tuple[T, UsageSnapshot, str]:
+        """Run a turn, asking ``provider_router`` for another model on failure.
+
+        ``fn`` receives the model to call. Returns ``(result, usage, model)``,
+        where ``model`` is the one that answered. Each attempt is a full turn:
+        it counts towards ``max_iterations`` and governance, so those still bound
+        the total. Only failures in ``failover_on`` switch provider. A governance
+        breach, budget or usage limit, permission denial, or open circuit always
+        propagates, as does the last failure once the router has no candidate.
+
+        A circuit breaker on the session is shared by every model, so it should
+        guard something they have in common, such as a gateway.
+        """
+        if self.provider_router is None:
+            raise ValueError("run_turn_with_fallback requires a provider_router")
+        current = model
+        tried = [current]
+        while True:
+            candidate = current
+            try:
+                result, snapshot = self.run_turn(
+                    functools.partial(fn, candidate),
+                    model=candidate,
+                    usage=usage,
+                    estimate_usage=estimate_usage,
+                    timeout=timeout,
+                    idempotency_key=idempotency_key,
+                    hook_ctx=hook_ctx,
+                )
+            except Exception as exc:
+                following = self._next_fallback_model(
+                    exc, current=current, tried=tried, failover_on=failover_on
+                )
+                if following is None:
+                    raise
+                tried.append(following)
+                current = following
+                continue
+            return result, snapshot, self._last_turn_model
 
     def _invoke_fn(self, fn: Callable[[], T], *, timeout: float | None) -> T:
         if timeout is None:
-            if self.circuit_breaker is not None:
-                return self.circuit_breaker.call(fn)
-            return fn()
-
-        # Timeout path: dispatch to a one-shot worker thread. We do NOT
-        # wrap the executor call in the breaker; the breaker counts the
-        # downstream failure if the inner fn raises, and a hard timeout
-        # counts as TurnTimeoutError (a session-level concern, not a
-        # downstream signal).
-        #
-        # We deliberately bypass `with ... as ex:` because its __exit__
-        # calls shutdown(wait=True), which would block the timeout from
-        # returning until the worker thread finishes — defeating the
-        # whole point of a hard turn deadline. shutdown(wait=False,
-        # cancel_futures=True) lets the timeout propagate immediately;
-        # the orphan thread completes in the background (Python has no
-        # thread.kill()) but is reclaimed naturally when it returns.
-        ex = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-        try:
-            future = ex.submit(self._wrapped_call, fn)
-            try:
-                return future.result(timeout=timeout)
-            except concurrent.futures.TimeoutError as exc:
-                future.cancel()
-                raise TurnTimeoutError(timeout) from exc
-        finally:
-            ex.shutdown(wait=False, cancel_futures=True)
+            return self._wrapped_call(fn)
+        # The breaker wraps the call inside the worker thread, so it counts a
+        # downstream exception but not the deadline itself: a hard timeout is
+        # a session-level TurnTimeoutError, not a downstream signal.
+        return _call_with_deadline(
+            lambda: self._wrapped_call(fn), timeout, lambda: TurnTimeoutError(timeout)
+        )
 
     def _wrapped_call(self, fn: Callable[[], T]) -> T:
         if self.circuit_breaker is not None:
@@ -1347,6 +1760,9 @@ class AsyncOrchestrationSession(_SessionBase):
         coro_factory: Callable[[], Awaitable[T]],
         *,
         hook_ctx: HookContext | None = None,
+        args: dict[str, Any] | None = None,
+        timeout: float | None = None,
+        idempotency_key: str | None = None,
     ) -> T:
         """Async sibling of run_tool.
 
@@ -1354,13 +1770,15 @@ class AsyncOrchestrationSession(_SessionBase):
         they implement ``AsyncGuardrail`` and called inline when they
         are sync ``Guardrail`` instances. Hooks are dispatched both
         sync and async — see ``hooks.py``.
+
+        ``args``, ``timeout`` and ``idempotency_key`` work as in ``run_tool``,
+        except that a timed-out tool is cancelled rather than left running.
         """
-        outcome = self.authorize(tool_name)
-        if not outcome.allowed:
-            self._emit_tool_blocked(tool_name, kind="permission")
-            raise PermissionDeniedError(outcome)
-        self._check_governance_pre_tool()
-        ctx = self._resolve_hook_ctx(hook_ctx, tool=tool_name)
+        ctx = self._begin_tool(tool_name, hook_ctx, args)
+        replayed = self._restore_tool_step(tool_name, idempotency_key)
+        if replayed is not None:
+            cached: T = replayed.result
+            return cached
         await arun_before_tool(self.hooks, ctx)
         try:
             await arun_pre_checks(self.guardrails, role=self.role, tool=tool_name)
@@ -1368,10 +1786,29 @@ class AsyncOrchestrationSession(_SessionBase):
             self._emit_guardrail_blocked(exc)
             raise
         self._emit_event(AgentEvent.tool_called(self.role, self.phase, tool_name))
+        started = time.monotonic()
         try:
-            result_raw: T = await coro_factory()
-        except Exception:
-            self._emit_tool_failed(tool_name)
+            if timeout is None:
+                result_raw: T = await coro_factory()
+            else:
+                scope = asyncio.timeout(timeout)
+                try:
+                    async with scope:
+                        result_raw = await coro_factory()
+                except TimeoutError as exc:
+                    if scope.expired():
+                        raise ToolTimeoutError(tool_name, timeout) from exc
+                    raise
+        except asyncio.CancelledError as exc:
+            self._emit_tool_failed(
+                tool_name,
+                started=started,
+                exc=exc,
+                failure_class=AgentFailureClass.CANCELLED,
+            )
+            raise
+        except Exception as exc:
+            self._emit_tool_failed(tool_name, started=started, exc=exc)
             raise
         try:
             await arun_post_checks(
@@ -1381,7 +1818,8 @@ class AsyncOrchestrationSession(_SessionBase):
             self._emit_guardrail_blocked(exc)
             raise
         result: T = await arun_after_tool(self.hooks, ctx, result_raw)
-        self._emit_event(AgentEvent.tool_completed(self.role, self.phase, tool_name))
+        self._persist_tool_step(tool_name, idempotency_key, result)
+        self._emit_tool_completed(tool_name, started=started)
         return result
 
     async def arun_turn(
@@ -1397,62 +1835,100 @@ class AsyncOrchestrationSession(_SessionBase):
     ) -> tuple[T, UsageSnapshot]:
         """Execute one model turn with async circuit-breaker + recovery wiring.
 
-        ``timeout`` is enforced with ``asyncio.wait_for``. Cancellation
+        ``timeout`` is enforced with ``asyncio.timeout``. Cancellation
         from outside (parent task) is propagated as CancelledError; an
         internal timeout becomes ``TurnTimeoutError``.
 
         ``idempotency_key`` behaves the same as in ``run_turn``: when the
         session has a saver + thread_id configured, a prior checkpoint
-        with the same key short-circuits the call.
+        with the same key short-circuits the call and counts its usage.
         """
-        cached = self._restore_idempotent_turn(idempotency_key)
-        if cached is not None:
-            cached_result, cached_usage = cached
-            self._check_iteration_cap()
-            self._check_governance_pre_turn()
-            return cached_result, cached_usage
-
-        if self.async_rate_limiter is not None:
-            await self.async_rate_limiter.acquire_pre_call()
-
+        replayed = self._restore_idempotent_turn(idempotency_key)
         self._check_iteration_cap()
         self._check_governance_pre_turn()
+        if replayed is not None:
+            return self._replay_turn(replayed)
+
         ctx = self._resolve_hook_ctx(hook_ctx, model=model)
         await arun_before_model(self.hooks, ctx)
-        cost_before = self.tracker.total_cost()
+        if self.async_rate_limiter is not None:
+            await self.async_rate_limiter.acquire_pre_call()
+        started = time.monotonic()
         try:
-            result = await self._ainvoke(coro_factory, timeout=timeout)
-        except CircuitOpenError:
+            raw = await self._ainvoke(coro_factory, timeout=timeout)
+        except CircuitOpenError as exc:
+            self._emit_turn_failed(model, started=started, exc=exc)
             self._record_governance_turn_outcome(success=False)
             raise
-        except TurnTimeoutError as exc:
-            await _arecord_recovery_event(self, exc)
-            self._record_governance_turn_outcome(success=False)
-            raise
-        except asyncio.CancelledError:
+        except asyncio.CancelledError as exc:
+            self._emit_turn_failed(model, started=started, exc=exc)
             raise
         except Exception as exc:
+            self._emit_turn_failed(model, started=started, exc=exc)
             await _arecord_recovery_event(self, exc)
             self._record_governance_turn_outcome(success=False)
             raise
 
-        result = await arun_after_model(self.hooks, ctx, result)
-        snapshot = self._resolve_usage(result, usage, estimate_usage)
+        try:
+            result = await arun_after_model(self.hooks, ctx, raw)
+            snapshot = self._resolve_usage(result, usage, estimate_usage)
+        except Exception:
+            self._account_unfinished_turn(model, raw, usage, estimate_usage)
+            raise
+        self._settle_turn(
+            result=result,
+            snapshot=snapshot,
+            model=model,
+            idempotency_key=idempotency_key,
+            started=started,
+        )
         if self.async_rate_limiter is not None:
             await self.async_rate_limiter.acquire_usage(
                 input_tokens=snapshot.input_tokens,
                 output_tokens=snapshot.output_tokens,
             )
-        self._apply_usage_and_check_budget(model, snapshot)
-        self._persist_turn_checkpoint(
-            result=result,
-            usage=snapshot,
-            model=model,
-            idempotency_key=idempotency_key,
-        )
-        cost_delta = self.tracker.total_cost() - cost_before
-        self._record_governance_turn_outcome(success=True, cost_usd=cost_delta)
+        self._enforce_turn_limits()
         return result, snapshot
+
+    async def arun_turn_with_fallback(
+        self,
+        coro_factory: Callable[[str], Awaitable[T]],
+        *,
+        model: str,
+        usage: UsageSnapshot | None = None,
+        estimate_usage: Callable[[T], UsageSnapshot] | None = None,
+        timeout: float | None = None,
+        idempotency_key: str | None = None,
+        hook_ctx: HookContext | None = None,
+        failover_on: frozenset[FailureScenario] = DEFAULT_FAILOVER_SCENARIOS,
+    ) -> tuple[T, UsageSnapshot, str]:
+        """Async sibling of ``run_turn_with_fallback``."""
+        if self.provider_router is None:
+            raise ValueError("arun_turn_with_fallback requires a provider_router")
+        current = model
+        tried = [current]
+        while True:
+            candidate = current
+            try:
+                result, snapshot = await self.arun_turn(
+                    functools.partial(coro_factory, candidate),
+                    model=candidate,
+                    usage=usage,
+                    estimate_usage=estimate_usage,
+                    timeout=timeout,
+                    idempotency_key=idempotency_key,
+                    hook_ctx=hook_ctx,
+                )
+            except Exception as exc:
+                following = self._next_fallback_model(
+                    exc, current=current, tried=tried, failover_on=failover_on
+                )
+                if following is None:
+                    raise
+                tried.append(following)
+                current = following
+                continue
+            return result, snapshot, self._last_turn_model
 
     async def arun_turn_stream(
         self,
@@ -1462,6 +1938,7 @@ class AsyncOrchestrationSession(_SessionBase):
         usage: UsageSnapshot | None = None,
         estimate_usage: Callable[[str], UsageSnapshot] | None = None,
         timeout: float | None = None,
+        idempotency_key: str | None = None,
         hook_ctx: HookContext | None = None,
     ) -> AsyncIterator[StreamEvent]:
         """Stream a model turn as a sequence of ``StreamEvent`` values.
@@ -1477,17 +1954,37 @@ class AsyncOrchestrationSession(_SessionBase):
         Per-chunk hooks are intentionally out of scope — they would invert
         the cost model of streaming.
 
-        Cancellation: if the consumer breaks out of the ``async for`` loop,
-        the upstream iterator's ``aclose()`` is awaited and
-        ``session._last_stream_cancelled`` flips to ``True``. The generator
-        does NOT emit a ``final("cancelled")`` event in that case because
-        the consumer is no longer listening; check the flag instead.
+        ``timeout`` is a deadline for the whole stream, checked only while
+        waiting on upstream, so it can never fire inside the consumer's own code.
+        A consumer that is slow between chunks hits it on the next pull.
 
-        On upstream exception: ``error`` + ``final("failed")`` events are
-        yielded and the exception is re-raised so callers see it.
+        ``idempotency_key`` replays a recorded turn as one text event plus the
+        terminal event, without calling upstream.
+
+        Cancellation: wrap the generator in ``contextlib.aclosing``. When the
+        consumer leaves the block early the upstream iterator's ``aclose()`` is
+        awaited and ``session._last_stream_cancelled`` flips to ``True``. A plain
+        ``break`` without ``aclosing`` defers all of that to garbage collection.
+        No ``final("cancelled")`` event is emitted because the consumer is no
+        longer listening; check the flag instead.
+
+        A stream that ends early books its usage when ``usage`` or
+        ``estimate_usage`` can provide it (the latter sees the partial text),
+        because the provider charges for what it already sent.
+
+        On failure, including a limit crossed once the stream has finished,
+        ``error`` + ``final("failed")`` events are yielded and the exception is
+        re-raised so callers see it.
         """
+        replayed = self._restore_idempotent_turn(idempotency_key)
         self._check_iteration_cap()
         self._check_governance_pre_turn()
+        if replayed is not None:
+            replay_result, replay_usage = self._replay_turn(replayed)
+            yield StreamEvent.text(str(replay_result))
+            yield StreamEvent.final("completed", usage=replay_usage.to_dict())
+            return
+
         ctx = self._resolve_hook_ctx(hook_ctx, model=model)
         await arun_before_model(self.hooks, ctx)
 
@@ -1495,38 +1992,48 @@ class AsyncOrchestrationSession(_SessionBase):
             await self.async_rate_limiter.acquire_pre_call()
 
         self._last_stream_cancelled = False
-        cost_before = self.tracker.total_cost()
+        started = time.monotonic()
         aggregated: list[str] = []
         upstream: AsyncIterator[str] | None = None
+        loop = asyncio.get_running_loop()
+        deadline = None if timeout is None else loop.time() + timeout
 
         try:
             try:
                 upstream = chunk_factory().__aiter__()
-                if timeout is None:
-                    async for chunk in upstream:
-                        aggregated.append(chunk)
-                        yield StreamEvent.text(chunk)
-                else:
-                    async with asyncio.timeout(timeout):
-                        async for chunk in upstream:
-                            aggregated.append(chunk)
-                            yield StreamEvent.text(chunk)
-            except TimeoutError as exc:
-                timeout_error = TurnTimeoutError(timeout or 0.0)
+                # PEP 789: a yield inside an asyncio.timeout block would deliver
+                # the cancellation to the consumer's task. Only the pull is
+                # scoped, and the yield stays outside it.
+                while True:
+                    try:
+                        chunk = await self._next_chunk(upstream, deadline, timeout)
+                    except StopAsyncIteration:
+                        break
+                    aggregated.append(chunk)
+                    yield StreamEvent.text(chunk)
+            except TurnTimeoutError as exc:
                 # Record the failure outcome BEFORE yielding the terminal
                 # event: an idiomatic consumer that breaks the async-for on
                 # seeing ``final`` would otherwise throw GeneratorExit at that
                 # yield and skip the recovery/governance recording entirely.
-                await _arecord_recovery_event(self, timeout_error)
-                self._record_governance_turn_outcome(success=False)
+                self._emit_turn_failed(model, started=started, exc=exc)
+                await _arecord_recovery_event(self, exc)
+                self._account_unfinished_turn(
+                    model, "".join(aggregated), usage, estimate_usage
+                )
                 yield StreamEvent.error("timeout", f"stream exceeded {timeout}s")
                 yield StreamEvent.final("failed", detail="timeout")
-                raise timeout_error from exc
-            except GeneratorExit:
-                # Consumer broke the async-for loop. Flag + finally cleanup
-                # run; we cannot yield further since the consumer is gone.
+                self._enforce_governance()
+                raise
+            except (GeneratorExit, asyncio.CancelledError) as exc:
+                # The consumer left or the task was cancelled. Nothing may be
+                # yielded, and a breach must not replace the cancellation: the
+                # next pre-turn check reports it instead.
                 self._last_stream_cancelled = True
-                self._record_governance_turn_outcome(success=False)
+                self._emit_turn_failed(model, started=started, exc=exc)
+                self._account_unfinished_turn(
+                    model, "".join(aggregated), usage, estimate_usage
+                )
                 logger.info(
                     "stream_cancelled",
                     extra={
@@ -1537,32 +2044,50 @@ class AsyncOrchestrationSession(_SessionBase):
                     },
                 )
                 raise
-            except asyncio.CancelledError:
-                self._last_stream_cancelled = True
-                self._record_governance_turn_outcome(success=False)
-                raise
             except Exception as exc:
                 safe_detail = _safe_exception_detail(exc)
-                # Record before the terminal yield (see TimeoutError branch):
-                # a consumer that stops iterating at ``final`` must not be able
-                # to skip the recovery/governance recording.
+                # Record before the terminal yield (see the timeout branch).
+                self._emit_turn_failed(model, started=started, exc=exc)
                 await _arecord_recovery_event(self, exc)
-                self._record_governance_turn_outcome(success=False)
+                self._account_unfinished_turn(
+                    model, "".join(aggregated), usage, estimate_usage
+                )
                 yield StreamEvent.error(type(exc).__name__, safe_detail)
                 yield StreamEvent.final("failed", detail=safe_detail)
+                self._enforce_governance()
                 raise
 
             full_text = "".join(aggregated)
-            transformed = await arun_after_model(self.hooks, ctx, full_text)
-            snapshot = self._resolve_usage(transformed, usage, estimate_usage)
-            if self.async_rate_limiter is not None:
-                await self.async_rate_limiter.acquire_usage(
-                    input_tokens=snapshot.input_tokens,
-                    output_tokens=snapshot.output_tokens,
+            try:
+                transformed = await arun_after_model(self.hooks, ctx, full_text)
+                snapshot = self._resolve_usage(transformed, usage, estimate_usage)
+            except Exception as exc:
+                self._account_unfinished_turn(model, full_text, usage, estimate_usage)
+                safe_detail = _safe_exception_detail(exc)
+                yield StreamEvent.error(type(exc).__name__, safe_detail)
+                yield StreamEvent.final("failed", detail=safe_detail)
+                raise
+            self._settle_turn(
+                result=transformed,
+                snapshot=snapshot,
+                model=model,
+                idempotency_key=idempotency_key,
+                started=started,
+            )
+            try:
+                if self.async_rate_limiter is not None:
+                    await self.async_rate_limiter.acquire_usage(
+                        input_tokens=snapshot.input_tokens,
+                        output_tokens=snapshot.output_tokens,
+                    )
+                self._enforce_turn_limits()
+            except Exception as exc:
+                safe_detail = _safe_exception_detail(exc)
+                yield StreamEvent.error(type(exc).__name__, safe_detail)
+                yield StreamEvent.final(
+                    "failed", detail=safe_detail, usage=snapshot.to_dict()
                 )
-            self._apply_usage_and_check_budget(model, snapshot)
-            cost_delta = self.tracker.total_cost() - cost_before
-            self._record_governance_turn_outcome(success=True, cost_usd=cost_delta)
+                raise
             yield StreamEvent.final("completed", usage=snapshot.to_dict())
         finally:
             # Close upstream so a generator-based provider client can
@@ -1590,6 +2115,28 @@ class AsyncOrchestrationSession(_SessionBase):
                             },
                         )
 
+    @staticmethod
+    async def _next_chunk(
+        upstream: AsyncIterator[str],
+        deadline: float | None,
+        timeout: float | None,
+    ) -> str:
+        """Pull one chunk, turning an expired deadline into TurnTimeoutError."""
+        if deadline is None or timeout is None:
+            return await anext(upstream)
+        if asyncio.get_running_loop().time() >= deadline:
+            raise TurnTimeoutError(timeout)
+        scope = asyncio.timeout_at(deadline)
+        try:
+            async with scope:
+                return await anext(upstream)
+        except TimeoutError as exc:
+            # Only our own deadline is a turn timeout. An upstream's TimeoutError
+            # is an ordinary upstream failure.
+            if scope.expired():
+                raise TurnTimeoutError(timeout) from exc
+            raise
+
     async def _ainvoke(
         self,
         coro_factory: Callable[[], Awaitable[T]],
@@ -1604,11 +2151,14 @@ class AsyncOrchestrationSession(_SessionBase):
         # once and the context manager re-raises a clean TimeoutError.
         # asyncio.wait_for has a long-standing bug where the inner task
         # can be resurrected after the timeout fires; PEP 789 explains.
+        scope = asyncio.timeout(timeout)
         try:
-            async with asyncio.timeout(timeout):
+            async with scope:
                 return await self._wrapped_acall(coro_factory)
         except TimeoutError as exc:
-            raise TurnTimeoutError(timeout) from exc
+            if scope.expired():
+                raise TurnTimeoutError(timeout) from exc
+            raise
 
     async def _wrapped_acall(self, coro_factory: Callable[[], Awaitable[T]]) -> T:
         if self.circuit_breaker is not None:
@@ -1632,6 +2182,10 @@ class AsyncOrchestrationSession(_SessionBase):
         zero-arg callable that returns an awaitable; this matches the
         contract used elsewhere in the session API and means callers
         can build the coroutine lazily inside the group.
+
+        This method only provides the concurrency. It applies no permission,
+        guardrail, governance or hook checks, so have each factory go through
+        ``arun_tool``: ``lambda: session.arun_tool("search", search_factory)``.
         """
         if not coro_factories:
             return []
@@ -1684,6 +2238,21 @@ class AsyncOrchestrationSession(_SessionBase):
         self._pending_input = future
         try:
             value = await future
+        except asyncio.CancelledError:
+            # A timed-out approval wait is normal control flow. Leave the worker
+            # runnable, so the session can continue or exit cleanly; a real
+            # cancellation still reaches asession(), which marks it CANCELLED.
+            if not self.worker.is_terminal:
+                self.worker.transition(AgentStatus.RUNNING, detail="input wait ended")
+                self._emit_event(
+                    AgentEvent.ready(
+                        self.role,
+                        self.phase,
+                        detail="input wait ended",
+                        data={"kind": "human_input"},
+                    )
+                )
+            raise
         finally:
             self._pending_input = None
         if not self.worker.is_terminal:
@@ -1710,6 +2279,18 @@ class AsyncOrchestrationSession(_SessionBase):
     )
 
 
+# Raised by the runtime's own limits. Another provider would not change the answer.
+_NO_FAILOVER_ERRORS = (
+    GovernanceBreachError,
+    MaxIterationsExceededError,
+    BudgetExceededError,
+    UsageLimitExceededError,
+    RateLimitExceededError,
+    PermissionDeniedError,
+    CircuitOpenError,
+)
+
+
 def _failure_class_for_exception(exc: Exception) -> AgentFailureClass:
     """Classify terminal session exceptions into the public event taxonomy."""
     if isinstance(exc, BudgetExceededError | UsageLimitExceededError):
@@ -1722,6 +2303,11 @@ def _failure_class_for_exception(exc: Exception) -> AgentFailureClass:
         return AgentFailureClass.PERMISSION_DENIED
     if isinstance(exc, GuardrailViolatedError):
         return AgentFailureClass.GUARDRAIL_VIOLATION
+    # ToolTimeoutError and MCPToolError name the tool that failed. Duck-typed so
+    # this module need not import the optional MCP integration; classifying by
+    # type also keeps an MCP server's error text from steering the failure class.
+    if isinstance(getattr(exc, "tool_name", None), str):
+        return AgentFailureClass.TOOL_ERROR
     scenario = classify_exception(exc)
     if scenario != FailureScenario.LLM_ERROR:
         return _scenario_to_class(scenario)
@@ -1735,8 +2321,10 @@ def _failure_class_for_exception(exc: Exception) -> AgentFailureClass:
 __all__ = [
     "AgentSession",
     "AsyncOrchestrationSession",
+    "DEFAULT_FAILOVER_SCENARIOS",
     "MaxIterationsExceededError",
     "OrchestrationSession",
     "PermissionDeniedError",
+    "ToolTimeoutError",
     "TurnTimeoutError",
 ]
