@@ -617,9 +617,33 @@ def _classify_by_type(error: BaseException) -> FailureScenario | None:
     return None
 
 
+# Glued neighbours make a number part of something else: hex ids (``7a503bc3``),
+# UUID segments, decimals, unit suffixes (``401ms``). A number standing alone is
+# taken as a status even in "401 ms": a keyword stays recognised in any text around
+# it, which tests/test_property_retry_policy.py pins.
+_NOT_STATUS_BEFORE = r"(?<![\w-])(?<!\d\.)"
+_NOT_STATUS_AFTER = r"(?![\w-])(?!\.\d)"
+_RATE_LIMIT_MARKERS = (
+    "rate limit",
+    "rate_limit",
+    "too many requests",
+    "throttl",
+    "per minute",
+)
+_CONTEXT_OVERFLOW_MARKERS = (
+    "context length",
+    "maximum context",
+    "context_length_exceeded",
+    "prompt is too long",
+    "prompt too long",
+    "input is too long",
+)
+_RETRY_LATER_MARKERS = ("please wait", "try again", "retry after")
+
+
 def _has_status_code(text: str, code: str) -> bool:
-    """Match ``code`` as a whole number, not inside ``14290`` or ``req_84010``."""
-    return re.search(rf"(?<!\d){code}(?!\d)", text) is not None
+    """Match ``code`` as a standalone HTTP status, not a fragment of another token."""
+    return re.search(_NOT_STATUS_BEFORE + code + _NOT_STATUS_AFTER, text) is not None
 
 
 def classify_exception(error: Exception) -> FailureScenario:
@@ -660,21 +684,19 @@ def classify_exception(error: Exception) -> FailureScenario:
 
     # Checked before rate limits: these name the context window itself, and
     # overflow messages routinely carry token counts and "rate limit" advice.
-    if any(
-        kw in error_str
-        for kw in ("context length", "maximum context", "context_length_exceeded")
-    ):
+    if any(kw in error_str for kw in _CONTEXT_OVERFLOW_MARKERS):
         return FailureScenario.CONTEXT_OVERFLOW
 
-    if (
-        "rate limit" in error_str
-        or _has_status_code(error_str, "429")
-        or "too many requests" in error_str
+    if any(kw in error_str for kw in _RATE_LIMIT_MARKERS) or _has_status_code(
+        error_str, "429"
     ):
         return FailureScenario.LLM_ERROR
 
-    # Checked after rate limits: per-minute quota errors use the same words.
+    # Ambiguous words: per-minute quota errors use them too, and those tell the
+    # caller to come back later (Bedrock: "Too many tokens, please wait").
     if any(kw in error_str for kw in ("token limit", "too many tokens")):
+        if any(kw in error_str for kw in _RETRY_LATER_MARKERS):
+            return FailureScenario.LLM_ERROR
         return FailureScenario.CONTEXT_OVERFLOW
 
     if "corrupt" in error_str or "malformed" in error_str:

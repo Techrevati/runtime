@@ -21,7 +21,9 @@ except CircuitOpenError:
 
 Each consecutive failure increments an internal counter. At `failure_threshold` failures, the breaker opens and immediately raises `CircuitOpenError` without calling `fn`. After `recovery_timeout_seconds`, the next call moves the breaker to `HALF_OPEN`; a successful call closes it again, a failure re-opens it.
 
-In `HALF_OPEN` at most `half_open_max_probes` probes are issued per cycle, and the circuit closes once every admitted probe has succeeded. A cycle whose probes have not reported after another `recovery_timeout_seconds` is abandoned and a new probe is admitted, so a hung call cannot block recovery forever (with `recovery_timeout_seconds=0` there is no such window). A result from an abandoned or failed cycle is ignored.
+In `HALF_OPEN` at most `half_open_max_probes` probes are issued per cycle, and the circuit closes once every admitted probe has succeeded. A cycle whose probes have not reported after another `recovery_timeout_seconds` is abandoned and a new probe is admitted, so a hung call cannot block recovery forever (with `recovery_timeout_seconds=0` there is no such window). A downstream that never answers therefore gets at most one new probe per window, and those calls can pile up until they return.
+
+A success from an abandoned probe closes the circuit, because no failure has been seen since it started; this lets a downstream slower than `recovery_timeout_seconds` recover under load. Its failure is ignored. Any result from a call admitted before the latest trip is ignored too.
 
 ## API
 
@@ -52,4 +54,4 @@ CircuitBreaker(
 
 - `failure_threshold` is consecutive failures. A single success resets the counter.
 - The HALF_OPEN probe is one request by default. Set `half_open_max_probes` to spread recovery over N requests.
-- A probe that takes longer than `recovery_timeout_seconds` counts as hung: its late result is ignored.
+- A probe that takes longer than `recovery_timeout_seconds` no longer holds its slot: its late success still closes the circuit, its late failure is ignored.

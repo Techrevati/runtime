@@ -55,11 +55,17 @@ open. It fails closed with `InvalidReviewDecisionError` on:
   rely on this check across restarts;
 - a `decided_at` outside the review window (with 5 minutes of clock tolerance), or
   without a timezone;
+- a decision with no usable reviewer or `decided_at`;
 - a queue claiming the reserved `system` reviewer, which only timeouts may use.
+  Case, Unicode form, and invisible characters do not get around this.
 
 A queue failure or cancellation closes the trail with `decision: "error"` or
-`"cancelled"` and propagates. The id is released, so that review can be retried.
-A refused decision is recorded as `"error"` and its id stays used.
+`"cancelled"` and propagates. The id is released, so that review can be retried,
+and the same applies if the audit record of a decision cannot be written; that
+attempt is logged, if the log accepts it, with `attempted_decision` and the reviewer
+id. A retry can therefore get a different answer from the same channel. A refused
+decision is recorded as `"error"` and its id stays used. An id with surrounding
+whitespace is rejected.
 
 Inside `EUAIActComplianceKit`, an interface with no audit log of its own records
 to the kit's log.

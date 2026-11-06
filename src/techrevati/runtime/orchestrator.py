@@ -261,6 +261,17 @@ def _call_with_deadline(
         ex.shutdown(wait=False, cancel_futures=True)
 
 
+def _validate_thread_id(value: str | None) -> str | None:
+    """Reject a thread id no saver can store, before any turn has been paid for."""
+    thread_id = _validate_optional_non_empty_str("thread_id", value)
+    if thread_id is not None:
+        try:
+            thread_id.encode("utf-8")
+        except UnicodeEncodeError as exc:
+            raise ValueError("thread_id must be valid Unicode text") from exc
+    return thread_id
+
+
 def _validate_budget_usd(value: float | None) -> float | None:
     if value is None:
         return None
@@ -482,7 +493,7 @@ class AgentSession:
         Pass the ``Handoff`` returned by ``handoff_to`` as ``handoff`` to run
         on the worker it reserved; otherwise that worker stays INITIALIZING.
         """
-        thread_id = _validate_optional_non_empty_str("thread_id", thread_id)
+        thread_id = _validate_thread_id(thread_id)
         self._assert_compliance_deployable()
         worker = self._start_worker(handoff)
         session = OrchestrationSession(
@@ -547,7 +558,7 @@ class AgentSession:
         replay-safe async turns, and pass ``handoff`` to run on the worker a
         ``Handoff`` reserved.
         """
-        thread_id = _validate_optional_non_empty_str("thread_id", thread_id)
+        thread_id = _validate_thread_id(thread_id)
         self._assert_compliance_deployable()
         worker = self._start_worker(handoff)
         session = AsyncOrchestrationSession(

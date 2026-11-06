@@ -71,6 +71,9 @@ repaid. `timeout` is one budget shared across the buckets; on timeout
 `RateLimitExceededError` is raised and the debits stand. `TokenBucket.debit`
 exposes the same charge directly.
 
+Debt is capped at 24 hours of refill, so a bucket always recovers; tokens beyond
+the cap are forgotten. A single charge above `1e15` tokens raises `ValueError`.
+
 `acquire` still refuses an amount above `capacity`, because it could never be
 served in advance.
 

@@ -253,6 +253,25 @@ def _copy_checkpoint(checkpoint: Checkpoint) -> Checkpoint:
     return Checkpoint.from_dict(checkpoint.to_dict())
 
 
+def _validate_key(field_name: str, value: str) -> str:
+    """Validate an id used for lookups; both savers reject the same values.
+
+    A lone surrogate cannot be stored as UTF-8 text. It is rejected rather than
+    cleaned, because cleaning could map two different ids onto one key and hand
+    one thread another thread's checkpoints.
+    """
+    value = _validate_non_empty_str(field_name, value)
+    try:
+        value.encode("utf-8")
+    except UnicodeEncodeError as exc:
+        raise ValueError(f"{field_name} must be valid Unicode text") from exc
+    return value
+
+
+def _validate_optional_key(field_name: str, value: str | None) -> str | None:
+    return None if value is None else _validate_key(field_name, value)
+
+
 def _copy_step(record: StepRecord) -> StepRecord:
     return replace(record, state=copy.deepcopy(record.state))
 
@@ -272,8 +291,8 @@ class InMemorySaver:
     def get(
         self, thread_id: str, checkpoint_id: str | None = None
     ) -> Checkpoint | None:
-        thread_id = _validate_non_empty_str("thread_id", thread_id)
-        checkpoint_id = _validate_optional_non_empty_str("checkpoint_id", checkpoint_id)
+        thread_id = _validate_key("thread_id", thread_id)
+        checkpoint_id = _validate_optional_key("checkpoint_id", checkpoint_id)
         with self._lock:
             entries = self._threads.get(thread_id)
             if not entries:
@@ -293,13 +312,13 @@ class InMemorySaver:
         parent_id: str | None = None,
         metadata: Mapping[str, Any] | None = None,
     ) -> Checkpoint:
-        thread_id = _validate_non_empty_str("thread_id", thread_id)
+        thread_id = _validate_key("thread_id", thread_id)
         cp = Checkpoint(
             id=_new_id(),
             thread_id=thread_id,
             created_at=_now_iso(),
             state=_normalize_json_mapping("state", state),
-            parent_id=parent_id,
+            parent_id=_validate_optional_key("parent_id", parent_id),
             metadata=_normalize_json_mapping("metadata", metadata or {}),
         )
         with self._lock:
@@ -309,8 +328,8 @@ class InMemorySaver:
     def list(
         self, thread_id: str, *, before: str | None = None, limit: int = 10
     ) -> list[Checkpoint]:
-        thread_id = _validate_non_empty_str("thread_id", thread_id)
-        before = _validate_optional_non_empty_str("before", before)
+        thread_id = _validate_key("thread_id", thread_id)
+        before = _validate_optional_key("before", before)
         limit = _validate_limit(limit)
         if limit <= 0:
             return []
@@ -327,7 +346,7 @@ class InMemorySaver:
         return [_copy_checkpoint(cp) for cp in reversed(entries[-limit:])]
 
     def delete(self, thread_id: str) -> None:
-        thread_id = _validate_non_empty_str("thread_id", thread_id)
+        thread_id = _validate_key("thread_id", thread_id)
         with self._lock:
             self._threads.pop(thread_id, None)
             self._steps.pop(thread_id, None)
@@ -335,8 +354,8 @@ class InMemorySaver:
     def put_step(
         self, thread_id: str, step_key: str, state: Mapping[str, Any]
     ) -> StepRecord:
-        thread_id = _validate_non_empty_str("thread_id", thread_id)
-        step_key = _validate_non_empty_str("step_key", step_key)
+        thread_id = _validate_key("thread_id", thread_id)
+        step_key = _validate_key("step_key", step_key)
         record = StepRecord(
             thread_id=thread_id,
             step_key=step_key,
@@ -348,14 +367,14 @@ class InMemorySaver:
         return record
 
     def get_step(self, thread_id: str, step_key: str) -> StepRecord | None:
-        thread_id = _validate_non_empty_str("thread_id", thread_id)
-        step_key = _validate_non_empty_str("step_key", step_key)
+        thread_id = _validate_key("thread_id", thread_id)
+        step_key = _validate_key("step_key", step_key)
         with self._lock:
             record = self._steps.get(thread_id, {}).get(step_key)
             return None if record is None else _copy_step(record)
 
     def list_steps(self, thread_id: str) -> builtins.list[StepRecord]:
-        thread_id = _validate_non_empty_str("thread_id", thread_id)
+        thread_id = _validate_key("thread_id", thread_id)
         with self._lock:
             records = [_copy_step(r) for r in self._steps.get(thread_id, {}).values()]
         # Match SqliteSaver's (created_at, step_key) ordering so the two savers
@@ -442,8 +461,8 @@ class SqliteSaver:
     def get(
         self, thread_id: str, checkpoint_id: str | None = None
     ) -> Checkpoint | None:
-        thread_id = _validate_non_empty_str("thread_id", thread_id)
-        checkpoint_id = _validate_optional_non_empty_str("checkpoint_id", checkpoint_id)
+        thread_id = _validate_key("thread_id", thread_id)
+        checkpoint_id = _validate_optional_key("checkpoint_id", checkpoint_id)
         with self._lock:
             if checkpoint_id is None:
                 row = self._conn.execute(
@@ -471,13 +490,13 @@ class SqliteSaver:
         parent_id: str | None = None,
         metadata: Mapping[str, Any] | None = None,
     ) -> Checkpoint:
-        thread_id = _validate_non_empty_str("thread_id", thread_id)
+        thread_id = _validate_key("thread_id", thread_id)
         cp = Checkpoint(
             id=_new_id(),
             thread_id=thread_id,
             created_at=_now_iso(),
             state=_normalize_json_mapping("state", state),
-            parent_id=parent_id,
+            parent_id=_validate_optional_key("parent_id", parent_id),
             metadata=_normalize_json_mapping("metadata", metadata or {}),
         )
         with self._lock:
@@ -500,8 +519,8 @@ class SqliteSaver:
     def list(
         self, thread_id: str, *, before: str | None = None, limit: int = 10
     ) -> list[Checkpoint]:
-        thread_id = _validate_non_empty_str("thread_id", thread_id)
-        before = _validate_optional_non_empty_str("before", before)
+        thread_id = _validate_key("thread_id", thread_id)
+        before = _validate_optional_key("before", before)
         limit = _validate_limit(limit)
         if limit <= 0:
             return []
@@ -531,7 +550,7 @@ class SqliteSaver:
         return [self._row_to_checkpoint(r) for r in rows]
 
     def delete(self, thread_id: str) -> None:
-        thread_id = _validate_non_empty_str("thread_id", thread_id)
+        thread_id = _validate_key("thread_id", thread_id)
         with self._lock:
             with self._conn:
                 self._conn.execute(
@@ -544,8 +563,8 @@ class SqliteSaver:
     def put_step(
         self, thread_id: str, step_key: str, state: Mapping[str, Any]
     ) -> StepRecord:
-        thread_id = _validate_non_empty_str("thread_id", thread_id)
-        step_key = _validate_non_empty_str("step_key", step_key)
+        thread_id = _validate_key("thread_id", thread_id)
+        step_key = _validate_key("step_key", step_key)
         record = StepRecord(
             thread_id=thread_id,
             step_key=step_key,
@@ -568,8 +587,8 @@ class SqliteSaver:
         return record
 
     def get_step(self, thread_id: str, step_key: str) -> StepRecord | None:
-        thread_id = _validate_non_empty_str("thread_id", thread_id)
-        step_key = _validate_non_empty_str("step_key", step_key)
+        thread_id = _validate_key("thread_id", thread_id)
+        step_key = _validate_key("step_key", step_key)
         with self._lock:
             row = self._conn.execute(
                 "SELECT thread_id, step_key, created_at, state_json"
@@ -586,7 +605,7 @@ class SqliteSaver:
         )
 
     def list_steps(self, thread_id: str) -> builtins.list[StepRecord]:
-        thread_id = _validate_non_empty_str("thread_id", thread_id)
+        thread_id = _validate_key("thread_id", thread_id)
         with self._lock:
             rows = self._conn.execute(
                 "SELECT thread_id, step_key, created_at, state_json"

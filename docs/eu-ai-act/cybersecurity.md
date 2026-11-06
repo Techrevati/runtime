@@ -15,9 +15,17 @@ sequences (used to smuggle terminal payloads), DEL, and oversized output. It wal
 nested `str` / `bytes` / `dict` / `list` / `tuple` / `set` structures, including
 dict keys, and `max_chars` caps the payload's total size across all of them.
 
-Bytes that decode as UTF-8 are scanned as text. Other bytes are treated as opaque
-binary (images and archives legitimately contain control bytes) and only count
-towards the size cap. Objects of other types are not inspected.
+Any mapping or re-iterable container is walked; one-shot iterators are left
+unconsumed, and a payload of more than 1,000,000 values is rejected rather than
+assumed clean. Objects of other types are not inspected.
+
+Bytes that are valid UTF-8 and at least half printable are scanned as text. Other
+bytes may be binary, where control bytes are ordinary, so only a complete CSI or OSC
+escape sequence counts, and only if the value is at least half printable or at most
+64 bytes long. Random data contains such a sequence about every 90 KB, so scanning
+long binary values would reject images at random. The cost is a known gap: a
+terminal sequence hidden in more than 64 bytes of mostly non-printable padding is
+not detected.
 
 ```python
 from techrevati.runtime.compliance import OutputIntegrityGuardrail

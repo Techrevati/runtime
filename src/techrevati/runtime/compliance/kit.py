@@ -29,7 +29,6 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import timedelta
-from pathlib import Path
 from typing import Any
 
 from techrevati.runtime.compliance.audit_log import (
@@ -255,7 +254,8 @@ class EUAIActComplianceKit:
         if isinstance(backend, InMemoryAuditBackend):
             return False
         if isinstance(backend, SqliteAuditBackend):
-            return Path(backend.path).name != ":memory:"
+            # SQLite gives "" a temporary database, deleted when it closes.
+            return str(backend.path) not in ("", ":memory:")
         return None
 
     def conformity_assessment_checklist(self) -> ConformityChecklist:

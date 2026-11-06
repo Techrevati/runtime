@@ -31,9 +31,26 @@ writers serialize into a single chain, and a failed write rolls back instead of
 holding the write lock. A third-party backend gets the same guarantee by adding
 `append_chained(build)`; one that only has `append` is single-writer.
 
-Event content never prevents a record: values JSON cannot represent are stored
-via `repr`, and lone surrogates are escaped. `emitted_at` is validated before it
+A write waits up to `SqliteAuditBackend(path, busy_timeout_seconds=30)` for other
+writers, then raises. Emitting is synchronous, so under extreme contention an event
+loop can block for that long; lower it if latency matters more than keeping the
+record. As measured, 32 processes writing to one file peaked at about 15 s.
+
+Event content never prevents a record, and is copied in bounded time. Only the
+offending value is replaced: a cycle becomes `"<cycle>"`, an unrepresentable object
+its `repr`, nesting past 100 levels or graphs past 100,000 values are truncated
+with a marker, and lone surrogates are escaped. `emitted_at` is validated before it
 becomes the record's timestamp (the raw value stays in the payload).
+
+A tampered row never stops the log. Bytes that are not valid UTF-8 and payloads too
+deep to parse read as a hash mismatch with `first_bad_sequence`, export still
+works, and new records keep chaining past an edited tip. An unusable purge marker
+reports invalid and is otherwise ignored. A row edited to the largest possible
+sequence leaves no number above it, so new records take the highest free sequence
+below it. Such records sort before the edited row, and the chain reports invalid.
+
+`repr` of an arbitrary object is that object's own code. Its exceptions are
+contained, but a slow `__repr__` still runs for as long as it takes.
 
 ## Optional HMAC envelope
 
@@ -84,8 +101,23 @@ tip = sink.tip()                      # ChainTip(sequence, record_hash) — publ
 sink.verify_chain(expected_tip=tip)   # invalid if the log no longer reaches that tip
 ```
 
-A sink whose log was emptied by *another* process's `purge_expired` reports
-truncation until it is reopened; that false alarm is the safe direction.
+A purge records the newest record it removed, so a sink can tell that from
+truncation, including a purge by another process, and the next record continues the
+chain past it. What that marker proves depends on the key:
+
+- **With a `signing_key`**, the sink that purges signs the marker with its own HMAC
+  over the sequence and hash. A marker with a missing or invalid signature makes
+  `verify_chain` invalid. Purge through `AuditLogSink.purge_expired`: calling
+  `backend.purge_before` directly, or purging from a sink without the key, leaves an
+  unsigned marker, which keyed verifiers report. A real signed marker can be left in
+  place while the rows *after* it are deleted, so tail truncation after a restart
+  still needs `expected_tip`.
+- **Without a key, a marker proves nothing.** Anyone who can write to the database
+  can delete every record and insert a marker naming the real tip's sequence and
+  hash. `verify_chain` then reports valid, including with `require_genesis=True` and
+  with `expected_tip`, whose anchor is weakened to a hash the attacker can read from
+  the log before deleting it. Use a key if the log must withstand someone with
+  database write access.
 
 ## Threat model — tamper-evident, **not** tamper-proof
 

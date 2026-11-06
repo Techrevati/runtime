@@ -382,12 +382,15 @@ _DEFAULT_PII_PATTERNS: tuple[str, ...] = (
     r"\b[A-Za-z0-9_\-]{40,}\b",
     # JWT (the dots otherwise split it, leaving header and payload readable)
     r"\beyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}",
-    # Standard base64 key. Mixed case plus a digit, and not embedded in a longer
-    # path-like or URL-like token, so ordinary file paths and URLs stay readable.
-    r"(?<![A-Za-z0-9+/_.-])"
+    # Standard base64 key: mixed case plus a digit, not embedded in a longer token.
+    # Keys may start or end with "/", or be followed by sentence punctuation; a run
+    # with more than three inner slashes needs 100+ characters, so ordinary file
+    # paths and URLs stay readable.
+    r"(?<![A-Za-z0-9+/.-])"
     r"(?=[A-Za-z0-9+/]*[0-9])(?=[A-Za-z0-9+/]*[a-z])(?=[A-Za-z0-9+/]*[A-Z])"
-    r"[A-Za-z0-9+][A-Za-z0-9+/]{39,}={0,2}"
-    r"(?![A-Za-z0-9+/=_.:-])",
+    r"(?:(?=[A-Za-z0-9+/]{40,})/?[A-Za-z0-9+]+(?:/[A-Za-z0-9+]+){0,3}/?"
+    r"|[A-Za-z0-9+/]{100,})={0,2}"
+    r"(?![A-Za-z0-9+/=_-])(?![.:][A-Za-z0-9/])",
 )
 
 
@@ -439,10 +442,7 @@ class RedactPIIHook:
             except UnicodeDecodeError:
                 return value
         if isinstance(value, dict):
-            return {
-                (self._scrub_text(k) if isinstance(k, str) else k): self._scrub(v)
-                for k, v in value.items()
-            }
+            return self._scrub_mapping(value)
         if isinstance(value, list):
             return [self._scrub(item) for item in value]
         if isinstance(value, tuple):
@@ -451,6 +451,21 @@ class RedactPIIHook:
         if isinstance(value, (set, frozenset)):
             return type(value)(self._scrub(item) for item in value)
         return value
+
+    def _scrub_mapping(self, value: dict[Any, Any]) -> dict[Any, Any]:
+        """Scrub keys and values; redacted keys that collide stay separate entries."""
+        result: dict[Any, Any] = {}
+        counters: dict[str, int] = {}
+        for key, item in value.items():
+            name = self._scrub_text(key) if isinstance(key, str) else key
+            if name != key:
+                unique = name
+                while unique in result:
+                    counters[name] = counters.get(name, 1) + 1
+                    unique = f"{name}#{counters[name]}"
+                name = unique
+            result[name] = self._scrub(item)
+        return result
 
     def before_model(self, ctx: HookContext) -> None:
         ctx.prompt = self._scrub(ctx.prompt)

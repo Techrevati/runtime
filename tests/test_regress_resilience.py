@@ -688,3 +688,464 @@ def test_manual_clock_overflow_leaves_both_clocks_unchanged() -> None:
     with pytest.raises(OverflowError):
         clock.tick(1e300)
     assert clock.monotonic() == 1000.0
+
+
+# -- Adversarial review of the fixes above ------------------------------------
+
+
+def _trip_with_slow_call_in_flight(clock: ManualClock) -> Any:
+    breaker = CircuitBreaker(
+        "svc", failure_threshold=1, recovery_timeout_seconds=10.0, clock=clock
+    )
+    release, slow = _call_blocked(breaker, succeed=False)
+    breaker.record_failure()
+    assert breaker._state == CircuitState.OPEN
+    return breaker, release, slow
+
+
+def test_late_closed_era_failure_does_not_tear_down_probe_cycle() -> None:
+    clock = ManualClock()
+    breaker, release_slow, slow = _trip_with_slow_call_in_flight(clock)
+    tripped_at = breaker._last_failure_time
+    clock.advance(10.0)
+    release_probe, probe = _call_blocked(breaker)
+
+    clock.advance(1.0)
+    release_slow.set()
+    with pytest.raises(RuntimeError):
+        slow.result(5)
+    assert breaker._state == CircuitState.HALF_OPEN
+    assert breaker._last_failure_time == tripped_at
+
+    release_probe.set()
+    probe.result(5)
+    assert breaker.state() == CircuitState.CLOSED
+
+
+def test_late_closed_era_failure_does_not_delay_recovery_while_open() -> None:
+    clock = ManualClock()
+    breaker, release_slow, slow = _trip_with_slow_call_in_flight(clock)
+    clock.advance(9.0)
+    release_slow.set()
+    with pytest.raises(RuntimeError):
+        slow.result(5)
+    clock.advance(1.0)
+    assert breaker.call(lambda: "probe") == "probe"
+    assert breaker.state() == CircuitState.CLOSED
+
+
+def test_same_generation_closed_failures_still_trip() -> None:
+    clock = ManualClock()
+    breaker = CircuitBreaker(
+        "svc", failure_threshold=2, recovery_timeout_seconds=10.0, clock=clock
+    )
+    release_a, a = _call_blocked(breaker, succeed=False)
+    release_b, b = _call_blocked(breaker, succeed=False)
+    release_a.set()
+    release_b.set()
+    for future in (a, b):
+        with pytest.raises(RuntimeError):
+            future.result(5)
+    assert breaker._state == CircuitState.OPEN
+
+
+@pytest.mark.asyncio
+async def test_async_late_closed_era_failure_does_not_tear_down_probe_cycle() -> None:
+    clock = ManualClock()
+    breaker = AsyncCircuitBreaker(
+        "svc", failure_threshold=1, recovery_timeout_seconds=10.0, clock=clock
+    )
+    release_slow = asyncio.Event()
+    release_probe = asyncio.Event()
+
+    async def slow_failure() -> None:
+        await release_slow.wait()
+        raise RuntimeError("late")
+
+    async def probe() -> str:
+        await release_probe.wait()
+        return "ok"
+
+    slow = asyncio.create_task(breaker.call(slow_failure))
+    await asyncio.sleep(0)
+    await breaker.record_failure()
+    clock.advance(10.0)
+    probing = asyncio.create_task(breaker.call(probe))
+    await asyncio.sleep(0)
+
+    release_slow.set()
+    with pytest.raises(RuntimeError):
+        await slow
+    assert breaker._state == CircuitState.HALF_OPEN
+
+    release_probe.set()
+    assert await probing == "ok"
+    assert await breaker.state() == CircuitState.CLOSED
+
+
+@pytest.mark.parametrize(
+    ("message", "expected"),
+    [
+        (
+            "tool 'search' failed (request_id=7a503bc3-1111-4222-8333-abcdefabcdef)",
+            FailureScenario.TOOL_EXECUTION_ERROR,
+        ),
+        (
+            "tool 'search' failed (request_id=1111-503-8333)",
+            FailureScenario.TOOL_EXECUTION_ERROR,
+        ),
+        (
+            "tool 'search' failed (request_id=7a401bc3)",
+            FailureScenario.TOOL_EXECUTION_ERROR,
+        ),
+        ("Tool failed: took 401ms", FailureScenario.TOOL_EXECUTION_ERROR),
+        ("req_a401b: bad argument", FailureScenario.LLM_ERROR),
+        ("version 1.503 rejected", FailureScenario.LLM_ERROR),
+        (
+            "ThrottlingException: Too many tokens, please wait before trying again.",
+            FailureScenario.LLM_ERROR,
+        ),
+        ("Too many tokens, please wait", FailureScenario.LLM_ERROR),
+        ("rate_limit_error: slow down", FailureScenario.LLM_ERROR),
+        (
+            "prompt is too long: 210000 tokens > 200000 maximum",
+            FailureScenario.CONTEXT_OVERFLOW,
+        ),
+        ("Input is too long for requested model.", FailureScenario.CONTEXT_OVERFLOW),
+    ],
+)
+def test_classifier_rejects_status_lookalikes(
+    message: str, expected: FailureScenario
+) -> None:
+    assert classify_exception(Exception(message)) == expected
+
+
+@pytest.mark.parametrize(
+    ("message", "expected"),
+    [
+        ("status 503", FailureScenario.PROVIDER_FAILURE),
+        ("HTTP/1.1 503", FailureScenario.PROVIDER_FAILURE),
+        ("server returned 503.", FailureScenario.PROVIDER_FAILURE),
+        ("(503)", FailureScenario.PROVIDER_FAILURE),
+        ("Upstream connect error 503", FailureScenario.PROVIDER_FAILURE),
+        ("502: try again later", FailureScenario.PROVIDER_FAILURE),
+        (
+            "503 Service Unavailable. Please try again later.",
+            FailureScenario.PROVIDER_FAILURE,
+        ),
+        ("error code: 401", FailureScenario.PROVIDER_FAILURE),
+        ("Error code: 401 - invalid key", FailureScenario.PROVIDER_FAILURE),
+        ("HTTP 429", FailureScenario.LLM_ERROR),
+        ("429 Too Many Requests", FailureScenario.LLM_ERROR),
+        ("Error code: 429 - {'error': 'x'}", FailureScenario.LLM_ERROR),
+        ("too many tokens", FailureScenario.CONTEXT_OVERFLOW),
+    ],
+)
+def test_classifier_keeps_realistic_http_phrasing(
+    message: str, expected: FailureScenario
+) -> None:
+    assert classify_exception(Exception(message)) == expected
+
+
+@pytest.mark.parametrize("bad", [float("inf"), float("nan"), 1e308, 10**400])
+def test_debit_rejects_absurd_amounts(bad: Any) -> None:
+    bucket = TokenBucket("b", 10.0, 1.0, clock=ManualClock())
+    with pytest.raises(ValueError, match="tokens"):
+        bucket.debit(bad)
+    assert bucket.available == pytest.approx(10.0)
+
+
+def test_acquire_usage_rejects_absurd_amount_before_any_debit() -> None:
+    clock = ManualClock()
+    in_b = TokenBucket("input_tpm", 10.0, 1.0, clock=clock)
+    limiter = RateLimiter({"input_tpm": in_b})
+    with pytest.raises(ValueError, match="output_tokens"):
+        limiter.acquire_usage(input_tokens=5, output_tokens=10**400)
+    assert in_b.available == pytest.approx(10.0)
+
+
+@pytest.mark.parametrize("value", [10**400, "1" * 400])
+def test_amount_validation_does_not_leak_overflow(value: Any) -> None:
+    bucket = TokenBucket("b", 10.0, 1.0, clock=ManualClock())
+    with pytest.raises(ValueError, match="tokens"):
+        bucket.try_acquire(value)
+
+
+def test_debt_is_capped_and_stays_repayable() -> None:
+    clock = ManualClock()
+    bucket = TokenBucket("b", 10.0, 1.0, clock=clock)
+    for _ in range(100):
+        bucket.debit(1e15)
+    assert bucket.available == pytest.approx(-86_400.0)
+    clock.advance(0.05)
+    assert bucket.available == pytest.approx(-86_399.95)
+    clock.advance(86_401.0)
+    assert bucket.try_acquire(1.0) is True
+
+
+@pytest.mark.asyncio
+async def test_async_debt_is_capped() -> None:
+    clock = ManualClock()
+    bucket = AsyncTokenBucket("b", 10.0, 2.0, clock=clock)
+    await bucket.debit(1e15)
+    assert await bucket.available() == pytest.approx(-172_800.0)
+    with pytest.raises(ValueError, match="tokens"):
+        await bucket.debit(1e308)
+
+
+def test_event_sink_stores_surrogate_timestamp(tmp_path: Path) -> None:
+    event = AgentEvent.started("r", "p")
+    broken = AgentEvent.from_dict({**event.to_dict(), "emitted_at": "\ud800"})
+    with SqliteEventSink(tmp_path / "e.db") as sink:
+        sink.emit(broken)
+        replayed = list(sink.replay())
+    assert replayed[0].emitted_at == "\ud800"
+
+
+@pytest.mark.parametrize("backend", ["memory", "sqlite"])
+@pytest.mark.parametrize(
+    "operation",
+    [
+        lambda s: s.put("a\ud800", {}),
+        lambda s: s.get("a\ud800"),
+        lambda s: s.get("t", "a\ud800"),
+        lambda s: s.list("a\ud800"),
+        lambda s: s.list("t", before="a\ud800"),
+        lambda s: s.delete("a\ud800"),
+        lambda s: s.put("t", {}, parent_id="a\ud800"),
+        lambda s: s.put_step("a\ud800", "k", {}),
+        lambda s: s.put_step("t", "k\ud800", {}),
+        lambda s: s.get_step("t", "k\ud800"),
+        lambda s: s.list_steps("a\ud800"),
+    ],
+)
+def test_savers_reject_surrogate_keys_alike(
+    tmp_path: Path, backend: str, operation: Any
+) -> None:
+    saver: Any = InMemorySaver() if backend == "memory" else SqliteSaver(tmp_path / "c")
+    with pytest.raises(ValueError, match="valid Unicode"):
+        operation(saver)
+
+
+def test_saver_keeps_literal_escape_text_as_its_own_thread(tmp_path: Path) -> None:
+    with SqliteSaver(tmp_path / "c") as saver:
+        saver.put("a\\ud800", {"n": 1})
+        latest = saver.get("a\\ud800")
+    assert latest is not None and latest.state == {"n": 1}
+
+
+# -- Slow but healthy downstream ----------------------------------------------
+
+
+def test_slow_healthy_downstream_closes_under_sustained_load() -> None:
+    clock = ManualClock()
+    breaker = CircuitBreaker(
+        "svc", failure_threshold=1, recovery_timeout_seconds=1.0, clock=clock
+    )
+    breaker.record_failure()
+    clock.advance(1.0)
+    in_flight: list[tuple[float, Any]] = []
+    peak = 0
+    for _ in range(200):  # a new caller every 0.25 s; each call succeeds after 2 s
+        clock.advance(0.25)
+        for entry in [e for e in in_flight if clock() >= e[0]]:
+            with breaker._lock:
+                breaker._record_call_success_locked(entry[1])
+            in_flight.remove(entry)
+        if breaker.state() == CircuitState.CLOSED:
+            break
+        try:
+            in_flight.append((clock() + 2.0, _admit(breaker)))
+        except CircuitOpenError:
+            continue
+        peak = max(peak, len(in_flight))
+    assert breaker.state() == CircuitState.CLOSED
+    assert peak <= 3
+
+
+def _admit(breaker: CircuitBreaker) -> Any:
+    with breaker._lock:
+        return breaker._admit_locked()
+
+
+def test_abandoned_probe_success_closes_but_its_failure_does_not_count() -> None:
+    clock = ManualClock()
+    breaker = _opened(clock)
+    abandoned = _admit(breaker)
+    clock.advance(10.0)
+    current = _admit(breaker)
+
+    with breaker._lock:
+        breaker._record_call_failure_locked(abandoned)
+    assert breaker._state == CircuitState.HALF_OPEN
+    assert breaker._probe_in_flight == 1
+
+    with breaker._lock:
+        breaker._record_call_success_locked(abandoned)
+    assert breaker._state == CircuitState.CLOSED
+    assert current.is_probe
+
+
+def test_success_admitted_before_a_later_failure_stays_ignored() -> None:
+    clock = ManualClock()
+    breaker = _opened(clock, half_open_max_probes=2)
+    earlier = _admit(breaker)
+    failing = _admit(breaker)
+    with breaker._lock:
+        breaker._record_call_failure_locked(failing)
+    clock.advance(10.0)
+    _admit(breaker)
+    with breaker._lock:
+        breaker._record_call_success_locked(earlier)
+    assert breaker._state == CircuitState.HALF_OPEN
+
+
+def test_released_abandoned_probe_does_not_free_the_current_slot() -> None:
+    clock = ManualClock()
+    breaker = _opened(clock)
+    abandoned = _admit(breaker)
+    clock.advance(10.0)
+    _admit(breaker)
+    with breaker._lock:
+        breaker._release_probe_locked(abandoned)
+    assert breaker._probe_in_flight == 1
+    with pytest.raises(CircuitOpenError):
+        breaker.call(lambda: "blocked")
+
+
+def test_cancelled_probe_restarts_the_window_for_its_replacement() -> None:
+    clock = ManualClock()
+    breaker = _opened(clock)
+    cancelled = _admit(breaker)
+    clock.advance(9.9)
+    with breaker._lock:
+        breaker._release_probe_locked(cancelled)
+    replacement = _admit(breaker)
+    clock.advance(0.2)
+    with pytest.raises(CircuitOpenError):
+        breaker.call(lambda: "must wait a full window")
+    with breaker._lock:
+        breaker._record_call_success_locked(replacement)
+    assert breaker.state() == CircuitState.CLOSED
+
+
+def test_cancellations_do_not_extend_a_hung_probes_window() -> None:
+    clock = ManualClock()
+    breaker = _opened(clock, half_open_max_probes=2)
+    _admit(breaker)  # hung, never reports
+    other = _admit(breaker)
+    clock.advance(9.0)
+    with breaker._lock:
+        breaker._release_probe_locked(other)
+    _admit(breaker)
+    clock.advance(1.0)
+    assert breaker.call(lambda: "reclaimed") == "reclaimed"
+
+
+@pytest.mark.asyncio
+async def test_async_abandoned_probe_success_closes_and_window_restarts() -> None:
+    clock = ManualClock()
+    breaker = AsyncCircuitBreaker(
+        "svc", failure_threshold=1, recovery_timeout_seconds=10.0, clock=clock
+    )
+    await breaker.record_failure()
+    clock.advance(10.0)
+
+    release = asyncio.Event()
+
+    async def slow() -> str:
+        await release.wait()
+        return "slow"
+
+    async def fine() -> str:
+        return "ok"
+
+    async def cancelled_probe() -> None:
+        await asyncio.sleep(3600)
+
+    task = asyncio.create_task(breaker.call(cancelled_probe))
+    await asyncio.sleep(0)
+    clock.advance(9.9)
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    abandoned = asyncio.create_task(breaker.call(slow))
+    await asyncio.sleep(0)
+    clock.advance(0.2)
+    with pytest.raises(CircuitOpenError):
+        await breaker.call(fine)
+
+    clock.advance(10.0)
+    current_release = asyncio.Event()
+
+    async def current_probe() -> None:
+        await current_release.wait()
+
+    current = asyncio.create_task(breaker.call(current_probe))
+    await asyncio.sleep(0)
+    release.set()
+    assert await abandoned == "slow"
+    assert await breaker.state() == CircuitState.CLOSED
+    current_release.set()
+    await current
+
+
+# -- Refill rounding ----------------------------------------------------------
+
+
+def test_refill_accumulates_when_increment_rounds_away() -> None:
+    clock = ManualClock()
+    bucket = TokenBucket("b", 1e15, 1.0, clock=clock)
+    assert bucket.try_acquire(1.0)
+    for _ in range(40):
+        clock.advance(0.05)
+        assert bucket.available <= 1e15  # the read runs a refill each step
+    assert bucket.available == 1e15
+
+
+@pytest.mark.asyncio
+async def test_async_refill_accumulates_when_increment_rounds_away() -> None:
+    clock = ManualClock()
+    bucket = AsyncTokenBucket("b", 1e15, 1.0, clock=clock)
+    assert await bucket.try_acquire(1.0)
+    for _ in range(40):
+        clock.advance(0.05)
+        await bucket.available()
+    assert await bucket.available() == 1e15
+
+
+@pytest.mark.parametrize("bucket_type", ["sync", "async"])
+def test_idle_full_bucket_earns_no_credit(bucket_type: str) -> None:
+    clock = ManualClock()
+    if bucket_type == "sync":
+        sync_bucket = TokenBucket("b", 10.0, 1.0, clock=clock)
+        clock.advance(3600.0)
+        assert sync_bucket.available == pytest.approx(10.0)
+        assert sync_bucket.try_acquire(10.0)
+        assert sync_bucket.available == pytest.approx(0.0)
+        return
+
+    async def scenario() -> None:
+        async_bucket = AsyncTokenBucket("b", 10.0, 1.0, clock=clock)
+        clock.advance(3600.0)
+        assert await async_bucket.available() == pytest.approx(10.0)
+        assert await async_bucket.try_acquire(10.0)
+        assert await async_bucket.available() == pytest.approx(0.0)
+
+    asyncio.run(scenario())
+
+
+def test_probe_admitted_long_after_a_cancellation_gets_a_full_window() -> None:
+    clock = ManualClock()
+    breaker = _opened(clock)
+    cancelled = _admit(breaker)
+    with breaker._lock:
+        breaker._release_probe_locked(cancelled)
+    clock.advance(9.9)
+    replacement = _admit(breaker)
+    clock.advance(0.2)
+    with pytest.raises(CircuitOpenError):
+        breaker.call(lambda: "must wait a full window")
+    with breaker._lock:
+        breaker._record_call_success_locked(replacement)
+    assert breaker.state() == CircuitState.CLOSED

@@ -30,6 +30,22 @@ class PermissionMode(IntEnum):
     FULL_ACCESS = 3
 
 
+# Unicode Default_Ignorable_Code_Point outside category C, plus blank lookalikes that
+# render as nothing. NFKC runs first and maps the Hangul fillers U+3164 and U+FFA0
+# to U+1160.
+_IGNORABLE_RANGES = (
+    (0x034F, 0x034F),
+    (0x115F, 0x1160),
+    (0x17B4, 0x17B5),
+    (0x180B, 0x180F),
+    (0x2800, 0x2800),
+    (0x3164, 0x3164),
+    (0xFE00, 0xFE0F),
+    (0xFFA0, 0xFFA0),
+    (0xE0100, 0xE01EF),
+)
+
+
 def _normalize_name(value: str, *, field_name: str) -> str:
     if not isinstance(value, str):
         raise TypeError(f"{field_name} must be a string")
@@ -38,20 +54,27 @@ def _normalize_name(value: str, *, field_name: str) -> str:
     return value.strip()
 
 
-def _match_key(value: str, *, field_name: str) -> str:
-    """Comparison key for a role or tool name.
+def _is_ignorable(ch: str) -> bool:
+    """Invisible characters that must not change which name a string refers to."""
+    code = ord(ch)
+    return unicodedata.category(ch)[0] == "C" or any(
+        low <= code <= high for low, high in _IGNORABLE_RANGES
+    )
 
-    Case, Unicode compatibility forms, and invisible control/format characters must
-    not create a name that a deny list fails to recognize: ``WRITER``, ``ｗｒｉｔｅｒ``,
-    and ``writer`` followed by a zero-width space are all the role ``writer``.
+
+def _match_key(value: str, *, field_name: str) -> str:
+    """Comparison key for a name, ignoring how it was spelled.
+
+    Case, Unicode compatibility forms, and invisible characters collapse, so
+    ``DELETE``, ``ｄｅｌｅｔｅ`` and ``delete`` followed by a zero-width space share a
+    key. Homoglyphs from other scripts (Cyrillic ``е``) stay distinct.
     """
     name = _normalize_name(value, field_name=field_name)
-    folded = "".join(
-        ch
-        for ch in unicodedata.normalize("NFKC", name)
-        if unicodedata.category(ch)[0] != "C"
-    )
-    key = folded.strip().casefold()
+    composed = unicodedata.normalize("NFKC", name)
+    visible = "".join(ch for ch in composed if not _is_ignorable(ch))
+    # Compose again: removing an invisible character can leave a letter next to a
+    # combining mark ("cafe" + U+200B + U+0301 is "café"), and folding can decompose.
+    key = unicodedata.normalize("NFKC", visible.casefold()).strip()
     if not key:
         raise ValueError(f"{field_name} must be a non-empty string")
     return key
@@ -134,20 +157,51 @@ class RolePermissionConfig:
                 _normalize_name(tool, field_name="allowed_tools")
                 for tool in self.allowed_tools
             ]
+            for tool in self.allowed_tools:
+                _match_key(tool, field_name="allowed_tools")
         if not isinstance(self.denied_tools, list):
             raise TypeError("denied_tools must be a list")
         self.denied_tools = [
             _normalize_name(tool, field_name="denied_tools")
             for tool in self.denied_tools
         ]
+        for tool in self.denied_tools:
+            _match_key(tool, field_name="denied_tools")
+
+
+@dataclass(frozen=True)
+class _CompiledRole:
+    """A role config with its tool lists reduced to comparison keys."""
+
+    config: RolePermissionConfig
+    denied: frozenset[str]
+    allowed: frozenset[str] | None
+
+
+def _compile_role(config: RolePermissionConfig) -> _CompiledRole:
+    allowed = config.allowed_tools
+    return _CompiledRole(
+        config=config,
+        denied=frozenset(_normalize_tool_name(t) for t in config.denied_tools),
+        allowed=(
+            None
+            if allowed is None
+            else frozenset(_normalize_tool_name(t) for t in allowed)
+        ),
+    )
 
 
 class PermissionPolicy:
     """Evaluates tool access based on role configs and tool requirements.
 
-    Role and tool names match regardless of case, Unicode compatibility form, and
-    invisible characters. Two role configs that differ only in those ways are
-    rejected at construction.
+    A role is identified by its **exact** name. A name that only matches a
+    configured role after folding case, Unicode form, or invisible characters is
+    denied, whatever ``default_allow_unknown_roles`` says: treating it as that role
+    could grant access its caller was not given, and treating it as unknown could
+    escape that role's deny list.
+
+    Tool names match regardless of those spellings, so a deny list cannot be escaped
+    by respelling. Keys that collide after folding are rejected at construction.
     """
 
     def __init__(
@@ -161,25 +215,42 @@ class PermissionPolicy:
             "default_allow_unknown_roles",
             default_allow_unknown_roles,
         )
-        self._role_configs: dict[str, RolePermissionConfig] = {}
+        self._roles: dict[str, _CompiledRole] = {}
+        self._role_keys: dict[str, str] = {}
         for role, config in (role_configs or {}).items():
-            role_key = _match_key(role, field_name="role")
+            normalized_role = _normalize_name(role, field_name="role")
             copied = _copy_role_config(config)
-            if _match_key(copied.role, field_name="role") != role_key:
+            if copied.role != normalized_role:
                 raise ValueError("role_configs keys must match config.role")
-            if role_key in self._role_configs:
-                raise ValueError(f"duplicate role config for {role!r}")
-            self._role_configs[role_key] = copied
-        self._tool_requirements = {
-            _normalize_tool_name(tool): _normalize_mode(mode)
-            for tool, mode in (tool_requirements or {}).items()
-        }
+            if normalized_role in self._roles:
+                raise ValueError(f"duplicate role config for {normalized_role!r}")
+            self._roles[normalized_role] = _compile_role(copied)
+            self._role_keys[_match_key(normalized_role, field_name="role")] = (
+                normalized_role
+            )
+        self._tool_requirements: dict[str, PermissionMode] = {}
+        for tool, mode in (tool_requirements or {}).items():
+            key = _normalize_tool_name(tool)
+            if key in self._tool_requirements:
+                raise ValueError(f"tool_requirements keys collide for {tool!r}")
+            self._tool_requirements[key] = _normalize_mode(mode)
 
     def authorize(self, role: str, tool_name: str) -> PermissionOutcome:
         role = _normalize_name(role, field_name="role")
         tool_name = _normalize_name(tool_name, field_name="tool_name")
-        config = self._role_configs.get(_match_key(role, field_name="role"))
-        if config is None:
+        compiled = self._roles.get(role)
+        if compiled is None:
+            configured = self._role_keys.get(_match_key(role, field_name="role"))
+            if configured is not None:
+                return PermissionOutcome(
+                    allowed=False,
+                    reason=(
+                        f"role {role!r} is not an exact match for configured role "
+                        f"{configured!r}; denied rather than treated as either"
+                    ),
+                    active_mode="N/A",
+                    required_mode="N/A",
+                )
             if not self._default_allow_unknown_roles:
                 return PermissionOutcome(
                     allowed=False,
@@ -191,17 +262,17 @@ class PermissionPolicy:
                 allowed=True,
                 reason="no config for role, default allow",
             )
+        config = compiled.config
 
         # 1. Deny list first (highest precedence)
         tool_lower = _normalize_tool_name(tool_name)
-        for denied in config.denied_tools:
-            if tool_lower == _normalize_tool_name(denied):
-                return PermissionOutcome(
-                    allowed=False,
-                    reason=f"tool '{tool_name}' is explicitly denied for role '{role}'",
-                    active_mode=config.mode.name,
-                    required_mode="N/A",
-                )
+        if tool_lower in compiled.denied:
+            return PermissionOutcome(
+                allowed=False,
+                reason=f"tool '{tool_name}' is explicitly denied for role '{role}'",
+                active_mode=config.mode.name,
+                required_mode="N/A",
+            )
 
         # 2. Mode check
         required = self._tool_requirements.get(tool_lower, PermissionMode.READ_ONLY)
@@ -217,15 +288,13 @@ class PermissionPolicy:
             )
 
         # 3. Allowed list (if specified, tool must be in it)
-        if config.allowed_tools is not None:
-            allowed_lower = [_normalize_tool_name(t) for t in config.allowed_tools]
-            if tool_lower not in allowed_lower:
-                return PermissionOutcome(
-                    allowed=False,
-                    reason=f"tool '{tool_name}' not in allowed list for role '{role}'",
-                    active_mode=config.mode.name,
-                    required_mode=required.name,
-                )
+        if compiled.allowed is not None and tool_lower not in compiled.allowed:
+            return PermissionOutcome(
+                allowed=False,
+                reason=f"tool '{tool_name}' not in allowed list for role '{role}'",
+                active_mode=config.mode.name,
+                required_mode=required.name,
+            )
 
         return PermissionOutcome(
             allowed=True,

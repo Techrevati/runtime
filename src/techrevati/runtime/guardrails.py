@@ -11,16 +11,16 @@ This is content gating — orthogonal to ``PermissionEnforcer`` which
 answers "is this role allowed to use this tool at all?". Permissions
 are role × tool; guardrails are value × context.
 
-Output checks are mandatory; input/pre-call checks are optional and default to
-``GuardrailOutcome(allowed=True)`` if a guardrail does not implement
-them, matching the structural Protocol pattern.
+A guardrail may implement one stage only; the other stage then passes. A guardrail
+a session cannot enforce (async checks only in part, on a sync session) is refused
+before the tool runs.
 """
 
 from __future__ import annotations
 
 import logging
 import re
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from re import Pattern
 from typing import Any, Literal, Protocol, cast, runtime_checkable
@@ -297,11 +297,54 @@ class GuardrailViolatedError(Exception):
         super().__init__(message)
 
 
+def _has_check(g: object, method: str) -> bool:
+    return getattr(g, method, None) is not None
+
+
 def _is_async_only(g: object) -> bool:
-    """True for a guardrail with async checks and no sync ones (either stage)."""
-    has_async = hasattr(g, "acheck_pre") or hasattr(g, "acheck_post")
-    has_sync = hasattr(g, "check_pre") or hasattr(g, "check_post")
-    return has_async and not has_sync
+    """True for a guardrail whose every check is async and which has both of them.
+
+    Only this full ``AsyncGuardrail`` shape is skipped on the sync path (documented,
+    with a warning). Any other mix has a check the sync path cannot run, which must
+    not pass silently; see ``_refuse_unenforceable``.
+    """
+    return (
+        _has_check(g, "acheck_pre")
+        and _has_check(g, "acheck_post")
+        and not _has_check(g, "check_pre")
+        and not _has_check(g, "check_post")
+    )
+
+
+def _guardrail_label(g: object) -> str:
+    return repr(getattr(g, "name", type(g).__name__))
+
+
+def _refuse_checkless(g: object) -> None:
+    if not any(
+        _has_check(g, method)
+        for method in ("check_pre", "check_post", "acheck_pre", "acheck_post")
+    ):
+        raise TypeError(f"guardrail {_guardrail_label(g)} implements no checks")
+
+
+def _refuse_unenforceable(guardrails: Iterable[object]) -> None:
+    """Fail before the tool runs if a sync session could not enforce a guardrail.
+
+    Both stages are checked here, because the post check runs only after the tool's
+    side effects have already happened.
+    """
+    for g in guardrails:
+        _refuse_checkless(g)
+        if _is_async_only(g):
+            continue
+        for method in ("check_pre", "check_post"):
+            if _has_check(g, f"a{method}") and not _has_check(g, method):
+                raise TypeError(
+                    f"guardrail {_guardrail_label(g)} implements a{method} but not "
+                    f"{method}, so a sync session cannot enforce it; use the async "
+                    "session or add the sync check"
+                )
 
 
 def run_pre_checks(
@@ -317,13 +360,14 @@ def run_pre_checks(
     """
     role = _validate_name(role, field_name="role")
     tool = _validate_name(tool, field_name="tool")
+    _refuse_unenforceable(guardrails)
     violations: list[GuardrailViolation] = []
     for g in guardrails:
         if _is_async_only(g):
             _maybe_warn_async_in_sync(g)
             continue
         check_pre = getattr(g, "check_pre", None)
-        if check_pre is None:  # Pre-call checks are optional.
+        if check_pre is None:  # A guardrail may check one stage only.
             continue
         outcome = _validate_outcome(check_pre(role=role, tool=tool))
         if not outcome.allowed:
@@ -356,9 +400,12 @@ def run_post_checks(
         if _is_async_only(g):
             _maybe_warn_async_in_sync(g)
             continue
-        outcome = _validate_outcome(
-            cast(Guardrail, g).check_post(value, role=role, tool=tool)
-        )
+        if _has_check(g, "acheck_post") and not _has_check(g, "check_post"):
+            _refuse_unenforceable([g])
+        check_post = getattr(g, "check_post", None)
+        if check_post is None:  # A guardrail may check one stage only.
+            continue
+        outcome = _validate_outcome(check_post(value, role=role, tool=tool))
         if not outcome.allowed:
             violations.append(
                 GuardrailViolation(
@@ -380,15 +427,17 @@ async def arun_pre_checks(
     """Run every pre-call guardrail; await async ones, call sync ones inline."""
     role = _validate_name(role, field_name="role")
     tool = _validate_name(tool, field_name="tool")
+    for g in guardrails:
+        _refuse_checkless(g)
     violations: list[GuardrailViolation] = []
     for g in guardrails:
         acheck_pre = getattr(g, "acheck_pre", None)
         check_pre = getattr(g, "check_pre", None)
         if acheck_pre is not None:
             outcome = _validate_outcome(await acheck_pre(role=role, tool=tool))
-        elif check_pre is not None and not hasattr(g, "acheck_post"):
+        elif check_pre is not None:
             outcome = _validate_outcome(check_pre(role=role, tool=tool))
-        else:  # Pre-call checks are optional.
+        else:  # A guardrail may check one stage only.
             continue
         if not outcome.allowed:
             violations.append(
@@ -415,12 +464,13 @@ async def arun_post_checks(
     violations: list[GuardrailViolation] = []
     for g in guardrails:
         acheck_post = getattr(g, "acheck_post", None)
+        check_post = getattr(g, "check_post", None)
         if acheck_post is not None:
             outcome = _validate_outcome(await acheck_post(value, role=role, tool=tool))
-        else:
-            outcome = _validate_outcome(
-                cast(Guardrail, g).check_post(value, role=role, tool=tool)
-            )
+        elif check_post is not None:
+            outcome = _validate_outcome(check_post(value, role=role, tool=tool))
+        else:  # A guardrail may check one stage only.
+            continue
         if not outcome.allowed:
             violations.append(
                 GuardrailViolation(

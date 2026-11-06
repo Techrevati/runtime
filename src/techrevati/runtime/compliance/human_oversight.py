@@ -45,6 +45,7 @@ from techrevati.runtime.compliance.audit_log import (
     _hash_bytes,
     _normalize_payload,
 )
+from techrevati.runtime.permissions import _match_key
 
 __all__ = [
     "ExplanationReport",
@@ -260,10 +261,14 @@ class HumanOversightInterface:
         The gate fails closed: a replayed ``decision_id``, a decision dated outside
         the review window, or one claiming the system reviewer raises
         :class:`InvalidReviewDecisionError`. A queue failure is recorded and
-        re-raised, and the id can then be retried.
+        re-raised, and the id can then be retried; so is a decision whose audit
+        record could not be written, since an unrecorded decision did not take effect.
         """
         if not decision_id.strip():
             raise ValueError("decision_id must be non-empty")
+        if decision_id != decision_id.strip():
+            # " d1" would otherwise claim a new id and get around replay rejection.
+            raise ValueError("decision_id must not have surrounding whitespace")
         timeout = (
             self._default_timeout
             if timeout_seconds is None
@@ -303,13 +308,26 @@ class HumanOversightInterface:
                 )
                 raise InvalidReviewDecisionError(f"{decision_id}: {refusal}")
 
-        self._emit_resolved(
-            decision_id,
-            decision,
-            context_sha256=digest,
-            timed_out=timed_out,
-            on_timeout=self._on_timeout if timed_out else None,
-        )
+        try:
+            self._emit_resolved(
+                decision_id,
+                decision,
+                context_sha256=digest,
+                timed_out=timed_out,
+                on_timeout=self._on_timeout if timed_out else None,
+            )
+        except BaseException as exc:
+            # Unrecorded, so unresolved: a retry must be able to ask again, and the
+            # log should show what this attempt decided if it can still be written.
+            self._claimed.pop(decision_id, None)
+            self._record_unresolved(
+                decision_id,
+                digest,
+                exc,
+                attempted_decision=decision.decision,
+                reviewer_id=decision.reviewer.id,
+            )
+            raise
         if timed_out and self._on_timeout == "abort":
             raise ReviewTimeoutError(decision_id)
         return decision
@@ -340,15 +358,22 @@ class HumanOversightInterface:
         decision: ReviewDecision, requested_at: datetime, timeout: float
     ) -> str | None:
         """Why this queue-supplied decision must not be honored, or ``None``."""
-        reviewer_id = decision.reviewer.id.strip().casefold()
-        if reviewer_id == SYSTEM_REVIEWER.id:
+        reviewer = decision.reviewer
+        if not isinstance(reviewer, ReviewerIdentity):
+            return "the decision does not name a reviewer"
+        try:
+            reviewer_key = _match_key(reviewer.id, field_name="reviewer id")
+        except (TypeError, ValueError):
+            return "the reviewer id is not usable"
+        if reviewer_key == SYSTEM_REVIEWER.id:
             return "the system reviewer cannot be supplied by a review queue"
-        if decision.decided_at.tzinfo is None:
-            return "decided_at must be timezone-aware"
+        decided_at = decision.decided_at
+        if not isinstance(decided_at, datetime) or decided_at.tzinfo is None:
+            return "decided_at must be a timezone-aware datetime"
         earliest = requested_at - _DECISION_CLOCK_SKEW
         latest = requested_at + timedelta(seconds=timeout) + _DECISION_CLOCK_SKEW
-        if not earliest <= decision.decided_at <= latest:
-            return f"decided_at {decision.decided_at.isoformat()} is outside the window"
+        if not earliest <= decided_at <= latest:
+            return f"decided_at {decided_at.isoformat()} is outside the window"
         return None
 
     def override(
@@ -400,7 +425,7 @@ class HumanOversightInterface:
         )
 
     def _record_unresolved(
-        self, decision_id: str, digest: str, exc: BaseException
+        self, decision_id: str, digest: str, exc: BaseException, **details: Any
     ) -> None:
         """Close the trail for a review that ended without an honored decision.
 
@@ -419,6 +444,7 @@ class HumanOversightInterface:
                     ),
                     context_sha256=digest,
                     error_type=type(exc).__name__,
+                    **details,
                     reason=(
                         str(exc)
                         if isinstance(exc, InvalidReviewDecisionError)

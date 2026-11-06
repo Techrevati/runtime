@@ -23,6 +23,7 @@ Added:
 - MCP Python SDK 2.x support alongside 1.x, plus a per-call `timeout`.
 - Audit log `tip()`, `ChainTip`, and `verify_chain(expected_tip=...)`.
 - `AgentRegistry.evict_terminal()`, `TokenBucket.debit()`.
+- Audit purge markers, signed under the sink's key.
 - Python 3.14 support.
 
 Fixed, security and audit integrity:

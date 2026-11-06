@@ -114,7 +114,7 @@ def test_failing_after_model_hook_still_books_the_paid_turn() -> None:
 def test_usage_above_bucket_capacity_does_not_lose_the_paid_turn() -> None:
     saver = InMemorySaver()
     calls: list[int] = []
-    limiter = RateLimiter(buckets={"input_tpm": TokenBucket("i", 100, 100)})
+    limiter = RateLimiter(buckets={"input_tpm": TokenBucket("i", 100, 100_000)})
     agent = _agent(saver=saver, rate_limiter=limiter)
 
     def paid() -> str:
@@ -1048,3 +1048,10 @@ async def test_stream_replay_of_none_and_over_budget() -> None:
 
 async def _none_result() -> None:
     return None
+
+
+def test_unstorable_thread_id_is_rejected_before_any_turn_is_paid() -> None:
+    agent = _agent(saver=InMemorySaver())
+    with pytest.raises(ValueError, match="valid Unicode"):
+        with agent.session(thread_id="bad\ud800"):
+            pass

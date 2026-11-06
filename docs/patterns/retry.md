@@ -52,8 +52,10 @@ filesystem, or dependency I/O error still maps to `DEPENDENCY_TIMEOUT` instead
 of being reported as an LLM failure.
 
 String matching covers common provider and dependency messages. Status codes
-match only as whole numbers, so `14290 tokens` is not a 429 and `req_84010` is
-not a 401. Database,
+match only as standalone numbers, so `14290 tokens`, `req_84010`, a hex id such as
+`7a503bc3` and `took 401ms` are not statuses, while `HTTP 429`, `status 503` and
+`error code: 401` are. Throttling messages are rate limits; `prompt is too long`
+is context overflow. Database,
 SQLite, disk, filesystem, read-only, and no-space-left errors are classified as
 dependency failures so terminal audit events can distinguish runtime
 infrastructure problems from model failures.

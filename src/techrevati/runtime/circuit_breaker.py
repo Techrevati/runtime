@@ -19,8 +19,15 @@ Probe bookkeeping in HALF_OPEN:
   abandoned and a new probe is admitted, so a hung probe (for example a worker
   thread orphaned by ``run_turn(timeout=...)``) cannot block recovery forever.
   With ``recovery_timeout_seconds=0`` there is no such window and no reclaim.
-- Each probe belongs to a generation. A result from an abandoned or failed cycle
-  is ignored; it says nothing about the current one.
+- Every call is stamped with the generation current at admission, and the
+  generation moves on each trip. A result from an older generation is ignored: a
+  failure has been seen since that call started, and a slow call that fails late
+  must not delay recovery.
+- Abandoning a cycle does not move the generation, because no failure was seen. A
+  success from an abandoned probe closes the circuit, so a downstream slower than
+  ``recovery_timeout_seconds`` can still recover. Its failure is ignored, because
+  the current probes decide. A downstream that never answers gets at most one new
+  probe per ``recovery_timeout_seconds``.
 """
 
 from __future__ import annotations
@@ -31,7 +38,7 @@ import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, TypeVar
+from typing import Any, NamedTuple, TypeVar
 
 T = TypeVar("T")
 
@@ -55,6 +62,14 @@ class CircuitOpenError(Exception):
         return (type(self), (self.name,))
 
 
+class _Admission(NamedTuple):
+    """What ``call`` must remember between admission and the call's outcome."""
+
+    generation: int
+    is_probe: bool
+    probe_cycle: int = 0
+
+
 class _BreakerStateMachine:
     """State transitions shared by both breakers; callers hold the lock."""
 
@@ -70,6 +85,7 @@ class _BreakerStateMachine:
     _probes_issued: int
     _half_open_since: float | None
     _generation: int
+    _probe_cycle: int
 
     def _validate_config(self) -> None:
         if self.failure_threshold <= 0:
@@ -87,12 +103,13 @@ class _BreakerStateMachine:
             return False
         return (self.clock() - self._last_failure_time) >= self.recovery_timeout_seconds
 
-    def _start_probe_cycle_locked(self) -> int:
+    def _start_probe_cycle_locked(self) -> _Admission:
         self._state = CircuitState.HALF_OPEN
         self._probe_in_flight = 1
         self._probes_issued = 1
         self._half_open_since = self.clock()
-        return self._generation
+        self._probe_cycle += 1
+        return _Admission(self._generation, True, self._probe_cycle)
 
     def _probe_cycle_expired_locked(self) -> bool:
         if self._half_open_since is None or self.recovery_timeout_seconds <= 0:
@@ -100,25 +117,26 @@ class _BreakerStateMachine:
         elapsed = self.clock() - self._half_open_since
         return elapsed >= self.recovery_timeout_seconds
 
-    def _admit_locked(self) -> int | None:
-        """Admit a call. Returns the probe's generation, or None if not a probe."""
+    def _admit_locked(self) -> _Admission:
+        """Admit a call or raise ``CircuitOpenError``."""
         if self._state == CircuitState.OPEN:
             if not self._should_attempt_reset():
                 raise CircuitOpenError(self.name)
             return self._start_probe_cycle_locked()
         if self._state == CircuitState.HALF_OPEN:
             if self._probes_issued < self.half_open_max_probes:
+                # With nothing in flight this probe starts the window: it may come
+                # long after a cancelled one. A probe joining others does not, so
+                # cancellations cannot keep a hung probe's cycle alive.
+                if self._probe_in_flight == 0:
+                    self._half_open_since = self.clock()
                 self._probe_in_flight += 1
                 self._probes_issued += 1
-                return self._generation
+                return _Admission(self._generation, True, self._probe_cycle)
             if not self._probe_cycle_expired_locked():
                 raise CircuitOpenError(self.name)
-            self._generation += 1
             return self._start_probe_cycle_locked()
-        return None
-
-    def _is_stale_locked(self, generation: int | None) -> bool:
-        return generation is not None and generation != self._generation
+        return _Admission(self._generation, is_probe=False)
 
     def _open_locked(self) -> None:
         self._state = CircuitState.OPEN
@@ -145,10 +163,25 @@ class _BreakerStateMachine:
         ):
             self._complete_probe_locked()
 
-    def _record_call_success_locked(self, generation: int | None) -> None:
-        if self._is_stale_locked(generation):
+    def _from_abandoned_cycle_locked(self, admission: _Admission) -> bool:
+        return admission.is_probe and admission.probe_cycle != self._probe_cycle
+
+    def _record_call_failure_locked(self, admission: _Admission) -> None:
+        if admission.generation != self._generation:
             return
-        if self._state == CircuitState.HALF_OPEN and generation is not None:
+        if not self._from_abandoned_cycle_locked(admission):
+            self._record_failure_locked()
+
+    def _record_call_success_locked(self, admission: _Admission) -> None:
+        if admission.generation != self._generation:
+            return
+        if self._from_abandoned_cycle_locked(admission):
+            # Proof of health with no failure since it started: close, or the
+            # circuit could never recover from a slow downstream under load.
+            if self._state == CircuitState.HALF_OPEN:
+                self._reset_locked()
+            return
+        if self._state == CircuitState.HALF_OPEN and admission.is_probe:
             self._complete_probe_locked()
             return
         if self._state == CircuitState.CLOSED:
@@ -161,8 +194,10 @@ class _BreakerStateMachine:
         if self._probe_in_flight == 0:
             self._reset_locked()
 
-    def _release_probe_locked(self, generation: int) -> None:
-        if self._is_stale_locked(generation):
+    def _release_probe_locked(self, admission: _Admission) -> None:
+        if not admission.is_probe or admission.generation != self._generation:
+            return
+        if self._from_abandoned_cycle_locked(admission):
             return
         if self._state == CircuitState.HALF_OPEN and self._probe_in_flight > 0:
             self._probe_in_flight -= 1
@@ -217,6 +252,7 @@ class CircuitBreaker(_BreakerStateMachine):
     _probes_issued: int = field(default=0, init=False, repr=False)
     _half_open_since: float | None = field(default=None, init=False, repr=False)
     _generation: int = field(default=0, init=False, repr=False)
+    _probe_cycle: int = field(default=0, init=False, repr=False)
     _lock: threading.Lock = field(
         default_factory=threading.Lock, init=False, repr=False
     )
@@ -232,27 +268,21 @@ class CircuitBreaker(_BreakerStateMachine):
         completes or expires.
         """
         with self._lock:
-            generation = self._admit_locked()
+            admission = self._admit_locked()
 
         try:
             result = fn(*args, **kwargs)
         except Exception:
-            self._record_call_failure(generation)
+            with self._lock:
+                self._record_call_failure_locked(admission)
             raise
         except BaseException:
-            if generation is not None:
-                with self._lock:
-                    self._release_probe_locked(generation)
+            with self._lock:
+                self._release_probe_locked(admission)
             raise
         with self._lock:
-            self._record_call_success_locked(generation)
+            self._record_call_success_locked(admission)
         return result
-
-    def _record_call_failure(self, generation: int | None) -> None:
-        with self._lock:
-            stale = self._is_stale_locked(generation)
-        if not stale:
-            self.record_failure()
 
     def record_success(self) -> None:
         """Record a successful execution. Closes the circuit if HALF_OPEN."""
@@ -303,6 +333,7 @@ class AsyncCircuitBreaker(_BreakerStateMachine):
     _probes_issued: int = field(default=0, init=False, repr=False)
     _half_open_since: float | None = field(default=None, init=False, repr=False)
     _generation: int = field(default=0, init=False, repr=False)
+    _probe_cycle: int = field(default=0, init=False, repr=False)
     _lock: asyncio.Lock = field(default_factory=asyncio.Lock, init=False, repr=False)
 
     def __post_init__(self) -> None:
@@ -316,27 +347,21 @@ class AsyncCircuitBreaker(_BreakerStateMachine):
     ) -> T:
         """Execute coro with breaker protection. Raises CircuitOpenError if open."""
         async with self._lock:
-            generation = self._admit_locked()
+            admission = self._admit_locked()
 
         try:
             result = await coro_factory(*args, **kwargs)
         except Exception:
-            await self._record_call_failure(generation)
+            async with self._lock:
+                self._record_call_failure_locked(admission)
             raise
         except BaseException:
-            if generation is not None:
-                async with self._lock:
-                    self._release_probe_locked(generation)
+            async with self._lock:
+                self._release_probe_locked(admission)
             raise
         async with self._lock:
-            self._record_call_success_locked(generation)
+            self._record_call_success_locked(admission)
         return result
-
-    async def _record_call_failure(self, generation: int | None) -> None:
-        async with self._lock:
-            stale = self._is_stale_locked(generation)
-        if not stale:
-            await self.record_failure()
 
     async def record_success(self) -> None:
         """Record a successful execution. Closes the circuit if HALF_OPEN."""

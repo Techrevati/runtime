@@ -39,6 +39,14 @@ __all__ = [
 ]
 
 
+# A single debit above this is a bug in the caller, not a real turn.
+_MAX_DEBIT_TOKENS = 1e15
+# Debt is capped at this much refill. Past some size a float balance stops
+# changing when refill is added, so an uncapped debt could never be repaid and
+# every later acquire would block for good.
+_MAX_DEBT_SECONDS = 86_400.0
+
+
 class RateLimitExceededError(Exception):
     """Raised when an ``acquire`` call exceeds the bucket's wait budget.
 
@@ -75,7 +83,7 @@ def _validate_amount(name: str, value: float, *, allow_zero: bool) -> float:
         raise TypeError(f"{name} must be a finite number")
     try:
         amount = float(value)
-    except (TypeError, ValueError) as exc:
+    except (TypeError, ValueError, OverflowError) as exc:
         raise ValueError(f"{name} must be a finite number") from exc
     if not math.isfinite(amount):
         raise ValueError(f"{name} must be finite")
@@ -85,6 +93,18 @@ def _validate_amount(name: str, value: float, *, allow_zero: bool) -> float:
     elif amount <= 0:
         raise ValueError(f"{name} must be > 0")
     return amount
+
+
+def _validate_debit(name: str, value: float) -> float:
+    amount = _validate_amount(name, value, allow_zero=True)
+    if amount > _MAX_DEBIT_TOKENS:
+        raise ValueError(f"{name} must be <= {_MAX_DEBIT_TOKENS:g}")
+    return amount
+
+
+def _debited_balance(balance: float, tokens: float, refill_per_second: float) -> float:
+    """Subtract ``tokens``, keeping the debt repayable (see ``_MAX_DEBT_SECONDS``)."""
+    return max(balance - tokens, -refill_per_second * _MAX_DEBT_SECONDS)
 
 
 def _validate_timeout(timeout: float | None) -> float | None:
@@ -158,10 +178,15 @@ class TokenBucket:
         now = _clock_now(self.clock)
         elapsed = max(0.0, now - self._last_refill)
         if elapsed > 0:
-            self._tokens = min(
+            refilled = min(
                 self.capacity, self._tokens + elapsed * self.refill_per_second
             )
-            self._last_refill = now
+            # Keep the elapsed time if the increment rounded away on a large
+            # balance: it must accumulate, or a small deficit never refills. A
+            # full bucket is the exception, since idle time there earns nothing.
+            if refilled != self._tokens or refilled >= self.capacity:
+                self._tokens = refilled
+                self._last_refill = now
 
     @property
     def available(self) -> float:
@@ -218,12 +243,16 @@ class TokenBucket:
 
         Unlike ``acquire``, this cannot refuse: the spend already happened, so
         the balance may go negative (even past ``-capacity``). Later acquires
-        wait until refill has paid the debt.
+        wait until refill has paid the debt. The debt is capped at 24 hours of
+        refill so it always stays repayable; anything beyond that is forgotten.
+        A single debit above ``1e15`` tokens raises ``ValueError``.
         """
-        tokens = _validate_amount("tokens", tokens, allow_zero=True)
+        tokens = _validate_debit("tokens", tokens)
         with self._lock:
             self._refill()
-            self._tokens -= tokens
+            self._tokens = _debited_balance(
+                self._tokens, tokens, self.refill_per_second
+            )
 
     def _settle(self, amount: float, *, timeout: float | None) -> None:
         """Wait until any debt is repaid; ``amount`` only labels the error."""
@@ -274,10 +303,15 @@ class AsyncTokenBucket:
         now = _clock_now(self.clock)
         elapsed = max(0.0, now - self._last_refill)
         if elapsed > 0:
-            self._tokens = min(
+            refilled = min(
                 self.capacity, self._tokens + elapsed * self.refill_per_second
             )
-            self._last_refill = now
+            # Keep the elapsed time if the increment rounded away on a large
+            # balance: it must accumulate, or a small deficit never refills. A
+            # full bucket is the exception, since idle time there earns nothing.
+            if refilled != self._tokens or refilled >= self.capacity:
+                self._tokens = refilled
+                self._last_refill = now
 
     async def available(self) -> float:
         async with self._lock:
@@ -320,11 +354,13 @@ class AsyncTokenBucket:
             await asyncio.sleep(min(wait, 0.05))
 
     async def debit(self, tokens: float) -> None:
-        """Async sibling of ``TokenBucket.debit``; the balance may go negative."""
-        tokens = _validate_amount("tokens", tokens, allow_zero=True)
+        """Async sibling of ``TokenBucket.debit``, with the same debt cap."""
+        tokens = _validate_debit("tokens", tokens)
         async with self._lock:
             self._refill()
-            self._tokens -= tokens
+            self._tokens = _debited_balance(
+                self._tokens, tokens, self.refill_per_second
+            )
 
     async def _settle(self, amount: float, *, timeout: float | None) -> None:
         """Wait until any debt is repaid; ``amount`` only labels the error."""
@@ -398,10 +434,8 @@ class RateLimiter:
         timeout ``RateLimitExceededError`` is raised and the debits stand,
         because the provider has counted those tokens either way.
         """
-        input_amount = _validate_amount("input_tokens", input_tokens, allow_zero=True)
-        output_amount = _validate_amount(
-            "output_tokens", output_tokens, allow_zero=True
-        )
+        input_amount = _validate_debit("input_tokens", input_tokens)
+        output_amount = _validate_debit("output_tokens", output_tokens)
         timeout = _validate_timeout(timeout)
         charges = [
             (bucket, amount)
@@ -457,10 +491,8 @@ class AsyncRateLimiter:
         output_tokens: int,
         timeout: float | None = None,
     ) -> None:
-        input_amount = _validate_amount("input_tokens", input_tokens, allow_zero=True)
-        output_amount = _validate_amount(
-            "output_tokens", output_tokens, allow_zero=True
-        )
+        input_amount = _validate_debit("input_tokens", input_tokens)
+        output_amount = _validate_debit("output_tokens", output_tokens)
         timeout = _validate_timeout(timeout)
         charges = [
             (bucket, amount)

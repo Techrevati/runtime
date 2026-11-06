@@ -139,7 +139,7 @@ class SqliteEventSink:
                 "INSERT INTO agent_events (emitted_at, event, role, phase, payload)"
                 " VALUES (?, ?, ?, ?, ?)",
                 (
-                    event.emitted_at,
+                    _sqlite_text(event.emitted_at),
                     event.event.value,
                     _sqlite_text(event.role),
                     _sqlite_text(event.phase),

@@ -26,6 +26,8 @@ Guardrail because ``check_post`` receives the value.
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable, Iterator, Mapping
+from itertools import islice
 from typing import Any
 
 from techrevati.runtime.guardrails import GuardrailOutcome
@@ -42,6 +44,16 @@ __all__ = [
 _CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x84\x86-\x9f]")
 
 
+# A complete CSI or OSC sequence, as raw bytes.
+_ESCAPE_SEQUENCE = re.compile(
+    rb"\x1b\[[0-?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]{0,256}(?:\x07|\x1b\\)"
+)
+_PRINTABLE_BYTES = frozenset(range(0x20, 0x7F)) | {0x09, 0x0A, 0x0D}
+_DROP_C1 = dict.fromkeys(range(128, 160))
+_MAX_BINARY_ESCAPE_SCAN = 64
+_MAX_WALK_NODES = 1_000_000
+
+
 def _scan_text(text: str) -> str | None:
     """Return a reason string if ``text`` looks tampered, else ``None``."""
     m = _CONTROL_CHARS.search(text)
@@ -50,42 +62,71 @@ def _scan_text(text: str) -> str | None:
     return None
 
 
-def _walk(value: Any, *, max_chars: int | None) -> str | None:
-    """Scan strings and bytes inside str / bytes / dict / list / tuple / set values.
+def _is_text_like(raw: bytes) -> bool:
+    if not raw:
+        return True
+    printable = sum(1 for byte in raw if byte in _PRINTABLE_BYTES)
+    return printable * 2 >= len(raw)
 
-    ``max_chars`` caps the payload's *total* size across all leaves. Bytes that
-    decode as UTF-8 are scanned as text. Other bytes are treated as opaque binary
-    (images, archives legitimately contain control bytes) and only count towards
-    the size cap. Other object types are not inspected.
+
+def _scan_bytes(raw: bytes) -> str | None:
+    """Scan bytes for what a terminal would act on, without rejecting binary data.
+
+    Bytes that are valid UTF-8 and read as text get the full text scan. Anything
+    else may be binary, where control bytes are ordinary, so only a complete escape
+    sequence counts, and only if the value reads as text in some encoding or is
+    short. Random data contains such a sequence about every 90 KB, so scanning long
+    blobs would reject images at random.
+    """
+    text_like = _is_text_like(raw)
+    if text_like:
+        try:
+            return _scan_text(raw.decode("utf-8"))
+        except UnicodeDecodeError:
+            pass
+    if not text_like and len(raw) > _MAX_BINARY_ESCAPE_SCAN:
+        return None
+    m = _ESCAPE_SEQUENCE.search(raw)
+    if m is not None:
+        return f"escape sequence {m.group(0)!r} at position {m.start()}"
+    return None
+
+
+def _walk(value: Any, *, max_chars: int | None) -> str | None:
+    """Scan strings and bytes inside any mapping or re-iterable container.
+
+    ``max_chars`` caps the payload's *total* size across all leaves. One-shot
+    iterators are not consumed, since the caller still needs them. Other object
+    types are not inspected. A payload too large to walk is rejected, not assumed
+    clean.
     """
     total = 0
+    visited = 0
     stack: list[Any] = [value]
     seen: set[int] = set()
     while stack:
         item = stack.pop()
-        if isinstance(item, (bytes, bytearray, memoryview)):
-            raw = bytes(item)
-            total += len(raw)
-            try:
-                item = raw.decode("utf-8")
-            except UnicodeDecodeError:
-                item = ""
-            else:
-                total -= len(item)
+        visited += 1
+        if visited > _MAX_WALK_NODES:
+            return f"payload exceeds {_MAX_WALK_NODES} values"
         if isinstance(item, str):
             total += len(item)
             reason = _scan_text(item)
-            if reason is not None:
-                return reason
-        elif isinstance(item, (dict, list, tuple, set, frozenset)):
-            if id(item) in seen:
-                continue
-            seen.add(id(item))
-            if isinstance(item, dict):
-                stack.extend(item.values())
-                stack.extend(item.keys())
-            else:
-                stack.extend(item)
+        elif isinstance(item, (bytes, bytearray, memoryview)):
+            raw = bytes(item)
+            total += len(raw)
+            reason = _scan_bytes(raw)
+        else:
+            reason = None
+            if id(item) not in seen:
+                seen.add(id(item))
+                if isinstance(item, Mapping):
+                    stack.extend(islice(item.values(), _MAX_WALK_NODES))
+                    stack.extend(islice(item.keys(), _MAX_WALK_NODES))
+                elif isinstance(item, Iterable) and not isinstance(item, Iterator):
+                    stack.extend(islice(item, _MAX_WALK_NODES + 1))
+        if reason is not None:
+            return reason
         if max_chars is not None and total > max_chars:
             return f"payload exceeds max_chars ({total} > {max_chars})"
     return None

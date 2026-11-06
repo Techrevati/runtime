@@ -28,12 +28,13 @@ class PostgresSaver:  # satisfies CheckpointSaver structurally
         self._conn = psycopg.connect(conninfo, autocommit=True)
         self._conn.execute(
             "CREATE TABLE IF NOT EXISTS checkpoints ("
+            " seq BIGINT GENERATED ALWAYS AS IDENTITY,"
             " id TEXT PRIMARY KEY, thread_id TEXT NOT NULL, created_at TEXT NOT NULL,"
             " state_json JSONB NOT NULL, parent_id TEXT, metadata_json JSONB NOT NULL)"
         )
         self._conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_ckpt_thread_created"
-            " ON checkpoints (thread_id, created_at DESC)"
+            "CREATE INDEX IF NOT EXISTS idx_ckpt_thread_seq"
+            " ON checkpoints (thread_id, seq DESC)"
         )
 
     def put(self, thread_id, state, *, parent_id=None, metadata=None):
@@ -43,7 +44,9 @@ class PostgresSaver:  # satisfies CheckpointSaver structurally
             state=dict(state), parent_id=parent_id, metadata=dict(metadata or {}),
         )
         self._conn.execute(
-            "INSERT INTO checkpoints VALUES (%s,%s,%s,%s,%s,%s)",
+            "INSERT INTO checkpoints"
+            " (id,thread_id,created_at,state_json,parent_id,metadata_json)"
+            " VALUES (%s,%s,%s,%s,%s,%s)",
             (cp.id, cp.thread_id, cp.created_at, json.dumps(cp.state),
              cp.parent_id, json.dumps(cp.metadata)),
         )
@@ -53,7 +56,7 @@ class PostgresSaver:  # satisfies CheckpointSaver structurally
         if checkpoint_id is None:
             row = self._conn.execute(
                 "SELECT id,thread_id,created_at,state_json,parent_id,metadata_json"
-                " FROM checkpoints WHERE thread_id=%s ORDER BY created_at DESC LIMIT 1",
+                " FROM checkpoints WHERE thread_id=%s ORDER BY seq DESC LIMIT 1",
                 (thread_id,),
             ).fetchone()
         else:
@@ -67,9 +70,16 @@ class PostgresSaver:  # satisfies CheckpointSaver structurally
             state=row[3], parent_id=row[4], metadata=row[5],
         )
 
-    def list(self, thread_id, *, before=None, limit=10): ...   # keyset by (created_at, id)
+    def list(self, thread_id, *, before=None, limit=10): ...   # keyset by seq DESC
     def delete(self, thread_id): ...
 ```
+
+`seq` keeps insertion order, like the SQLite saver's rowid: `created_at` is a wall
+clock and can step backwards. Identity values are assigned at insert, so two
+transactions writing the *same* thread at once can commit out of `seq` order; a
+session writes its thread serially, so this only matters if you share a thread id
+across writers. `CREATE TABLE IF NOT EXISTS` will not add `seq` to an existing
+table; migrate that table first.
 
 Wire it exactly like the SQLite saver: `AgentSession(saver=PostgresSaver(...))` with
 a `thread_id` at `session()` time.
