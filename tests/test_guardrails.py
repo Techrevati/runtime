@@ -114,7 +114,9 @@ def test_post_guardrail_blocks_after_invocation():
     assert exc_info.value.stage == "post"
     assert "secret" in (exc_info.value.outcome.reason or "")
     blocked = [e for e in session.events if e.event.value == "agent.blocked"]
-    assert blocked[0].data == {
+    data = dict(blocked[0].data)
+    assert data.pop("duration_seconds") >= 0
+    assert data == {
         "tool": "ok_tool",
         "kind": "guardrail",
         "stage": "post",
@@ -213,7 +215,9 @@ async def test_async_run_tool_runs_guardrails():
         async with orch.asession() as session:
             await session.arun_tool("g", bad)
     blocked = [e for e in session.events if e.event.value == "agent.blocked"]
-    assert blocked[0].data == {
+    data = dict(blocked[0].data)
+    assert data.pop("duration_seconds") >= 0
+    assert data == {
         "tool": "g",
         "kind": "guardrail",
         "stage": "post",

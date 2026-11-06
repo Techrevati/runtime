@@ -44,6 +44,22 @@ if not outcome.allowed:
 3. **Allowed list.** If `allowed_tools` is set, the tool must be in it.
 4. **Default-allow.** If none of the above triggers a denial, allow.
 
+A role is identified by its **exact** name. A name that matches a configured role
+only after folding case, Unicode compatibility form (NFKC), or invisible characters,
+such as `ADMIN` when `admin` is configured, is **denied** whatever
+`default_allow_unknown_roles` says. Treating it as `admin` would grant access its
+caller was not given, and treating it as unknown could escape `admin`'s deny list.
+
+Tool names match regardless of those spellings, so `DELETE` and `delete` followed by
+a zero-width space or variation selector are both `delete`. Homoglyphs from other
+scripts, such as a Cyrillic `е`, stay distinct, so prefer `allowed_tools` over deny
+lists when tool names come from untrusted input. `tool_requirements` keys that
+collide after folding, tool names that are empty after folding, and two role configs
+whose names differ only by surrounding whitespace are rejected at construction.
+
+A role with no config at all is still **allowed** by default. Pass
+`default_allow_unknown_roles=False` to deny it, which the pilot profile already does.
+
 ## API
 
 ```python

@@ -28,6 +28,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Generic, Protocol, TypeVar, runtime_checkable
 
+_FENCE_OPENING = re.compile(r"```[\w+-]*")
+
 T = TypeVar("T")
 T_co = TypeVar("T_co", covariant=True)
 
@@ -63,15 +65,24 @@ class JsonOutputSpec:
     require_type: type | None = None
     strip_fences: bool = True
 
+    def _has_required_type(self, value: Any) -> bool:
+        assert self.require_type is not None
+        # bool subclasses int, but JSON true is not a number.
+        if isinstance(value, bool) and self.require_type not in (bool, object):
+            return False
+        return isinstance(value, self.require_type)
+
     def parse(self, raw: str) -> Any:
         if not isinstance(raw, str):
             raise OutputValidationError("output must be a string")
         text = _strip_code_fence(raw) if self.strip_fences else raw
         try:
-            value = json.loads(text)
-        except json.JSONDecodeError as exc:
+            value = json.loads(text, parse_constant=_reject_json_constant)
+        except (ValueError, RecursionError) as exc:
+            # ValueError covers JSONDecodeError and the int-digit limit;
+            # RecursionError is what pathologically nested input raises.
             raise OutputValidationError(f"invalid JSON: {exc}") from exc
-        if self.require_type is not None and not isinstance(value, self.require_type):
+        if self.require_type is not None and not self._has_required_type(value):
             raise OutputValidationError(
                 f"expected JSON {self.require_type.__name__}, "
                 f"got {type(value).__name__}"
@@ -135,12 +146,21 @@ class CallableOutputSpec(Generic[T]):
             raise OutputValidationError(f"output validation failed: {exc}") from exc
 
 
+def _reject_json_constant(name: str) -> Any:
+    # NaN / Infinity are Python extensions; they are not JSON (RFC 8259).
+    raise ValueError(f"{name} is not valid JSON")
+
+
 def _strip_code_fence(text: str) -> str:
     stripped = text.strip()
     if not stripped.startswith("```"):
         return text
-    lines = stripped.splitlines()
-    if len(lines) < 2:
+    # Not splitlines(): JSON strings may legally contain U+2028 / U+0085, which
+    # it would treat as line breaks and rejoin as a raw newline.
+    lines = stripped.split("\n")
+    # An opening line carrying anything but a language tag is not a fence, so
+    # leave the text alone rather than silently discarding that line's data.
+    if len(lines) < 2 or _FENCE_OPENING.fullmatch(lines[0].rstrip()) is None:
         return text
     # Drop the opening fence (``` or ```json) and a trailing fence if present.
     body = lines[1:]

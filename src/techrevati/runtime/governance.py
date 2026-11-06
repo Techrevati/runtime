@@ -40,9 +40,18 @@ Composition into a session:
 
 from __future__ import annotations
 
+import hashlib
+import json
 import math
+from collections import deque
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Literal, cast
+from typing import Any, Literal, cast
+
+from techrevati.runtime.usage_tracking import _exceeds
+
+# Upper bound on repeated-call history kept per session.
+MAX_TOOL_SIGNATURE_WINDOW = 1024
 
 LimitScope = Literal["session"]
 BreachAction = Literal["terminate", "alert"]
@@ -143,6 +152,15 @@ class GovernanceState:
     tool_calls: int = 0
     consecutive_failures: int = 0
     cost_usd: float = 0.0
+    _recent_tool_signatures: deque[str | None] = field(
+        default_factory=lambda: deque(maxlen=MAX_TOOL_SIGNATURE_WINDOW),
+        init=False,
+        repr=False,
+        compare=False,
+    )
+    _tool_call_evaluated: bool = field(
+        default=False, init=False, repr=False, compare=False
+    )
 
     def __post_init__(self) -> None:
         self.turns = _validate_non_negative_int("turns", self.turns)
@@ -155,8 +173,31 @@ class GovernanceState:
     def record_turn_start(self) -> None:
         self.turns += 1
 
-    def record_tool_call(self) -> None:
+    def record_tool_call(self, signature: str | None = None) -> None:
+        """Count a tool call. ``signature`` feeds repeated-call detection.
+
+        ``None`` means the call's arguments are unknown: it still occupies a
+        slot in the window but never matches another call, so tools invoked
+        without ``args`` cannot produce a false loop detection.
+        """
         self.tool_calls += 1
+        self._recent_tool_signatures.append(signature)
+        self._tool_call_evaluated = False
+
+    def repeats_of_latest_tool_call(self, window: int) -> int:
+        """Return how often the latest signature occurs in the last ``window``.
+
+        Zero once that call has passed its check, so an alert fires per repeated
+        call rather than on every later turn.
+        """
+        recent = list(self._recent_tool_signatures)[-window:]
+        if self._tool_call_evaluated or not recent or recent[-1] is None:
+            return 0
+        return recent.count(recent[-1])
+
+    def mark_tool_call_evaluated(self) -> None:
+        """Record that the latest tool call has passed its limit checks."""
+        self._tool_call_evaluated = True
 
     def record_failure(self) -> None:
         self.consecutive_failures += 1
@@ -241,12 +282,69 @@ class MaxToolCallsLimit(_LimitBase):
     name: str = "max_tool_calls"
 
 
+@dataclass(frozen=True)
+class MaxRepeatedToolCallsLimit(_LimitBase):
+    """Stop an agent repeating the same tool call with the same arguments.
+
+    ``value`` is how many identical calls are tolerated inside the last
+    ``window`` tool calls, so ``value=3`` blocks the fourth. A tool and its
+    ``args`` are compared in canonical form, so key order cannot hide a repeat.
+
+    Calls only count when the caller passes ``args=`` to ``run_tool`` /
+    ``arun_tool`` (or a ``hook_ctx`` carrying them): without arguments the
+    runtime cannot tell a loop from legitimate polling. For the same reason,
+    leave volatile fields such as timestamps out of the ``args`` you pass, or a
+    loop will look like a series of different calls.
+    """
+
+    name: str = "max_repeated_tool_calls"
+    window: int = 10
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        if isinstance(self.window, bool) or not isinstance(self.window, int):
+            raise ValueError("window must be an integer")
+        if not 1 <= self.window <= MAX_TOOL_SIGNATURE_WINDOW:
+            raise ValueError(
+                f"window must be between 1 and {MAX_TOOL_SIGNATURE_WINDOW}"
+            )
+
+
 Limit = (
     MaxIterationsLimit
     | MaxBudgetLimit
     | MaxConsecutiveFailuresLimit
     | MaxToolCallsLimit
+    | MaxRepeatedToolCallsLimit
 )
+
+
+def tool_call_signature(tool: str, args: Mapping[str, Any]) -> str:
+    """Return a stable digest of a tool call for repeated-call detection.
+
+    A digest rather than the arguments themselves, so the per-session state
+    never retains caller data such as personal information.
+    """
+    try:
+        canonical = json.dumps(
+            [tool, args], sort_keys=True, default=repr, separators=(",", ":")
+        )
+    except (TypeError, ValueError, RecursionError):
+        # Mixed-type keys cannot be sorted, circular values cannot be encoded.
+        canonical = repr((tool, sorted(map(repr, args.items()))))
+    return hashlib.sha256(canonical.encode("utf-8", "backslashreplace")).hexdigest()
+
+
+def safe_tool_call_signature(tool: str, args: Mapping[str, Any]) -> str | None:
+    """Like :func:`tool_call_signature`, but ``None`` if the arguments defeat it.
+
+    Telemetry about a call must never be the reason the call fails, for example
+    when an argument's ``__repr__`` raises or its nesting is too deep to walk.
+    """
+    try:
+        return tool_call_signature(tool, args)
+    except Exception:
+        return None
 
 
 @dataclass(frozen=True)
@@ -284,9 +382,15 @@ def _evaluate_one(limit: Limit, state: GovernanceState) -> LimitOutcome:
     if isinstance(limit, MaxIterationsLimit):
         observed: float = float(state.turns)
     elif isinstance(limit, MaxBudgetLimit):
+        # Float summation noise must not trip a terminal limit: three $0.10 turns
+        # are not over a $0.30 ceiling.
         observed = state.cost_usd
+        if not _exceeds(observed, limit.value):
+            observed = min(observed, limit.value)
     elif isinstance(limit, MaxConsecutiveFailuresLimit):
         observed = float(state.consecutive_failures)
+    elif isinstance(limit, MaxRepeatedToolCallsLimit):
+        observed = float(state.repeats_of_latest_tool_call(limit.window))
     else:  # MaxToolCallsLimit
         observed = float(state.tool_calls)
     return LimitOutcome(
@@ -324,6 +428,7 @@ class GovernancePlane:
                     MaxBudgetLimit,
                     MaxConsecutiveFailuresLimit,
                     MaxToolCallsLimit,
+                    MaxRepeatedToolCallsLimit,
                 ),
             ):
                 raise ValueError("limits must contain governance limit objects")
@@ -373,5 +478,8 @@ __all__ = [
     "MaxBudgetLimit",
     "MaxConsecutiveFailuresLimit",
     "MaxIterationsLimit",
+    "MaxRepeatedToolCallsLimit",
     "MaxToolCallsLimit",
+    "safe_tool_call_signature",
+    "tool_call_signature",
 ]

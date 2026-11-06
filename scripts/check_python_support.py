@@ -15,7 +15,7 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.11+ project
     import tomli as tomllib  # type: ignore[no-redef]
 
 
-SUPPORTED_PYTHONS = ("3.11", "3.12", "3.13")
+SUPPORTED_PYTHONS = ("3.11", "3.12", "3.13", "3.14")
 BASELINE_PYTHON = SUPPORTED_PYTHONS[0]
 RUFF_BASELINE = "py311"
 CLASSIFIER_PREFIX = "Programming Language :: Python :: "

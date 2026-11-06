@@ -7,5 +7,7 @@
         - AsyncOrchestrationSession
         - AgentSession
         - PermissionDeniedError
+        - ToolTimeoutError
         - TurnTimeoutError
+        - DEFAULT_FAILOVER_SCENARIOS
         - MaxIterationsExceededError

@@ -14,7 +14,6 @@ access to the existing usage tracker, governance plane, and hook chain.
 
 from __future__ import annotations
 
-import json
 from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -23,6 +22,7 @@ from typing import Any, Literal
 from techrevati.runtime._internal import (
     _validate_non_empty_str,
 )
+from techrevati.runtime.agent_events import _strict_json_dumps
 
 StreamEventType = Literal[
     "text_delta",
@@ -155,13 +155,21 @@ def _validate_payload(
     return copied
 
 
+def _json_fallback(value: Any) -> Any:
+    """Serialize values JSON has no spelling for, such as MCP content blocks."""
+    model_dump = getattr(value, "model_dump", None)
+    if callable(model_dump):
+        return model_dump(mode="json")
+    return str(value)
+
+
 @dataclass(frozen=True)
 class StreamEvent:
     """One event in a turn-level structured stream.
 
-    Frozen so consumers can fan it out to multiple sinks without worrying
-    about concurrent mutation. ``payload`` is a free-form dict whose
-    shape is documented per ``type`` below.
+    The fields are frozen, but ``payload`` is a plain dict: treat it as read-only
+    when fanning an event out, and use ``to_dict()`` for a private deep copy.
+    Its shape is documented per ``type`` below.
 
     | type          | required payload keys              |
     |---------------|-------------------------------------|
@@ -176,7 +184,7 @@ class StreamEvent:
     """
 
     type: StreamEventType
-    payload: dict[str, Any] = field(default_factory=dict)
+    payload: dict[str, Any] = field(default_factory=dict, hash=False)
     emitted_at: str = field(default_factory=_now_iso)
 
     def __post_init__(self) -> None:
@@ -254,7 +262,7 @@ class StreamEvent:
         }
 
     def to_json(self) -> str:
-        return json.dumps(self.to_dict(), ensure_ascii=False)
+        return _strict_json_dumps(self.to_dict(), default=_json_fallback)
 
 
 __all__ = [

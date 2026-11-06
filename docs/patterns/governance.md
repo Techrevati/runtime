@@ -87,7 +87,7 @@ as immutable limit configuration. Each `session()` / `asession()` call
 receives a fresh `GovernanceState`, so counters do not leak between
 separate sessions opened from the same factory.
 
-## The four built-in limits
+## The five built-in limits
 
 ### `MaxIterationsLimit`
 
@@ -129,6 +129,28 @@ Caps total tool invocations in the session. Distinct from
 ```python
 MaxToolCallsLimit(value=100, on_breach="alert")
 ```
+
+### `MaxRepeatedToolCallsLimit`
+
+Stops the classic stuck agent: the same tool with the same arguments, over and
+over. `value` is how many identical calls are tolerated inside the last `window`
+tool calls, so `value=3` blocks the fourth. Because it counts within a window
+rather than consecutively, it also catches an agent alternating between two
+calls.
+
+```python
+plane = GovernancePlane(limits=(MaxRepeatedToolCallsLimit(value=3, window=10),))
+
+with AgentSession(role="r", phase="p", governance=plane).session() as session:
+    session.run_tool("search", lambda: search(q), args={"q": q})
+```
+
+Only calls that pass `args=` (or a `hook_ctx` carrying them) are compared. Without
+arguments the runtime cannot tell a loop from legitimate polling, so those calls
+never trip the limit. Argument key order does not matter, and only a digest is
+kept. Leave volatile fields such as timestamps out of the `args` you pass, or
+pass just the fields that identify the call, otherwise a loop looks like a series
+of different calls. Start with `on_breach="alert"` if your agent polls.
 
 ## `on_breach` modes
 
@@ -182,6 +204,7 @@ session dies.
 | `MaxIterationsLimit.value` | 10-50 for production loops | Same default as `AgentSession`. |
 | `MaxBudgetLimit.value` | per-customer / per-session limit | Pair with `UsageLimits.cost_usd_max` at 80%. |
 | `MaxConsecutiveFailuresLimit.value` | 2–5 | Below 2 is twitchy; above 5 hides real reliability bugs. |
+| `MaxRepeatedToolCallsLimit.value` | 3–5 in a window of 10 | Published agent tools use similar values. Raise it for tools that are polled with identical arguments. |
 | `MaxToolCallsLimit.value` | 5×–10× expected | Useful as an alert before flipping to terminate. |
 | `on_breach="alert"` | Always start here for new limits | Measure first, terminate second. |
 

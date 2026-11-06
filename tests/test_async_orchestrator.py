@@ -225,7 +225,9 @@ async def test_arun_tool_passes_when_allowed():
     async with orch.asession() as session:
         assert await session.arun_tool("write_db", writer) == "wrote"
     tool_events = [
-        event for event in session.events if event.data == {"tool": "write_db"}
+        event
+        for event in session.events
+        if (event.data or {}).get("tool") == "write_db"
     ]
     assert [event.event.value for event in tool_events] == [
         "agent.tool_called",
@@ -248,7 +250,9 @@ async def test_arun_tool_execution_error_emits_tool_failure_event_when_caught():
     assert failures[0].failure_class is not None
     assert failures[0].failure_class.value == "tool_error"
     assert failures[0].detail == "tool execution failed: lookup"
-    assert failures[0].data == {"tool": "lookup"}
+    assert failures[0].data["tool"] == "lookup"
+    assert failures[0].data["error_type"] == "RuntimeError"
+    assert failures[0].data["duration_seconds"] >= 0
     assert "sensitive" not in str(failures[0].to_dict())
     assert any(e.event.value == "agent.tool_called" for e in session.events)
     assert not any(e.event.value == "agent.tool_completed" for e in session.events)

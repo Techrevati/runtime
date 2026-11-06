@@ -26,6 +26,8 @@ Guardrail because ``check_post`` receives the value.
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable, Iterator, Mapping
+from itertools import islice
 from typing import Any
 
 from techrevati.runtime.guardrails import GuardrailOutcome
@@ -36,40 +38,97 @@ __all__ = [
     "OutputIntegrityGuardrail",
 ]
 
-# NUL byte, or C0 control chars except tab/newline/carriage-return, including the
-# ESC (0x1b) that starts ANSI terminal escape sequences.
-_CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
+# NUL byte, C0 controls except tab/newline/carriage-return (including the ESC that
+# starts ANSI sequences), DEL, and C1 controls such as the 8-bit CSI (0x9b). NEL
+# (0x85) is kept: it is a line break, like newline, not an escape.
+_CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x84\x86-\x9f]")
 
 
-def _scan_text(text: str, *, max_chars: int | None) -> str | None:
+# A complete CSI or OSC sequence, as raw bytes.
+_ESCAPE_SEQUENCE = re.compile(
+    rb"\x1b\[[0-?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]{0,256}(?:\x07|\x1b\\)"
+)
+_PRINTABLE_BYTES = frozenset(range(0x20, 0x7F)) | {0x09, 0x0A, 0x0D}
+_DROP_C1 = dict.fromkeys(range(128, 160))
+_MAX_BINARY_ESCAPE_SCAN = 64
+_MAX_WALK_NODES = 1_000_000
+
+
+def _scan_text(text: str) -> str | None:
     """Return a reason string if ``text`` looks tampered, else ``None``."""
-    if max_chars is not None and len(text) > max_chars:
-        return f"payload exceeds max_chars ({len(text)} > {max_chars})"
     m = _CONTROL_CHARS.search(text)
     if m is not None:
         return f"control/escape byte {m.group(0)!r} at position {m.start()}"
     return None
 
 
-def _walk(value: Any, *, max_chars: int | None) -> str | None:
-    """Depth-first scan of strings inside str / dict / list / tuple structures."""
-    if isinstance(value, str):
-        return _scan_text(value, max_chars=max_chars)
-    if isinstance(value, dict):
-        for key, item in value.items():
-            if isinstance(key, str):
-                reason = _scan_text(key, max_chars=max_chars)
-                if reason is not None:
-                    return reason
-            reason = _walk(item, max_chars=max_chars)
-            if reason is not None:
-                return reason
+def _is_text_like(raw: bytes) -> bool:
+    if not raw:
+        return True
+    printable = sum(1 for byte in raw if byte in _PRINTABLE_BYTES)
+    return printable * 2 >= len(raw)
+
+
+def _scan_bytes(raw: bytes) -> str | None:
+    """Scan bytes for what a terminal would act on, without rejecting binary data.
+
+    Bytes that are valid UTF-8 and read as text get the full text scan. Anything
+    else may be binary, where control bytes are ordinary, so only a complete escape
+    sequence counts, and only if the value reads as text in some encoding or is
+    short. Random data contains such a sequence about every 90 KB, so scanning long
+    blobs would reject images at random.
+    """
+    text_like = _is_text_like(raw)
+    if text_like:
+        try:
+            return _scan_text(raw.decode("utf-8"))
+        except UnicodeDecodeError:
+            pass
+    if not text_like and len(raw) > _MAX_BINARY_ESCAPE_SCAN:
         return None
-    if isinstance(value, (list, tuple)):
-        for item in value:
-            reason = _walk(item, max_chars=max_chars)
-            if reason is not None:
-                return reason
+    m = _ESCAPE_SEQUENCE.search(raw)
+    if m is not None:
+        return f"escape sequence {m.group(0)!r} at position {m.start()}"
+    return None
+
+
+def _walk(value: Any, *, max_chars: int | None) -> str | None:
+    """Scan strings and bytes inside any mapping or re-iterable container.
+
+    ``max_chars`` caps the payload's *total* size across all leaves. One-shot
+    iterators are not consumed, since the caller still needs them. Other object
+    types are not inspected. A payload too large to walk is rejected, not assumed
+    clean.
+    """
+    total = 0
+    visited = 0
+    stack: list[Any] = [value]
+    seen: set[int] = set()
+    while stack:
+        item = stack.pop()
+        visited += 1
+        if visited > _MAX_WALK_NODES:
+            return f"payload exceeds {_MAX_WALK_NODES} values"
+        if isinstance(item, str):
+            total += len(item)
+            reason = _scan_text(item)
+        elif isinstance(item, (bytes, bytearray, memoryview)):
+            raw = bytes(item)
+            total += len(raw)
+            reason = _scan_bytes(raw)
+        else:
+            reason = None
+            if id(item) not in seen:
+                seen.add(id(item))
+                if isinstance(item, Mapping):
+                    stack.extend(islice(item.values(), _MAX_WALK_NODES))
+                    stack.extend(islice(item.keys(), _MAX_WALK_NODES))
+                elif isinstance(item, Iterable) and not isinstance(item, Iterator):
+                    stack.extend(islice(item, _MAX_WALK_NODES + 1))
+        if reason is not None:
+            return reason
+        if max_chars is not None and total > max_chars:
+            return f"payload exceeds max_chars ({total} > {max_chars})"
     return None
 
 
@@ -108,6 +167,9 @@ class InputSanitizationHook:
     A ``Hook`` (not a Guardrail) because only hooks see ``ctx.prompt`` /
     ``ctx.args``. Scans before the model call (``before_model``) and before tool
     execution (``before_tool``); raises :class:`InputSanitizationError` on a hit.
+
+    Hooks only see what the session is given: tool arguments are scanned only when
+    they are supplied to the session, so a closure-captured argument is invisible.
     """
 
     def __init__(

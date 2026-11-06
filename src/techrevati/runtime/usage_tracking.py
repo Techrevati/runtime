@@ -20,6 +20,10 @@ logger = logging.getLogger("techrevati.runtime.usage_tracking")
 logger.addHandler(logging.NullHandler())
 
 _CONFLICT_ACTIONS = frozenset({"overwrite", "error", "keep"})
+_COST_REL_TOL = 1e-12
+# What may follow a registered name for a longer model id to count as a variant
+# of it: "model-a-20260514" and "model-a@v2" are, "model-alpha" is not.
+_MODEL_VARIANT_SEPARATORS = frozenset("-:@/")
 
 
 class UsageBoundExceededError(Exception):
@@ -49,6 +53,9 @@ class BudgetExceededError(UsageBoundExceededError):
             f"budget exceeded: ${current_cost_usd:.4f} > ${budget_usd:.4f}"
         )
 
+    def __reduce__(self) -> tuple[Any, ...]:
+        return (type(self), (self.budget_usd, self.current_cost_usd))
+
 
 class UsageLimitExceededError(UsageBoundExceededError):
     """Raised when a non-cost usage dimension exceeds its configured cap.
@@ -57,18 +64,26 @@ class UsageLimitExceededError(UsageBoundExceededError):
     different (we hit a per-session token / tool-call cap, not a $$
     cap), and recovery options diverge: token caps usually mean
     "abort this loop", not "switch to a cheaper model".
+
+    ``observed`` and ``ceiling`` are in the dimension's own unit: a count of
+    tokens or tool calls, or US dollars for ``limit_name="cost_usd"``.
     """
 
-    def __init__(self, limit_name: str, observed: int, ceiling: int) -> None:
+    def __init__(
+        self, limit_name: str, observed: int | float, ceiling: int | float
+    ) -> None:
         if not isinstance(limit_name, str) or not limit_name.strip():
             raise ValueError("limit_name must be a non-empty string")
         self.limit_name = limit_name.strip()
-        self.observed = _validate_non_negative_int("observed", observed)
-        self.ceiling = _validate_non_negative_int("ceiling", ceiling)
+        self.observed = _validate_limit_amount("observed", observed)
+        self.ceiling = _validate_limit_amount("ceiling", ceiling)
         super().__init__(
             f"usage limit exceeded on '{self.limit_name}': "
             f"observed {self.observed} > ceiling {self.ceiling}"
         )
+
+    def __reduce__(self) -> tuple[Any, ...]:
+        return (type(self), (self.limit_name, self.observed, self.ceiling))
 
 
 def _validate_finite_amount(name: str, value: float, *, allow_zero: bool) -> float:
@@ -94,6 +109,21 @@ def _validate_non_negative_int(name: str, value: int) -> int:
     if value < 0:
         raise ValueError(f"{name} must be >= 0")
     return value
+
+
+def _validate_limit_amount(name: str, value: int | float) -> int | float:
+    if isinstance(value, float):
+        return _validate_finite_amount(name, value, allow_zero=True)
+    return _validate_non_negative_int(name, value)
+
+
+def _exceeds(cost: float, ceiling: float) -> bool:
+    """True when ``cost`` is over ``ceiling``, ignoring float summation noise.
+
+    Three $0.10 turns sum to 0.30000000000000004, which must not count as over a
+    $0.30 budget. The tolerance is relative, so a zero ceiling stays strict.
+    """
+    return cost > ceiling and not math.isclose(cost, ceiling, rel_tol=_COST_REL_TOL)
 
 
 def _validate_optional_non_negative_int(name: str, value: int | None) -> int | None:
@@ -223,17 +253,23 @@ class ModelPricing:
     def write_rate_for_ttl(self, ttl: str | None) -> float:
         """Return the per-million write rate for the given TTL hint.
 
-        ``ttl=None`` → fall back to ``cache_write_per_million`` (legacy
-        single-tier). ``"5m"`` and ``"1h"`` resolve to the 2026
-        ephemeral tiers; unknown values also fall back so a
-        misconfigured ``UsageSnapshot.cache_ttl`` doesn't crash cost
-        calculation.
+        ``"5m"`` and ``"1h"`` (case-insensitive) resolve to the 2026 ephemeral
+        tiers. ``ttl=None`` and unrecognized values fall back to
+        ``cache_write_per_million`` (legacy single-tier) so a misconfigured
+        ``UsageSnapshot.cache_ttl`` doesn't crash cost calculation.
+
+        When that single-tier rate is unset but tiers are registered, the higher
+        tier applies: for a budget guard an over-estimate is safe, while the
+        previous $0 silently let cache writes through unbilled.
         """
-        if ttl == "5m" and self.cache_write_5min_per_million:
+        normalized = ttl.strip().lower() if isinstance(ttl, str) else None
+        if normalized == "5m" and self.cache_write_5min_per_million:
             return self.cache_write_5min_per_million
-        if ttl == "1h" and self.cache_write_1h_per_million:
+        if normalized == "1h" and self.cache_write_1h_per_million:
             return self.cache_write_1h_per_million
-        return self.cache_write_per_million
+        if self.cache_write_per_million:
+            return self.cache_write_per_million
+        return max(self.cache_write_5min_per_million, self.cache_write_1h_per_million)
 
 
 def _load_default_pricing() -> dict[str, ModelPricing]:
@@ -291,19 +327,39 @@ _pricing_lock = threading.Lock()
 _warned_unpriced_models: set[str] = set()
 
 
+def _lookup_pricing(model_lower: str) -> ModelPricing | None:
+    """Find pricing by exact name, else the longest registered variant prefix.
+
+    Holds ``_pricing_lock`` so concurrent ``register_pricing`` calls cannot raise
+    ``RuntimeError: dictionary changed size during iteration``.
+    """
+    with _pricing_lock:
+        exact = PRICING_TABLE.get(model_lower)
+        if exact is not None:
+            return exact
+        snapshot = list(PRICING_TABLE.items())
+    best: tuple[int, ModelPricing] | None = None
+    for key, pricing in snapshot:
+        if (
+            len(model_lower) > len(key)
+            and model_lower.startswith(key)
+            and model_lower[len(key)] in _MODEL_VARIANT_SEPARATORS
+            and (best is None or len(key) > best[0])
+        ):
+            best = (len(key), pricing)
+    return best[1] if best else None
+
+
 def has_pricing(model: str) -> bool:
     """Check whether pricing is registered for a model.
 
-    Matches by exact name (case-insensitive) or longest-prefix, mirroring
-    the resolution behavior of cost calculations. Returns False if the
-    lookup falls back to the zero-cost default.
+    Matches by exact name (case-insensitive) or longest variant prefix, mirroring
+    the resolution behavior of cost calculations. Returns False if the lookup
+    falls back to the zero-cost default.
     """
     if not isinstance(model, str) or not model.strip():
         return False
-    model_lower = model.strip().lower()
-    if model_lower in PRICING_TABLE:
-        return True
-    return any(model_lower.startswith(key) for key in PRICING_TABLE)
+    return _lookup_pricing(model.strip().lower()) is not None
 
 
 class PricingAlreadyRegisteredError(ValueError):
@@ -316,6 +372,9 @@ class PricingAlreadyRegisteredError(ValueError):
             "retain the existing entry."
         )
         self.model = model
+
+    def __reduce__(self) -> tuple[Any, ...]:
+        return (type(self), (self.model,))
 
 
 def register_pricing(
@@ -367,27 +426,16 @@ def load_pricing_from_file(path: str | Path) -> None:
 def resolve_pricing(model: str) -> ModelPricing:
     """Resolve pricing for a model. Falls back to zero (local/unknown).
 
-    Public utility. Tries exact match first, then longest prefix match so
-    dated variants like 'model-a-20260514' map to 'model-a'. Unknown models
-    return ``ModelPricing(0.0, 0.0)`` (zero-fallback — this never raises).
-
-    Read path is guarded against concurrent ``register_pricing`` /
-    ``load_pricing_from_file`` mutations: we snapshot the table under
-    ``_pricing_lock`` and iterate the local copy, avoiding the
-    ``RuntimeError: dictionary changed size during iteration`` window.
+    Public utility. Tries exact match first, then the longest registered name
+    that the model id extends at a separator (``-``, ``:``, ``@`` or ``/``), so
+    dated variants like 'model-a-20260514' map to 'model-a' while a different
+    model like 'model-alpha' does not. Unknown models return
+    ``ModelPricing(0.0, 0.0)`` (zero-fallback — this never raises).
     """
     model_lower = _normalize_optional_model_name(model).lower()
     if not model_lower:
         return ModelPricing(0.0, 0.0)
-    with _pricing_lock:
-        if model_lower in PRICING_TABLE:
-            return PRICING_TABLE[model_lower]
-        snapshot = list(PRICING_TABLE.items())
-    best: tuple[int, ModelPricing] | None = None
-    for key, pricing in snapshot:
-        if model_lower.startswith(key) and (best is None or len(key) > best[0]):
-            best = (len(key), pricing)
-    return best[1] if best else ModelPricing(0.0, 0.0)
+    return _lookup_pricing(model_lower) or ModelPricing(0.0, 0.0)
 
 
 # Backwards-compatible internal alias (was the private name through 0.2.x).
@@ -528,7 +576,7 @@ class UsageTracker:
         )
 
     def total_cost(self) -> float:
-        return sum(
+        return math.fsum(
             self.cost_for_turn(model, usage) for model, usage in self._snapshot_turns()
         )
 
@@ -548,13 +596,15 @@ class UsageTracker:
 
     def is_over_budget(self, budget_usd: float) -> bool:
         budget_usd = _validate_finite_amount("budget_usd", budget_usd, allow_zero=True)
-        return self.total_cost() > budget_usd
+        return _exceeds(self.total_cost(), budget_usd)
 
     def summary(self) -> dict[str, Any]:
         turns = self._snapshot_turns()
         total_input_tokens = sum(u.input_tokens for _, u in turns)
         total_output_tokens = sum(u.output_tokens for _, u in turns)
-        total_cost_usd = sum(self.cost_for_turn(model, usage) for model, usage in turns)
+        total_cost_usd = math.fsum(
+            self.cost_for_turn(model, usage) for model, usage in turns
+        )
         return {
             "turns": len(turns),
             "total_input_tokens": total_input_tokens,
@@ -623,10 +673,6 @@ class UsageTracker:
                 "tool_calls", total_tool_calls, limits.tool_calls_max
             )
         if limits.cost_usd_max is not None:
-            cost = sum(self.cost_for_turn(model, usage) for model, usage in turns)
-            if cost > limits.cost_usd_max:
-                raise UsageLimitExceededError(
-                    "cost_usd",
-                    int(cost * 1_000_000),
-                    int(limits.cost_usd_max * 1_000_000),
-                )
+            cost = math.fsum(self.cost_for_turn(model, usage) for model, usage in turns)
+            if _exceeds(cost, limits.cost_usd_max):
+                raise UsageLimitExceededError("cost_usd", cost, limits.cost_usd_max)

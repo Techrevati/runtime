@@ -24,13 +24,13 @@ import json
 import sqlite3
 import threading
 from collections.abc import Iterator
-from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from techrevati.runtime._internal import (
     _ensure_schema_version,
+    _open_wal,
     _validate_cost_usd,
     _validate_model,
 )
@@ -94,16 +94,11 @@ CREATE INDEX IF NOT EXISTS idx_usage_records_recorded_at
 """
 
 
-def _open_wal(path: str | Path) -> sqlite3.Connection:
-    """Open a sqlite connection in WAL mode (no-op for ``:memory:``)."""
-    conn = sqlite3.connect(str(path), check_same_thread=False)
-    try:
-        conn.execute("PRAGMA journal_mode=WAL")
-    except Exception:
-        with suppress(Exception):
-            conn.close()
-        raise
-    return conn
+def _sqlite_text(value: str | None) -> str | None:
+    """Make a string bindable: sqlite3 rejects lone surrogates in UTF-8 binds."""
+    if value is None:
+        return None
+    return value.encode("utf-8", "backslashreplace").decode("utf-8")
 
 
 @dataclass
@@ -138,14 +133,19 @@ class SqliteEventSink:
 
     def emit(self, event: AgentEvent) -> None:
         event = _validate_event(event)
-        payload = json.dumps(event.to_dict(), ensure_ascii=False)
-        with self._lock:
+        payload = json.dumps(event.to_dict())
+        with self._lock, self._conn:
             self._conn.execute(
                 "INSERT INTO agent_events (emitted_at, event, role, phase, payload)"
                 " VALUES (?, ?, ?, ?, ?)",
-                (event.emitted_at, event.event.value, event.role, event.phase, payload),
+                (
+                    _sqlite_text(event.emitted_at),
+                    event.event.value,
+                    _sqlite_text(event.role),
+                    _sqlite_text(event.phase),
+                    payload,
+                ),
             )
-            self._conn.commit()
 
     def replay(self, *, limit: int | None = None) -> Iterator[AgentEvent]:
         """Yield every persisted event in insertion order."""
@@ -205,16 +205,20 @@ class SqliteUsageSink:
         model = _validate_model(model)
         usage = _validate_usage(usage)
         cost_usd = _validate_cost_usd(cost_usd)
-        snapshot_json = json.dumps(usage.to_dict(), ensure_ascii=False)
+        snapshot_json = json.dumps(usage.to_dict())
         from datetime import UTC, datetime
 
-        with self._lock:
+        with self._lock, self._conn:
             self._conn.execute(
                 "INSERT INTO usage_records (recorded_at, model, cost_usd, snapshot)"
                 " VALUES (?, ?, ?, ?)",
-                (datetime.now(UTC).isoformat(), model, cost_usd, snapshot_json),
+                (
+                    datetime.now(UTC).isoformat(),
+                    _sqlite_text(model),
+                    cost_usd,
+                    snapshot_json,
+                ),
             )
-            self._conn.commit()
 
     def totals(self) -> dict[str, Any]:
         """Aggregate cost + token totals across every recorded turn."""

@@ -28,11 +28,13 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import timedelta
 from typing import Any
 
 from techrevati.runtime.compliance.audit_log import (
     AuditLogSink,
     InMemoryAuditBackend,
+    SqliteAuditBackend,
 )
 from techrevati.runtime.compliance.cybersecurity import (
     InputSanitizationHook,
@@ -49,6 +51,9 @@ from techrevati.runtime.compliance.transparency import (
     HumanOversightConfig,
     TransparencyReport,
 )
+
+#: Article 12 / 26(6) floor for log retention, matching ``RetentionPolicy``'s default.
+_MIN_LOG_RETENTION = timedelta(days=183)
 
 __all__ = [
     "ConformityChecklist",
@@ -114,6 +119,11 @@ class EUAIActComplianceKit:
     incident_sink: IncidentReportingSink | None = None
     input_hooks: tuple[InputSanitizationHook, ...] = ()
     output_guardrails: tuple[OutputIntegrityGuardrail, ...] = ()
+
+    def __post_init__(self) -> None:
+        # Otherwise oversight decisions silently miss the kit's own Article 12 log.
+        if self.oversight is not None:
+            self.oversight.attach_audit_log(self.audit_log)
 
     @classmethod
     def standard(
@@ -222,9 +232,31 @@ class EUAIActComplianceKit:
             logging_mechanism={
                 "sink": "AuditLogSink",
                 "tamper_evident": True,
-                "backend": type(self.audit_log).__name__,
+                "backend": type(self.audit_log.backend).__name__,
             },
         )
+
+    def _log_retained(self) -> bool | None:
+        """Derive "retained" from configuration; ``None`` if only the deployer knows.
+
+        ``False`` for a store that dies with the process, or a policy that purges
+        before the six-month floor. A third-party backend's durability is unknown
+        to the kit, so it stays a manual attestation.
+        """
+        policy = self.audit_log.retention
+        if (
+            policy.purge_after_max
+            and policy.max_retention is not None
+            and policy.max_retention < _MIN_LOG_RETENTION
+        ):
+            return False
+        backend = self.audit_log.backend
+        if isinstance(backend, InMemoryAuditBackend):
+            return False
+        if isinstance(backend, SqliteAuditBackend):
+            # SQLite gives "" a temporary database, deleted when it closes.
+            return str(backend.path) not in ("", ":memory:")
+        return None
 
     def conformity_assessment_checklist(self) -> ConformityChecklist:
         """Article 16 self-check derived from the kit's configuration."""
@@ -242,7 +274,7 @@ class EUAIActComplianceKit:
             ConformityItem(
                 "Article 12",
                 "Tamper-evident, retained record-keeping (audit log)",
-                True,
+                self._log_retained(),
             ),
             ConformityItem(
                 "Article 14",

@@ -2,6 +2,97 @@
 
 Author: Techrevati doo
 
+## 0.5.0rc1 - 2026-11-06
+
+The hardening line: every defect below was reproduced by an executed proof before
+it was fixed. See [Migrating from 0.4.x](migrating-from-0.4.x.md) for what changes
+for existing callers.
+
+Added:
+
+- `run_tool` / `arun_tool` accept `args`, `timeout` (`ToolTimeoutError`), and
+  `idempotency_key`, which replays a completed tool call instead of repeating its
+  side effect (at-least-once).
+- `MaxRepeatedToolCallsLimit` stops an agent repeating the same tool call.
+- `run_turn_with_fallback` / `arun_turn_with_fallback` drive `provider_router`.
+- `arun_turn_stream(idempotency_key=...)`.
+- `session(handoff=...)` / `asession(handoff=...)` run on the worker a `Handoff`
+  reserved.
+- `agent.turn.completed` / `agent.turn.failed` events, `chat` spans,
+  `OpenTelemetryMetricsSink`, and the `gen_ai.client.inference.usage.*` counters.
+- MCP Python SDK 2.x support alongside 1.x, plus a per-call `timeout`.
+- Audit log `tip()`, `ChainTip`, and `verify_chain(expected_tip=...)`.
+- `AgentRegistry.evict_terminal()`, `TokenBucket.debit()`.
+- Audit purge markers, signed under the sink's key.
+- Python 3.14 support.
+
+Fixed, security and audit integrity:
+
+- Two audit writers on one SQLite file could wedge it and silently lose every later
+  record. Appends are now atomic and writers serialize into one chain.
+- Quadratic regular expressions in `PromptInjectionGuardrail` and `RedactPIIHook` let
+  untrusted content stall the event loop.
+- Prompt-injection and pattern guardrails were bypassed by any structured output,
+  because `str()` escaped the newlines their patterns match on.
+- A role name differing by case or an invisible character bypassed its deny list.
+- Async policy conditions always matched under `And` / `Or` and in sync `evaluate`.
+- The human-oversight gate accepted replayed, stale, spoofed, and invalid decisions,
+  and did not enforce its timeout on a hanging queue.
+- The oversight trail omitted the reason and action, and recorded nothing if a queue
+  raised. The compliance kit's log now receives oversight events.
+- Unserializable event content dropped audit records while the action proceeded, and
+  could suppress incident notification. Hashes of existing records are unchanged.
+- A deleted audit tail was not detected on a live sink.
+- Tampered rows crashed verification rather than reporting invalid. CSV export did
+  not escape timestamps. Purge compared timestamp strings across UTC offsets.
+- PII redaction skipped tuples, sets, dict keys, and bytes, and missed standard base64
+  keys and JWT headers. Combined patterns lost backreferences.
+
+Fixed, accounting and durability:
+
+- A turn that crossed a budget or usage limit, or whose `after_model` hook failed, was
+  missing from the checkpoint and from governance cost, so the retry paid again and
+  `MaxBudgetLimit` could never trip.
+- A replayed turn did not restore its spend, so a restart reset the budget.
+- Usage above a rate-limit bucket's capacity raised after the model call and lost the
+  turn.
+- Usage passed without `model=` was discarded, which disabled `UsageLimits`.
+- A failed SQLite write left a transaction open: every later write failed and reads
+  went stale until restart (`SqliteSaver`, `SqliteEventSink`, `SqliteUsageSink`).
+- Concurrent cold starts of a new SQLite file crashed with `IntegrityError`.
+- JSON-valid state with a lone surrogate failed on `SqliteSaver` and aborted the turn.
+- Pricing prefixes had no name boundary: `gpt-4` priced `gpt-4o-mini` and suppressed
+  the missing-price warning.
+- Cache writes could cost $0 on a tiered model. Float sums could falsely exceed a
+  budget at its exact boundary.
+
+Fixed, runtime behaviour:
+
+- `arun_turn_stream(timeout=)` cancelled the consumer's task, even after the consumer
+  had left the stream, because the timeout scope spanned a `yield`.
+- A hung half-open probe blocked the circuit indefinitely, a stale probe result could
+  close it, and it could stay half-open under sustained load despite successes.
+- Context-overflow errors containing a token count such as `14290` were classified as
+  rate limits, and digits inside identifiers as HTTP statuses.
+- Duplicate names in a router's `exclude` made every router return `None`.
+- A timed-out `pause_for_input` stranded the worker and made session exit raise.
+- `run_turn(timeout=)` lost context variables, including tracing context, in its
+  worker thread. A `TimeoutError` raised by user code was reported as the deadline.
+- Compaction identified messages by object identity, so a reused instance defeated
+  both limits, and it could delete the newest message.
+- `JsonOutputSpec` leaked `RecursionError` and `ValueError`, and accepted `NaN`.
+- Orphan spans were lost under a batch processor at exit. `OpenTelemetrySink.shutdown()`
+  closes them explicitly.
+- `execute_tool` spans lacked `gen_ai.tool.name`, tool spans stayed open after a
+  post-guardrail block or cancellation, and cache tokens never reached metrics.
+- Runtime exceptions did not survive `pickle` or `copy`.
+- `mkdocs build` failed with current `pymdown-extensions`; `mkdocstrings` is updated.
+
+Changed:
+
+- Toolchain updated (ruff 0.17, mypy 2.4, pytest 9.2, hypothesis, OpenTelemetry 1.45,
+  and pinned actions for checkout, setup-python, and the release publisher).
+
 ## 0.4.0 - 2026-06-20
 
 The EU AI Act compliance line.

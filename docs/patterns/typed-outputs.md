@@ -22,7 +22,11 @@ Reference implementations:
 
 - **`JsonOutputSpec`** — parse JSON, optionally enforce `required_keys` and a
   top-level `require_type`; `strip_fences=True` (default) unwraps Markdown code
-  fences models often add.
+  fences models often add. Everything outside strict JSON raises
+  `OutputValidationError`, including `NaN` / `Infinity`, pathologically nested
+  input, and integers over the interpreter's digit limit. JSON `true` does not
+  satisfy `require_type=int`. An opening fence line carrying anything but a
+  language tag is not treated as a fence.
 - **`RegexOutputSpec`** — match a regex and return its named groups as a dict.
 - **`CallableOutputSpec`** — wrap any `Callable[[str], T]`; its exceptions are
   normalized to `OutputValidationError`.

@@ -62,6 +62,24 @@ independent (no shared counters), so a sync and an async bucket
 pointing at the same provider must be kept in sync by you — or just
 use one shape.
 
+## Usage is charged after the fact
+
+`acquire_usage` records tokens the provider has already counted, so it cannot
+refuse them. Every configured bucket is debited first, and the balance may go
+negative when a turn exceeds `capacity`. The call then waits until the debt is
+repaid. `timeout` is one budget shared across the buckets; on timeout
+`RateLimitExceededError` is raised and the debits stand. `TokenBucket.debit`
+exposes the same charge directly.
+
+Debt is capped at 24 hours of refill, so a bucket always recovers; tokens beyond
+the cap are forgotten. A single charge above `1e15` tokens raises `ValueError`.
+
+`acquire` still refuses an amount above `capacity`, because it could never be
+served in advance.
+
+Waiters are not served in order: a large `acquire` can wait a long time while
+many small ones keep spending the refill.
+
 ## Tuning
 
 | Knob | Default | When to touch |

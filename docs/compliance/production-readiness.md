@@ -50,7 +50,7 @@ At plan creation, the runtime is already significantly hardened:
 - Runtime package name: `techrevati-runtime`.
 - Current release-candidate version: `0.3.0rc1`.
 - Runtime dependency policy: zero required runtime dependencies.
-- Supported Python versions: 3.11, 3.12, and 3.13.
+- Supported Python versions: 3.11, 3.12, 3.13, and 3.14.
 - Existing gates cover lint, formatting, strict typing, tests, coverage,
   package metadata, docs, branding, CI hardening, workflow pinning, release
   checks, public API checks, full-scope source hygiene for source, scripts,

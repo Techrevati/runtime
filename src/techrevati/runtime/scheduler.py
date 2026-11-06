@@ -126,8 +126,10 @@ class ManualClock:
         """Move both clocks forward by ``seconds``."""
         duration = _validate_duration("seconds", seconds)
         with self._lock:
+            # Compute first: an overflow must leave both clocks unchanged.
+            wall = self._wall + timedelta(seconds=duration)
             self._t += duration
-            self._wall = self._wall + timedelta(seconds=duration)
+            self._wall = wall
 
     def tick(self, absolute_monotonic: float) -> None:
         """Set monotonic to a specific value (must be non-decreasing)."""
@@ -137,9 +139,9 @@ class ManualClock:
                 raise ValueError(
                     f"ManualClock cannot move backwards: {target} < {self._t}"
                 )
-            delta = target - self._t
+            wall = self._wall + timedelta(seconds=target - self._t)
             self._t = target
-            self._wall = self._wall + timedelta(seconds=delta)
+            self._wall = wall
 
     def now_utc(self) -> datetime:
         return self.wall_now()

@@ -53,9 +53,13 @@ Both `register_pricing` and `load_pricing_from_file` are thread-safe. Subsequent
 
 ## Model name resolution
 
-`UsageTracker` resolves model names case-insensitively, with **longest-prefix match** as a fallback. That means a dated variant like `model-a-20260514` resolves to `model-a` if that's the most specific registered entry. Unknown models fall back to zero pricing (treated as free).
+`UsageTracker` resolves model names case-insensitively, with **longest-prefix match** as a fallback. The longer id must continue at a separator (`-`, `:`, `@` or `/`), so a dated variant like `model-a-20260514` resolves to `model-a`, while a different model like `model-alpha` does not. Unknown models fall back to zero pricing (treated as free).
 
 The same resolution is exposed publicly as `resolve_pricing(model) -> ModelPricing` for callers that need a model's pricing directly (e.g. cost pre-flight). It uses the same exact-then-longest-prefix logic and returns `ModelPricing(0.0, 0.0)` for unknown models — it never raises.
+
+Cache writes use the tier named by `UsageSnapshot.cache_ttl` (`"5m"` or `"1h"`, case-insensitive). With no recognized TTL they use `cache_write_per_million`. If only tiers are registered, the higher tier applies, because an over-estimate is the safe error for a budget guard.
+
+Budget and `cost_usd_max` comparisons tolerate float summation noise, so three $0.10 turns are not over a $0.30 budget. A `cost_usd` `UsageLimitExceededError` reports `observed` and `ceiling` in dollars; token and tool-call limits report counts.
 
 ## API
 

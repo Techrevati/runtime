@@ -57,7 +57,9 @@ from techrevati.runtime.governance import (
     MaxBudgetLimit,
     MaxConsecutiveFailuresLimit,
     MaxIterationsLimit,
+    MaxRepeatedToolCallsLimit,
     MaxToolCallsLimit,
+    tool_call_signature,
 )
 from techrevati.runtime.guardrails import (
     AllowAllGuardrail,
@@ -90,11 +92,13 @@ from techrevati.runtime.memory import (
     WindowCompaction,
 )
 from techrevati.runtime.orchestrator import (
+    DEFAULT_FAILOVER_SCENARIOS,
     AgentSession,
     AsyncOrchestrationSession,
     MaxIterationsExceededError,
     OrchestrationSession,
     PermissionDeniedError,
+    ToolTimeoutError,
     TurnTimeoutError,
 )
 from techrevati.runtime.output_spec import (
@@ -216,6 +220,7 @@ __all__ = [
     "CircuitOpenError",
     "CircuitState",
     "Clock",
+    "DEFAULT_FAILOVER_SCENARIOS",
     "DEFAULT_RING_CAPACITY",
     "EscalationPolicy",
     "EventSink",
@@ -244,6 +249,7 @@ __all__ = [
     "MaxConsecutiveFailuresLimit",
     "MaxIterationsExceededError",
     "MaxIterationsLimit",
+    "MaxRepeatedToolCallsLimit",
     "MaxToolCallsLimit",
     "ModelPricing",
     "NoopEventSink",
@@ -304,6 +310,7 @@ __all__ = [
     "SystemClock",
     "TokenBucket",
     "TokenBudgetCheckHook",
+    "ToolTimeoutError",
     "TurnTimeoutError",
     "UsageBoundExceededError",
     "UsageLimitExceededError",
@@ -324,4 +331,5 @@ __all__ = [
     "register_pricing",
     "resolve_pricing",
     "smaller_context_budget",
+    "tool_call_signature",
 ]

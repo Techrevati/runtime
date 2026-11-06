@@ -38,6 +38,29 @@ _KNOWN_KEYWORDS: list[tuple[str, FailureScenario]] = [
     ("401", FailureScenario.PROVIDER_FAILURE),
 ]
 
+_HIGHER_PRECEDENCE_NOISE: list[str] = [
+    "maximum context",
+    "context_length_exceeded",
+    "prompt is too long",
+    "prompt too long",
+    "input is too long",
+    "rate_limit",
+    "too many requests",
+    "throttl",
+    "per minute",
+    "too many tokens",
+    "please wait",
+    "try again",
+    "retry after",
+    "corrupt",
+    "connection reset",
+    "service unavailable",
+    "bad gateway",
+    "502",
+    "unauthorized",
+    "authentication",
+]
+
 
 @given(st.text(max_size=200))
 @settings(suppress_health_check=[HealthCheck.too_slow], deadline=None)
@@ -66,13 +89,20 @@ def test_known_keywords_classify_consistently(
     keyword, expected = _KNOWN_KEYWORDS[keyword_idx]
     # Avoid accidental keyword injection from prefix/suffix by filtering
     # the known substrings out of the surrounding noise.
-    noise_blocklist = [kw for kw, _ in _KNOWN_KEYWORDS]
+    # Hypothesis mines string constants from the source, so noise really does
+    # contain the classifier's other markers; every rule that can outrank a known
+    # keyword must be listed. Scrub to a fixed point: removing one marker can
+    # join its neighbours into another.
+    noise_blocklist = [kw for kw, _ in _KNOWN_KEYWORDS] + _HIGHER_PRECEDENCE_NOISE
 
     def _scrub(s: str) -> str:
         cleaned = s.lower()
-        for bad in noise_blocklist:
-            cleaned = cleaned.replace(bad, "")
-        return cleaned
+        while True:
+            before = cleaned
+            for bad in noise_blocklist:
+                cleaned = cleaned.replace(bad, "")
+            if cleaned == before:
+                return cleaned
 
     payload = f"{_scrub(prefix)} {keyword} {_scrub(suffix)}"
     result = classify_exception(Exception(payload))

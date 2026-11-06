@@ -129,9 +129,14 @@ have no observer.
 
 ### `RedactPIIHook`
 
-Best-effort PII scrubber for strings, dicts, and message dictionaries.
-Defaults to SSN, email, credit card, IPv4, and long API-key
-heuristics; pass `patterns=` to override.
+Best-effort PII scrubber for strings, UTF-8 bytes, and any nesting of dicts
+(including string keys), lists, tuples, and sets. Defaults to SSN, email,
+credit card, IPv4, JWT, and long API-key heuristics; pass `patterns=` to
+override. Base64-alphabet keys are recognized by mixed case plus a digit and at
+most three inner slashes (any number from 100 characters), so ordinary file paths
+and URLs stay readable, at the cost of missing a shorter key with more slashes. A
+mixed-case path of 40+ characters with a digit and few slashes can be redacted. Dict
+keys that redact to the same text stay separate (`[REDACTED]`, `[REDACTED]#2`).
 
 ```python
 RedactPIIHook(

@@ -25,6 +25,8 @@ tracer.start_span("agent.execution", attributes=event.to_otel_attributes())
 - `AgentEvent.blocked(role, phase, detail=None, data=None)`
 - `AgentEvent.completed(role, phase, detail=None)`
 - `AgentEvent.failed(role, phase, failure_class, detail=None)`
+- `AgentEvent.turn_completed(role, phase, *, model, duration_seconds, data=None)`
+- `AgentEvent.turn_failed(role, phase, *, model, duration_seconds, error_type, data=None)`
 - `AgentEvent.tool_called(role, phase, tool)`
 - `AgentEvent.tool_completed(role, phase, tool)`
 - `AgentEvent.phase_started(phase)`
@@ -77,7 +79,7 @@ All events are `frozen` dataclasses. To enrich, use `replace`-style builders:
 
 | Method | Returns |
 |---|---|
-| `to_dict()` | Dict with both `event` (full path like `agent.failed`) and `type` (short tail like `failed`) |
+| `to_dict()` | Dict with both `event` (full path like `agent.failed`) and a legacy `type` (short tail like `failed`). Route on `event`: `type` is ambiguous, since `failed` is both `agent.failed` and `agent.recovery.failed` |
 | `to_json()` | JSON string |
 | `to_otel_attributes()` | Dict of telemetry semantic-convention keys |
 | `AgentEvent.from_dict(d)` | Reconstruct from a dict |
@@ -100,7 +102,10 @@ exports `techrevati.failure_class="cancelled"` without setting `error.type` or
 `StatusCode.ERROR`, so intentional stops do not inflate error-rate alerts.
 The schema rejects inconsistent `agent.failed` cancellation payloads: a
 `cancelled` failure class must use `status="cancelled"`, and
-`status="cancelled"` must use `failure_class="cancelled"`.
+`status="cancelled"` must use `failure_class="cancelled"`. On these events
+`.with_failure_class(...)` updates the status to match.
+`to_json()` emits strict JSON: non-finite floats in `data` become the strings
+`"nan"`, `"inf"` and `"-inf"`.
 Every `agent.failed` payload must include a valid `failure_class`; missing
 failure classes are rejected during construction and `from_dict(...)`
 reconstruction.

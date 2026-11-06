@@ -11,10 +11,13 @@ runtime sessions as first-class agent activity.
 
 What gets emitted:
 - ``AGENT_STARTED`` / ``PHASE_STARTED`` open a long-lived parent span
-  and stash it on the sink keyed by ``(role, phase)``.
+  and stash it on the sink keyed by ``(role, phase)``. An agent span nests under
+  the open span of its phase, when there is one.
 - ``AGENT_TOOL_CALLED`` opens a tool span as a child of the active
-  agent span. ``AGENT_TOOL_COMPLETED`` or a tool-scoped
-  ``AGENT_FAILED`` event closes that tool span.
+  agent span. ``AGENT_TOOL_COMPLETED``, a tool-scoped ``AGENT_FAILED`` event, or a
+  post-execution guardrail ``AGENT_BLOCKED`` event closes that tool span.
+- ``AGENT_TURN_COMPLETED`` / ``AGENT_TURN_FAILED`` emit a ``chat {model}`` span
+  backdated by the turn's measured duration.
 - Non-terminal failure events with structured data (for example a
   catchable usage-limit overrun or tool failure) are emitted as child
   spans and do not close the agent parent.
@@ -30,6 +33,8 @@ import atexit
 import json
 import logging
 import math
+import threading
+import time
 import weakref
 from contextlib import suppress
 from dataclasses import dataclass, field
@@ -53,7 +58,7 @@ from techrevati.runtime.usage_tracking import UsageSnapshot
 try:
     from opentelemetry import metrics, trace
     from opentelemetry.metrics import Counter, Histogram, Meter
-    from opentelemetry.trace import Span, Status, StatusCode, Tracer
+    from opentelemetry.trace import Span, SpanKind, Status, StatusCode, Tracer
 
     _OTEL_AVAILABLE = True
 except ImportError as exc:  # pragma: no cover - import guard
@@ -102,6 +107,27 @@ def _is_safe_attribute_value(value: Any) -> bool:
     return isinstance(value, float) and math.isfinite(value)
 
 
+def _duration_seconds(event: AgentEvent) -> float | None:
+    value = (event.data or {}).get("duration_seconds")
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        return None
+    return float(value) if math.isfinite(value) and value >= 0 else None
+
+
+def _duration_histogram(meter: Meter, name: str, description: str) -> Histogram:
+    try:
+        return meter.create_histogram(
+            name=name,
+            unit="s",
+            description=description,
+            explicit_bucket_boundaries_advisory=_DURATION_BUCKETS_SECONDS,
+        )
+    except TypeError:
+        # The advisory parameter is newer than the [otel] floor; the SDK's default
+        # buckets are the only option there.
+        return meter.create_histogram(name=name, unit="s", description=description)
+
+
 def _render_messages(value: Any) -> str:
     """Render a GenAI message body to a span-event-safe string."""
     if isinstance(value, str):
@@ -131,13 +157,15 @@ def _log_cleanup_failure(*, phase: str, exc: Exception) -> None:
 
 # Mapping from our AgentEventName to semantic operation names.
 _OPERATION_NAME_MAP: dict[str, str] = {
-    AgentEventName.AGENT_STARTED.value: "create_agent",
-    AgentEventName.AGENT_READY.value: "create_agent",
+    AgentEventName.AGENT_STARTED.value: "invoke_agent",
+    AgentEventName.AGENT_READY.value: "invoke_agent",
     AgentEventName.AGENT_BLOCKED.value: "invoke_agent",
     AgentEventName.AGENT_TOOL_CALLED.value: "execute_tool",
     AgentEventName.AGENT_TOOL_COMPLETED.value: "execute_tool",
     AgentEventName.AGENT_COMPLETED.value: "invoke_agent",
     AgentEventName.AGENT_FAILED.value: "invoke_agent",
+    AgentEventName.AGENT_TURN_COMPLETED.value: "chat",
+    AgentEventName.AGENT_TURN_FAILED.value: "chat",
     AgentEventName.RECOVERY_ATTEMPTED.value: "invoke_agent",
     AgentEventName.RECOVERY_SUCCEEDED.value: "invoke_agent",
     AgentEventName.RECOVERY_FAILED.value: "invoke_agent",
@@ -173,6 +201,30 @@ _PARENT_CLOSE_EVENTS = frozenset(
 
 _TOOL_OPEN_EVENT = AgentEventName.AGENT_TOOL_CALLED.value
 _TOOL_CLOSE_EVENT = AgentEventName.AGENT_TOOL_COMPLETED.value
+_TURN_EVENTS = frozenset(
+    {
+        AgentEventName.AGENT_TURN_COMPLETED.value,
+        AgentEventName.AGENT_TURN_FAILED.value,
+    }
+)
+
+# Boundaries the GenAI conventions specify for their duration histograms.
+_DURATION_BUCKETS_SECONDS = (
+    0.01,
+    0.02,
+    0.04,
+    0.08,
+    0.16,
+    0.32,
+    0.64,
+    1.28,
+    2.56,
+    5.12,
+    10.24,
+    20.48,
+    40.96,
+    81.92,
+)
 
 
 # Process-wide registry of live sink instances. Used by the atexit hook below
@@ -185,12 +237,17 @@ _LIVE_SINKS: weakref.WeakSet[OpenTelemetrySink] = weakref.WeakSet()
 def _flush_orphan_parent_spans_at_exit() -> None:
     """Close any parent spans the runtime didn't get a chance to close.
 
-    If a process dies between ``AGENT_STARTED`` and ``AGENT_COMPLETED``
-    — e.g. a crash, SIGTERM, or simply ``sys.exit()`` mid-session — the
-    parent span otherwise stays open and the resulting trace is
-    corrupted in the APM dashboard. This hook marks every still-open
-    parent as ``ERROR`` with ``error.type=abrupt_termination`` and ends
-    it so the trace tree closes cleanly.
+    If an interpreter exits normally between ``AGENT_STARTED`` and
+    ``AGENT_COMPLETED`` — ``sys.exit()`` or an uncaught exception mid-session —
+    the parent span otherwise stays open and the resulting trace is corrupted in
+    the APM dashboard. This hook marks every still-open parent as ``ERROR`` with
+    ``error.type=abrupt_termination`` and ends it.
+
+    Limits: ``atexit`` never runs on a default SIGTERM, ``os._exit`` or a hard
+    crash. A span ended here also reaches the exporter only if the
+    ``TracerProvider`` shuts down afterwards, and ``atexit`` runs last-registered
+    first, so create the provider before the first sink. For SIGTERM or a provider
+    created later, call :meth:`OpenTelemetrySink.shutdown` yourself.
     """
     for sink in list(_LIVE_SINKS):
         try:
@@ -199,7 +256,21 @@ def _flush_orphan_parent_spans_at_exit() -> None:
             _log_cleanup_failure(phase="atexit_flush", exc=exc)
 
 
-atexit.register(_flush_orphan_parent_spans_at_exit)
+_atexit_lock = threading.Lock()
+_atexit_registered = False
+
+
+def _ensure_atexit_flush_registered() -> None:
+    """Register the flush on first sink creation, not at import.
+
+    Registering late makes it run before the shutdown hook of a provider that
+    already exists, so orphan spans are still exported by a batch processor.
+    """
+    global _atexit_registered
+    with _atexit_lock:
+        if not _atexit_registered:
+            atexit.register(_flush_orphan_parent_spans_at_exit)
+            _atexit_registered = True
 
 
 @dataclass(eq=False)
@@ -244,13 +315,22 @@ class OpenTelemetrySink:
                 _INSTRUMENTATION_SCOPE_NAME, _instrumentation_version()
             )
         _LIVE_SINKS.add(self)
+        _ensure_atexit_flush_registered()
+
+    def shutdown(self) -> None:
+        """End every span still open, marking it ``abrupt_termination``.
+
+        Call this from a SIGTERM handler or before shutting down the
+        ``TracerProvider``; ``atexit`` alone covers neither case. Idempotent, and
+        the sink stays usable afterwards.
+        """
+        self._close_orphan_parent_spans()
 
     def _close_orphan_parent_spans(self) -> None:
         """Mark every still-open parent span as abruptly terminated and end it.
 
-        Called by the ``atexit`` hook on interpreter shutdown. Safe to
-        call multiple times — second invocation finds an empty dict.
-        Never raises.
+        Called by ``shutdown()`` and the ``atexit`` hook. Safe to call multiple
+        times — second invocation finds an empty dict. Never raises.
         """
         while self._active_tool_spans:
             _tool_key, tool_spans = self._active_tool_spans.popitem()
@@ -301,11 +381,24 @@ class OpenTelemetrySink:
         return event.event.value == AgentEventName.AGENT_FAILED.value and not event.data
 
     @staticmethod
+    def _is_post_execution_block(event: AgentEvent) -> bool:
+        """A guardrail rejected a tool's result, so the call itself has finished.
+
+        Pre-execution blocks carry another stage (or none) and have no open span
+        of their own; closing on them could end a concurrent call of that tool.
+        """
+        return (
+            event.event.value == AgentEventName.AGENT_BLOCKED.value
+            and OpenTelemetrySink._tool_name(event) is not None
+            and (event.data or {}).get("stage") == "post"
+        )
+
+    @staticmethod
     def _operation_name(event: AgentEvent) -> str:
         if (
             event.event.value == AgentEventName.AGENT_FAILED.value
             and OpenTelemetrySink._tool_name(event) is not None
-        ):
+        ) or OpenTelemetrySink._is_post_execution_block(event):
             return "execute_tool"
         return _OPERATION_NAME_MAP.get(event.event.value, "invoke_agent")
 
@@ -328,6 +421,9 @@ class OpenTelemetrySink:
     def _populate(self, span: Span, event: AgentEvent, op: str) -> None:
         span.set_attribute("gen_ai.operation.name", op)
         span.set_attribute("gen_ai.provider.name", self.provider_name)
+        tool = self._tool_name(event)
+        if op == "execute_tool" and tool is not None:
+            span.set_attribute("gen_ai.tool.name", tool)
         if event.role:
             span.set_attribute("gen_ai.agent.name", event.role)
         if self.agent_id:
@@ -385,21 +481,54 @@ class OpenTelemetrySink:
 
         # Each tool call is a child of the agent/phase parent (sibling to any
         # other in-flight call of the same tool), pushed onto the per-key stack.
-        parent = self._active_spans.get(tool_key[:2])
-        if parent is None:
-            tool_span = self.tracer.start_span(span_name)
-        else:
-            ctx = trace.set_span_in_context(parent)
-            tool_span = self.tracer.start_span(span_name, context=ctx)
+        tool_span = self.tracer.start_span(
+            span_name, context=self._parent_context(*tool_key[:2])
+        )
         self._populate(tool_span, event, op)
         self._active_tool_spans.setdefault(tool_key, []).append(tool_span)
         return True
+
+    def _parent_context(self, role: str, phase: str) -> Any:
+        """Context of the agent's span, else its phase's; None means ambient."""
+        parent = self._active_spans.get((role, phase))
+        if parent is None:
+            parent = self._active_spans.get(("", phase))
+        return None if parent is None else trace.set_span_in_context(parent)
+
+    def _emit_turn_span(self, event: AgentEvent, *, op: str) -> None:
+        assert self.tracer is not None
+        data = event.data or {}
+        model = data.get("model")
+        name = f"{op} {model}" if isinstance(model, str) and model else op
+        duration = _duration_seconds(event)
+        end_ns = time.time_ns()
+        start_ns = end_ns - int((duration or 0.0) * 1e9)
+        span = self.tracer.start_span(
+            name,
+            context=self._parent_context(*self._span_key(event)),
+            kind=SpanKind.CLIENT,
+            start_time=start_ns,
+        )
+        self._populate(span, event, op)
+        if isinstance(model, str) and model:
+            span.set_attribute("gen_ai.request.model", model)
+        error_type = data.get("error_type")
+        # A cancellation is the caller's choice, not an error (see the module header).
+        if (
+            event.event.value == AgentEventName.AGENT_TURN_FAILED.value
+            and error_type != "cancelled"
+        ):
+            error = error_type if isinstance(error_type, str) else "unknown"
+            span.set_attribute("error.type", error)
+            span.set_status(Status(StatusCode.ERROR, error))
+        span.end(end_time=end_ns)
 
     def _close_tool_span(
         self,
         event: AgentEvent,
         *,
         op: str,
+        error_type: str | None = None,
     ) -> bool:
         tool_key = self._tool_key(event)
         if tool_key is None:
@@ -414,6 +543,9 @@ class OpenTelemetrySink:
         if not stack:
             del self._active_tool_spans[tool_key]
         self._populate(tool_span, event, op)
+        if error_type is not None:
+            tool_span.set_attribute("error.type", error_type)
+            tool_span.set_status(Status(StatusCode.ERROR, error_type))
         tool_span.end()
         return True
 
@@ -439,9 +571,21 @@ class OpenTelemetrySink:
                     key, detail="parent span restarted before tool completed"
                 )
                 self._active_spans.pop(key).end()
-            new_parent = self.tracer.start_span(span_name)
+            new_parent = self.tracer.start_span(
+                span_name,
+                context=None if not key[0] else self._parent_context("", key[1]),
+            )
             self._populate(new_parent, event, op)
             self._active_spans[key] = new_parent
+            return
+
+        if event.event.value in _TURN_EVENTS:
+            self._emit_turn_span(event, op=op)
+            return
+
+        if self._is_post_execution_block(event) and self._close_tool_span(
+            event, op=op, error_type="guardrail_blocked"
+        ):
             return
 
         if event.event.value == _TOOL_OPEN_EVENT and self._open_tool_span(
@@ -490,61 +634,121 @@ class OpenTelemetrySink:
                 self._populate(span, event, op)
 
 
+_USAGE_COUNTERS = (
+    ("input_tokens", "The number of input tokens used, including cached tokens."),
+    ("output_tokens", "The number of output tokens used."),
+    ("cache_read.input_tokens", "The number of input tokens served from a cache."),
+    ("cache_write.input_tokens", "The number of input tokens written to a cache."),
+)
+
+
 @dataclass
 class OpenTelemetryUsageSink:
     """UsageSink that records GenAI client metrics.
 
     Emits:
-    - ``gen_ai.client.token.usage`` histogram with ``gen_ai.token.type``
-      discriminator (``input`` / ``output``).
+    - ``gen_ai.client.inference.usage.input_tokens`` (including cached tokens),
+      ``.output_tokens``, ``.cache_read.input_tokens`` and
+      ``.cache_write.input_tokens`` counters, as the GenAI conventions define them.
+      ``gen_ai.token.modality`` is always ``unknown`` because ``UsageSnapshot``
+      does not split tokens by modality; the conventions require that value here.
+      ``gen_ai.operation.name`` is always ``chat``, the only inference operation
+      the session reports.
+    - ``gen_ai.client.token.usage`` histogram with a ``gen_ai.token.type``
+      discriminator (``input`` / ``output``). The conventions have removed this
+      metric; it stays on by default so existing dashboards keep working. Set
+      ``emit_legacy_token_metric=False`` once they read the counters.
     - ``techrevati.cost.usd`` counter (custom — no standard GenAI cost
       metric yet).
+
+    ``gen_ai.provider.name`` is required by the conventions but the runtime does
+    not know who served a call, so set ``provider_name`` to the real provider; the
+    default marks data as coming from this library instead.
     """
 
     meter: Meter | None = None
     provider_name: str = DEFAULT_PROVIDER_NAME
+    emit_legacy_token_metric: bool = True
     _token_histogram: Histogram | None = field(default=None, init=False, repr=False)
     _cost_counter: Counter | None = field(default=None, init=False, repr=False)
+    _usage_counters: dict[str, Counter] = field(
+        default_factory=dict, init=False, repr=False
+    )
 
     def __post_init__(self) -> None:
         _require_otel()
         self.provider_name = _validate_non_empty_str(
             "provider_name", self.provider_name
         )
+        self.emit_legacy_token_metric = _validate_bool(
+            "emit_legacy_token_metric", self.emit_legacy_token_metric
+        )
         if self.meter is None:
             self.meter = metrics.get_meter(
                 _INSTRUMENTATION_SCOPE_NAME, _instrumentation_version()
             )
-        self._token_histogram = self.meter.create_histogram(
-            name="gen_ai.client.token.usage",
-            unit="{token}",
-            description="Per-turn token usage by type",
-        )
+        if self.emit_legacy_token_metric:
+            self._token_histogram = self.meter.create_histogram(
+                name="gen_ai.client.token.usage",
+                unit="{token}",
+                description="Per-turn token usage by type",
+            )
+        for suffix, description in _USAGE_COUNTERS:
+            self._usage_counters[suffix] = self.meter.create_counter(
+                name=f"gen_ai.client.inference.usage.{suffix}",
+                unit="{token}",
+                description=description,
+            )
         self._cost_counter = self.meter.create_counter(
             name="techrevati.cost.usd",
             unit="USD",
             description="Cumulative model spend in USD",
         )
 
+    def _record_usage_counters(self, model: str, usage: UsageSnapshot) -> None:
+        attrs: dict[str, Any] = {
+            "gen_ai.operation.name": "chat",
+            "gen_ai.provider.name": self.provider_name,
+            "gen_ai.request.model": model,
+            "gen_ai.token.modality": "unknown",
+        }
+        # UsageSnapshot counts cached tokens separately from input_tokens (each
+        # bucket is priced once), while the convention's input counter includes
+        # them and the cache counters are subsets of it.
+        amounts = {
+            "input_tokens": (
+                usage.input_tokens + usage.cache_read_tokens + usage.cache_write_tokens
+            ),
+            "output_tokens": usage.output_tokens,
+            "cache_read.input_tokens": usage.cache_read_tokens,
+            "cache_write.input_tokens": usage.cache_write_tokens,
+        }
+        for suffix, amount in amounts.items():
+            if amount:  # The conventions require strictly positive measurements.
+                self._usage_counters[suffix].add(amount, attributes=attrs)
+
     def record(self, model: str, usage: UsageSnapshot, cost_usd: float) -> None:
         model = _validate_non_empty_str("model", model)
         usage = _validate_usage(usage)
         cost_usd = _validate_cost_usd(cost_usd)
-        assert self._token_histogram is not None
         assert self._cost_counter is not None
-        attrs_input: dict[str, Any] = {
-            "gen_ai.provider.name": self.provider_name,
-            "gen_ai.request.model": model,
-            "gen_ai.token.type": "input",
-        }
-        attrs_output: dict[str, Any] = {
-            **attrs_input,
-            "gen_ai.token.type": "output",
-        }
-        if usage.input_tokens:
-            self._token_histogram.record(usage.input_tokens, attributes=attrs_input)
-        if usage.output_tokens:
-            self._token_histogram.record(usage.output_tokens, attributes=attrs_output)
+        self._record_usage_counters(model, usage)
+        if self._token_histogram is not None:
+            attrs_input: dict[str, Any] = {
+                "gen_ai.provider.name": self.provider_name,
+                "gen_ai.request.model": model,
+                "gen_ai.token.type": "input",
+            }
+            attrs_output: dict[str, Any] = {
+                **attrs_input,
+                "gen_ai.token.type": "output",
+            }
+            if usage.input_tokens:
+                self._token_histogram.record(usage.input_tokens, attributes=attrs_input)
+            if usage.output_tokens:
+                self._token_histogram.record(
+                    usage.output_tokens, attributes=attrs_output
+                )
         if cost_usd:
             self._cost_counter.add(
                 cost_usd,
@@ -555,8 +759,97 @@ class OpenTelemetryUsageSink:
             )
 
 
+@dataclass
+class OpenTelemetryMetricsSink:
+    """EventSink that records GenAI duration histograms from session events.
+
+    Emits ``gen_ai.client.inference.duration`` for each model turn and
+    ``gen_ai.execute_tool.duration`` for each tool call, in seconds, with the
+    conventions' bucket boundaries and ``error.type`` on failure. Events without a
+    usable ``duration_seconds`` are ignored. Use it next to
+    :class:`OpenTelemetrySink`, for example through ``FanoutEventSink``.
+    ``provider_name`` has the same caveat as on :class:`OpenTelemetryUsageSink`.
+    """
+
+    meter: Meter | None = None
+    provider_name: str = DEFAULT_PROVIDER_NAME
+    _inference_duration: Histogram | None = field(default=None, init=False, repr=False)
+    _tool_duration: Histogram | None = field(default=None, init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        _require_otel()
+        self.provider_name = _validate_non_empty_str(
+            "provider_name", self.provider_name
+        )
+        if self.meter is None:
+            self.meter = metrics.get_meter(
+                _INSTRUMENTATION_SCOPE_NAME, _instrumentation_version()
+            )
+        self._inference_duration = _duration_histogram(
+            self.meter,
+            "gen_ai.client.inference.duration",
+            "GenAI client inference operation duration.",
+        )
+        self._tool_duration = _duration_histogram(
+            self.meter,
+            "gen_ai.execute_tool.duration",
+            "The duration of a single tool execution.",
+        )
+
+    def emit(self, event: AgentEvent) -> None:
+        event = _validate_event(event)
+        duration = _duration_seconds(event)
+        if duration is None:
+            return
+        if event.event.value in _TURN_EVENTS:
+            self._record_turn(event, duration)
+            return
+        tool = OpenTelemetrySink._tool_name(event)
+        if tool is not None and event.event.value in (
+            AgentEventName.AGENT_TOOL_COMPLETED.value,
+            AgentEventName.AGENT_FAILED.value,
+            AgentEventName.AGENT_BLOCKED.value,
+        ):
+            self._record_tool(event, tool, duration)
+
+    def _record_turn(self, event: AgentEvent, duration: float) -> None:
+        assert self._inference_duration is not None
+        data = event.data or {}
+        attrs: dict[str, Any] = {
+            "gen_ai.operation.name": "chat",
+            "gen_ai.provider.name": self.provider_name,
+        }
+        model = data.get("model")
+        if isinstance(model, str) and model:
+            attrs["gen_ai.request.model"] = model
+        error_type = data.get("error_type")
+        if (
+            event.event.value == AgentEventName.AGENT_TURN_FAILED.value
+            and error_type != "cancelled"
+        ):
+            attrs["error.type"] = (
+                error_type if isinstance(error_type, str) else "unknown"
+            )
+        self._inference_duration.record(duration, attributes=attrs)
+
+    def _record_tool(self, event: AgentEvent, tool: str, duration: float) -> None:
+        assert self._tool_duration is not None
+        attrs: dict[str, Any] = {
+            "gen_ai.operation.name": "execute_tool",
+            "gen_ai.tool.name": tool,
+        }
+        if event.role:
+            attrs["gen_ai.agent.name"] = event.role
+        if event.failure_class and _is_error_failure_class(event.failure_class):
+            attrs["error.type"] = event.failure_class.value
+        if event.event.value == AgentEventName.AGENT_BLOCKED.value:
+            attrs["error.type"] = "guardrail_blocked"
+        self._tool_duration.record(duration, attributes=attrs)
+
+
 __all__ = [
     "DEFAULT_PROVIDER_NAME",
+    "OpenTelemetryMetricsSink",
     "OpenTelemetrySink",
     "OpenTelemetryUsageSink",
 ]

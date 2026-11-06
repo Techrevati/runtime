@@ -9,14 +9,15 @@ all matching rules fire.
 
 from __future__ import annotations
 
+import inspect
 import logging
 import math
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
+from collections.abc import Awaitable, Generator, Iterator, Sequence
 from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import Any, cast
 
 from techrevati.runtime.quality_gate import QualityLevel
 
@@ -120,6 +121,74 @@ class PolicyCondition(ABC):
         ...
 
 
+def _short_circuit(
+    conditions: list[PolicyCondition], ctx: PhaseContext, *, stop_on: bool
+) -> bool:
+    """Evaluate in order, stopping at the first result equal to ``stop_on``.
+
+    If a child returns an awaitable, the remainder moves to a coroutine that the
+    caller receives instead of a bool. ``evaluate_async`` awaits it and ``evaluate``
+    rejects it; a truthiness test would make an async ``False`` always match.
+    """
+    remaining = iter(conditions)
+    for condition in remaining:
+        result: Any = condition.matches(ctx)
+        if inspect.isawaitable(result):
+            return cast(bool, _PendingComposite(result, remaining, ctx, stop_on))
+        if bool(result) is stop_on:
+            return stop_on
+    return not stop_on
+
+
+class _PendingComposite:
+    """The awaitable remainder of an ``And`` / ``Or`` that met an async child."""
+
+    def __init__(
+        self,
+        first: Awaitable[Any],
+        remaining: Iterator[PolicyCondition],
+        ctx: PhaseContext,
+        stop_on: bool,
+    ) -> None:
+        self._first = first
+        self._remaining = remaining
+        self._ctx = ctx
+        self._stop_on = stop_on
+
+    def __await__(self) -> Generator[Any, None, bool]:
+        return _short_circuit_async(
+            self._first, self._remaining, self._ctx, stop_on=self._stop_on
+        ).__await__()
+
+    def close(self) -> None:
+        """Dispose of the child awaitable without running it."""
+        _close_awaitable(self._first)
+
+
+def _close_awaitable(awaitable: Any) -> None:
+    close = getattr(awaitable, "close", None)
+    if close is not None:
+        close()
+
+
+async def _short_circuit_async(
+    first: Awaitable[Any],
+    remaining: Iterator[PolicyCondition],
+    ctx: PhaseContext,
+    *,
+    stop_on: bool,
+) -> bool:
+    if bool(await first) is stop_on:
+        return stop_on
+    for condition in remaining:
+        result: Any = condition.matches(ctx)
+        if inspect.isawaitable(result):
+            result = await result
+        if bool(result) is stop_on:
+            return stop_on
+    return not stop_on
+
+
 class And(PolicyCondition):
     """All conditions must match."""
 
@@ -127,9 +196,7 @@ class And(PolicyCondition):
         self.conditions = conditions
 
     def matches(self, ctx: PhaseContext) -> bool:
-        if not self.conditions:
-            return True
-        return all(c.matches(ctx) for c in self.conditions)
+        return _short_circuit(self.conditions, ctx, stop_on=False)
 
     def __repr__(self) -> str:
         return f"And({self.conditions})"
@@ -142,9 +209,7 @@ class Or(PolicyCondition):
         self.conditions = conditions
 
     def matches(self, ctx: PhaseContext) -> bool:
-        if not self.conditions:
-            return False
-        return any(c.matches(ctx) for c in self.conditions)
+        return _short_circuit(self.conditions, ctx, stop_on=True)
 
     def __repr__(self) -> str:
         return f"Or({self.conditions})"
@@ -375,10 +440,20 @@ class PolicyEngine:
         )
 
     def evaluate(self, ctx: PhaseContext) -> list[PolicyActionData]:
-        """Evaluate all rules. Returns the flat list of matching actions."""
+        """Evaluate all rules. Returns the flat list of matching actions.
+
+        Raises ``TypeError`` for a condition that needs awaiting: an unawaited
+        coroutine is truthy, so it would match every time. Use ``evaluate_async``.
+        """
         actions: list[PolicyActionData] = []
         for rule in self._rules:
-            if rule.condition.matches(ctx):
+            result: Any = rule.condition.matches(ctx)
+            if inspect.isawaitable(result):
+                _close_awaitable(result)
+                raise TypeError(
+                    f"condition {rule.condition!r} is async; use evaluate_async()"
+                )
+            if result:
                 actions.extend(_copy_action(action) for action in rule.actions)
         return actions
 
@@ -389,8 +464,6 @@ class PolicyEngine:
         sync conditions are called in place. Falls back to the sync path
         if every rule is sync, so existing engines run unchanged.
         """
-        import inspect
-
         actions: list[PolicyActionData] = []
         for rule in self._rules:
             match_fn = rule.condition.matches

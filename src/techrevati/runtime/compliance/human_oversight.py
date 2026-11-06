@@ -28,17 +28,29 @@ This module provides:
 
 from __future__ import annotations
 
+import asyncio
+import hashlib
+import logging
+import math
+from collections import OrderedDict
 from collections.abc import Iterable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
-from typing import Any, Literal, Protocol, runtime_checkable
+from datetime import UTC, datetime, timedelta
+from typing import Any, Literal, Protocol, get_args, runtime_checkable
 
 from techrevati.runtime.agent_events import AgentEvent
-from techrevati.runtime.compliance.audit_log import AuditLogSink
+from techrevati.runtime.compliance.audit_log import (
+    AuditLogSink,
+    _canonical_json,
+    _hash_bytes,
+    _normalize_payload,
+)
+from techrevati.runtime.permissions import _match_key
 
 __all__ = [
     "ExplanationReport",
     "HumanOversightInterface",
+    "InvalidReviewDecisionError",
     "ReviewDecision",
     "ReviewQueue",
     "ReviewTimeoutError",
@@ -48,10 +60,33 @@ __all__ = [
 
 ReviewOutcome = Literal["approve", "reject", "modify", "escalate"]
 OnTimeout = Literal["abort", "proceed_with_warning"]
+OverrideAction = Literal["stop", "modify_next_turn", "skip_governance"]
+
+_VALID_OUTCOMES = frozenset(get_args(ReviewOutcome))
+_VALID_OVERRIDE_ACTIONS = frozenset(get_args(OverrideAction))
+#: Tolerated clock difference between this host and the review channel.
+_DECISION_CLOCK_SKEW = timedelta(minutes=5)
+#: Resolved decision ids remembered for replay rejection (oldest evicted first).
+_MAX_TRACKED_DECISIONS = 65_536
+
+logger = logging.getLogger(__name__)
 
 
 def _now() -> datetime:
     return datetime.now(UTC)
+
+
+def _validate_timeout(name: str, value: float) -> float:
+    timeout = float(value)
+    if not math.isfinite(timeout) or timeout <= 0:
+        raise ValueError(f"{name} must be positive and finite")
+    return timeout
+
+
+def _context_digest(context: dict[str, Any]) -> str:
+    """Fingerprint of what was put in front of the reviewer, for the audit trail."""
+    text = _canonical_json(_normalize_payload(context))
+    return hashlib.sha256(_hash_bytes(text)).hexdigest()
 
 
 class ReviewTimeoutError(Exception):
@@ -60,6 +95,10 @@ class ReviewTimeoutError(Exception):
     def __init__(self, decision_id: str) -> None:
         self.decision_id = decision_id
         super().__init__(f"human review timed out: {decision_id}")
+
+
+class InvalidReviewDecisionError(ValueError):
+    """A review gate refused a decision: replayed id, stale, or not from a human."""
 
 
 @dataclass(frozen=True)
@@ -100,6 +139,12 @@ class ReviewDecision:
     modifications: dict[str, Any] | None = None
     decided_at: datetime = field(default_factory=_now)
 
+    def __post_init__(self) -> None:
+        if self.decision not in _VALID_OUTCOMES:
+            raise ValueError(
+                f"decision must be one of {sorted(_VALID_OUTCOMES)}: {self.decision!r}"
+            )
+
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {
             "decision": self.decision,
@@ -117,7 +162,8 @@ class ReviewQueue(Protocol):
     """Caller-implemented bridge to the human review channel.
 
     ``enqueue`` blocks (asynchronously) until a human responds or the timeout
-    elapses; return ``None`` to signal a timeout.
+    elapses; return ``None`` to signal a timeout. The gate also enforces the
+    timeout itself, so a hung channel cannot hold a decision open indefinitely.
     """
 
     async def enqueue(
@@ -152,7 +198,11 @@ class StaticReviewQueue:
 class HumanOversightInterface:
     """Article 14 human-oversight primitive: a standalone async pause-for-review
     gate plus a manual override. It records to the audit log and returns the
-    decision; it does not itself change worker status or auto-pause sessions."""
+    decision; it does not itself change worker status or auto-pause sessions.
+
+    Each ``decision_id`` resolves at most once per interface instance. The record
+    of resolved ids is in-memory and bounded, so make ids unique per decision and
+    do not rely on this check across restarts."""
 
     def __init__(
         self,
@@ -165,17 +215,29 @@ class HumanOversightInterface:
         role: str = "agent",
         phase: str = "oversight",
     ) -> None:
-        if default_timeout_seconds <= 0:
-            raise ValueError("default_timeout_seconds must be positive")
+        default_timeout_seconds = _validate_timeout(
+            "default_timeout_seconds", default_timeout_seconds
+        )
         if on_timeout not in ("abort", "proceed_with_warning"):
             raise ValueError("on_timeout must be 'abort' or 'proceed_with_warning'")
         self._queue = queue
         self._require_review_for = frozenset(require_review_for)
-        self._default_timeout = float(default_timeout_seconds)
+        self._default_timeout = default_timeout_seconds
         self._on_timeout = on_timeout
         self._audit = audit_log
         self._role = role
         self._phase = phase
+        self._claimed: OrderedDict[str, None] = OrderedDict()
+
+    @property
+    def audit_log(self) -> AuditLogSink | None:
+        """The audit log this interface records to, if any."""
+        return self._audit
+
+    def attach_audit_log(self, audit_log: AuditLogSink) -> None:
+        """Record to ``audit_log`` unless a log was already configured explicitly."""
+        if self._audit is None:
+            self._audit = audit_log
 
     def requires_review(self, event_type: str) -> bool:
         """Whether ``event_type`` is configured to demand a human decision."""
@@ -192,50 +254,143 @@ class HumanOversightInterface:
 
         This blocks the *calling coroutine*, not any worker — the caller awaits it
         at a decision point; it does not transition worker lifecycle status. Records
-        ``oversight.review_requested`` then ``oversight.review_resolved`` (with the
-        reviewer id) to the audit log, so the Article 12 trail shows who decided and
-        when.
+        ``oversight.review_requested`` then ``oversight.review_resolved`` to the
+        audit log, with the reviewer id, reason, and a fingerprint of ``context``,
+        so the Article 12 trail shows who decided what, when, and why.
+
+        The gate fails closed: a replayed ``decision_id``, a decision dated outside
+        the review window, or one claiming the system reviewer raises
+        :class:`InvalidReviewDecisionError`. A queue failure is recorded and
+        re-raised, and the id can then be retried; so is a decision whose audit
+        record could not be written, since an unrecorded decision did not take effect.
         """
         if not decision_id.strip():
             raise ValueError("decision_id must be non-empty")
-        timeout = self._default_timeout if timeout_seconds is None else timeout_seconds
-        if timeout <= 0:
-            raise ValueError("timeout_seconds must be positive")
-
-        self._emit(
-            AgentEvent.oversight_review_requested(
-                self._role, self._phase, decision_id=decision_id
-            )
+        if decision_id != decision_id.strip():
+            # " d1" would otherwise claim a new id and get around replay rejection.
+            raise ValueError("decision_id must not have surrounding whitespace")
+        timeout = (
+            self._default_timeout
+            if timeout_seconds is None
+            else _validate_timeout("timeout_seconds", timeout_seconds)
         )
-        decision = await self._queue.enqueue(decision_id, context, timeout)
+        if decision_id in self._claimed:
+            raise InvalidReviewDecisionError(
+                f"decision_id already used: {decision_id!r}"
+            )
+        self._claim(decision_id)
+
+        digest = _context_digest(context)
+        try:
+            self._emit(
+                self._with_details(
+                    AgentEvent.oversight_review_requested(
+                        self._role, self._phase, decision_id=decision_id
+                    ),
+                    context_sha256=digest,
+                )
+            )
+            requested_at = _now()
+            decision = await self._await_queue(decision_id, context, timeout)
+        except BaseException as exc:
+            self._claimed.pop(decision_id, None)
+            self._record_unresolved(decision_id, digest, exc)
+            raise
+
         timed_out = decision is None
         if decision is None:
             decision = self._on_timeout_decision(decision_id)
+        else:
+            refusal = self._refusal(decision, requested_at, timeout)
+            if refusal is not None:
+                self._record_unresolved(
+                    decision_id, digest, InvalidReviewDecisionError(refusal)
+                )
+                raise InvalidReviewDecisionError(f"{decision_id}: {refusal}")
 
-        self._emit(
-            AgentEvent.oversight_review_resolved(
-                self._role,
-                self._phase,
-                decision_id=decision_id,
-                decision=decision.decision,
+        try:
+            self._emit_resolved(
+                decision_id,
+                decision,
+                context_sha256=digest,
+                timed_out=timed_out,
+                on_timeout=self._on_timeout if timed_out else None,
+            )
+        except BaseException as exc:
+            # Unrecorded, so unresolved: a retry must be able to ask again, and the
+            # log should show what this attempt decided if it can still be written.
+            self._claimed.pop(decision_id, None)
+            self._record_unresolved(
+                decision_id,
+                digest,
+                exc,
+                attempted_decision=decision.decision,
                 reviewer_id=decision.reviewer.id,
             )
-        )
+            raise
         if timed_out and self._on_timeout == "abort":
             raise ReviewTimeoutError(decision_id)
         return decision
+
+    def _claim(self, decision_id: str) -> None:
+        self._claimed[decision_id] = None
+        while len(self._claimed) > _MAX_TRACKED_DECISIONS:
+            self._claimed.popitem(last=False)
+
+    async def _await_queue(
+        self, decision_id: str, context: dict[str, Any], timeout: float
+    ) -> ReviewDecision | None:
+        """Call the queue under the gate's own deadline; expiry means ``None``."""
+        deadline = asyncio.timeout(timeout)
+        try:
+            async with deadline:
+                decision = await self._queue.enqueue(decision_id, context, timeout)
+        except TimeoutError:
+            if deadline.expired():
+                return None
+            raise
+        if decision is not None and not isinstance(decision, ReviewDecision):
+            raise TypeError("ReviewQueue.enqueue must return ReviewDecision or None")
+        return decision
+
+    @staticmethod
+    def _refusal(
+        decision: ReviewDecision, requested_at: datetime, timeout: float
+    ) -> str | None:
+        """Why this queue-supplied decision must not be honored, or ``None``."""
+        reviewer = decision.reviewer
+        if not isinstance(reviewer, ReviewerIdentity):
+            return "the decision does not name a reviewer"
+        try:
+            reviewer_key = _match_key(reviewer.id, field_name="reviewer id")
+        except (TypeError, ValueError):
+            return "the reviewer id is not usable"
+        if reviewer_key == SYSTEM_REVIEWER.id:
+            return "the system reviewer cannot be supplied by a review queue"
+        decided_at = decision.decided_at
+        if not isinstance(decided_at, datetime) or decided_at.tzinfo is None:
+            return "decided_at must be a timezone-aware datetime"
+        earliest = requested_at - _DECISION_CLOCK_SKEW
+        latest = requested_at + timedelta(seconds=timeout) + _DECISION_CLOCK_SKEW
+        if not earliest <= decided_at <= latest:
+            return f"decided_at {decided_at.isoformat()} is outside the window"
+        return None
 
     def override(
         self,
         reason: str,
         reviewer: ReviewerIdentity,
         *,
-        action: Literal["stop", "modify_next_turn", "skip_governance"],
+        action: OverrideAction,
         decision_id: str = "manual-override",
     ) -> ReviewDecision:
         """Record a manual human override (Article 14(4)(d))."""
         if not reason.strip():
             raise ValueError("override reason must be non-empty")
+        if action not in _VALID_OVERRIDE_ACTIONS:
+            raise ValueError(
+                f"action must be one of {sorted(_VALID_OVERRIDE_ACTIONS)}: {action!r}"
+            )
         outcome: ReviewOutcome = "reject" if action == "stop" else "modify"
         decision = ReviewDecision(
             decision=outcome,
@@ -243,16 +398,66 @@ class HumanOversightInterface:
             reviewer=reviewer,
             modifications={"action": action},
         )
+        self._emit_resolved(decision_id, decision, action=action)
+        return decision
+
+    @staticmethod
+    def _with_details(event: AgentEvent, **details: Any) -> AgentEvent:
+        present = {key: value for key, value in details.items() if value is not None}
+        return event.with_data({**(event.data or {}), **present})
+
+    def _emit_resolved(
+        self, decision_id: str, decision: ReviewDecision, **details: Any
+    ) -> None:
         self._emit(
-            AgentEvent.oversight_review_resolved(
-                self._role,
-                self._phase,
-                decision_id=decision_id,
-                decision=decision.decision,
-                reviewer_id=reviewer.id,
+            self._with_details(
+                AgentEvent.oversight_review_resolved(
+                    self._role,
+                    self._phase,
+                    decision_id=decision_id,
+                    decision=decision.decision,
+                    reviewer_id=decision.reviewer.id,
+                ),
+                reason=decision.reason,
+                modifications=decision.modifications,
+                **details,
             )
         )
-        return decision
+
+    def _record_unresolved(
+        self, decision_id: str, digest: str, exc: BaseException, **details: Any
+    ) -> None:
+        """Close the trail for a review that ended without an honored decision.
+
+        Never raises: this runs while another exception (possibly cancellation)
+        is propagating, and that exception must win over an audit failure.
+        """
+        outcome = "cancelled" if isinstance(exc, asyncio.CancelledError) else "error"
+        try:
+            self._emit(
+                self._with_details(
+                    AgentEvent.oversight_review_resolved(
+                        self._role,
+                        self._phase,
+                        decision_id=decision_id,
+                        decision=outcome,
+                    ),
+                    context_sha256=digest,
+                    error_type=type(exc).__name__,
+                    **details,
+                    reason=(
+                        str(exc)
+                        if isinstance(exc, InvalidReviewDecisionError)
+                        else None
+                    ),
+                )
+            )
+        except Exception as exc:
+            logger.error(
+                "could not record unresolved review %s: %s",
+                decision_id,
+                type(exc).__name__,
+            )
 
     def _on_timeout_decision(self, decision_id: str) -> ReviewDecision:
         if self._on_timeout == "abort":

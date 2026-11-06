@@ -33,6 +33,7 @@ EXPECTED_RUNTIME_EXPORTS = (
     "CircuitOpenError",
     "CircuitState",
     "Clock",
+    "DEFAULT_FAILOVER_SCENARIOS",
     "DEFAULT_RING_CAPACITY",
     "EscalationPolicy",
     "EventSink",
@@ -61,6 +62,7 @@ EXPECTED_RUNTIME_EXPORTS = (
     "MaxConsecutiveFailuresLimit",
     "MaxIterationsExceededError",
     "MaxIterationsLimit",
+    "MaxRepeatedToolCallsLimit",
     "MaxToolCallsLimit",
     "ModelPricing",
     "NoopEventSink",
@@ -121,6 +123,7 @@ EXPECTED_RUNTIME_EXPORTS = (
     "SystemClock",
     "TokenBucket",
     "TokenBudgetCheckHook",
+    "ToolTimeoutError",
     "TurnTimeoutError",
     "UsageBoundExceededError",
     "UsageLimitExceededError",
@@ -141,6 +144,7 @@ EXPECTED_RUNTIME_EXPORTS = (
     "register_pricing",
     "resolve_pricing",
     "smaller_context_budget",
+    "tool_call_signature",
 )
 
 

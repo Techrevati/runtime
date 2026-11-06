@@ -28,19 +28,19 @@ external workflow engine when you need those.
 from __future__ import annotations
 
 import builtins
+import copy
 import json
-import sqlite3
 import threading
 import uuid
 from collections.abc import Mapping
-from contextlib import suppress
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
 from techrevati.runtime._internal import (
     _ensure_schema_version,
+    _open_wal,
     _validate_non_empty_str,
     _validate_optional_non_empty_str,
 )
@@ -253,6 +253,29 @@ def _copy_checkpoint(checkpoint: Checkpoint) -> Checkpoint:
     return Checkpoint.from_dict(checkpoint.to_dict())
 
 
+def _validate_key(field_name: str, value: str) -> str:
+    """Validate an id used for lookups; both savers reject the same values.
+
+    A lone surrogate cannot be stored as UTF-8 text. It is rejected rather than
+    cleaned, because cleaning could map two different ids onto one key and hand
+    one thread another thread's checkpoints.
+    """
+    value = _validate_non_empty_str(field_name, value)
+    try:
+        value.encode("utf-8")
+    except UnicodeEncodeError as exc:
+        raise ValueError(f"{field_name} must be valid Unicode text") from exc
+    return value
+
+
+def _validate_optional_key(field_name: str, value: str | None) -> str | None:
+    return None if value is None else _validate_key(field_name, value)
+
+
+def _copy_step(record: StepRecord) -> StepRecord:
+    return replace(record, state=copy.deepcopy(record.state))
+
+
 class InMemorySaver:
     """Process-local checkpoint store. Lost on exit; thread-safe.
 
@@ -268,8 +291,8 @@ class InMemorySaver:
     def get(
         self, thread_id: str, checkpoint_id: str | None = None
     ) -> Checkpoint | None:
-        thread_id = _validate_non_empty_str("thread_id", thread_id)
-        checkpoint_id = _validate_optional_non_empty_str("checkpoint_id", checkpoint_id)
+        thread_id = _validate_key("thread_id", thread_id)
+        checkpoint_id = _validate_optional_key("checkpoint_id", checkpoint_id)
         with self._lock:
             entries = self._threads.get(thread_id)
             if not entries:
@@ -289,13 +312,13 @@ class InMemorySaver:
         parent_id: str | None = None,
         metadata: Mapping[str, Any] | None = None,
     ) -> Checkpoint:
-        thread_id = _validate_non_empty_str("thread_id", thread_id)
+        thread_id = _validate_key("thread_id", thread_id)
         cp = Checkpoint(
             id=_new_id(),
             thread_id=thread_id,
             created_at=_now_iso(),
             state=_normalize_json_mapping("state", state),
-            parent_id=parent_id,
+            parent_id=_validate_optional_key("parent_id", parent_id),
             metadata=_normalize_json_mapping("metadata", metadata or {}),
         )
         with self._lock:
@@ -305,8 +328,8 @@ class InMemorySaver:
     def list(
         self, thread_id: str, *, before: str | None = None, limit: int = 10
     ) -> list[Checkpoint]:
-        thread_id = _validate_non_empty_str("thread_id", thread_id)
-        before = _validate_optional_non_empty_str("before", before)
+        thread_id = _validate_key("thread_id", thread_id)
+        before = _validate_optional_key("before", before)
         limit = _validate_limit(limit)
         if limit <= 0:
             return []
@@ -316,18 +339,14 @@ class InMemorySaver:
             cursor = next((cp for cp in entries if cp.id == before), None)
             if cursor is None:
                 return []
-            # Keyset filter on the SAME total order SqliteSaver uses
-            # ``(created_at, id)`` so the two savers stay interchangeable even
-            # when checkpoints share a ``created_at`` (insertion order would
-            # diverge from sqlite's id tiebreaker otherwise).
-            cutoff = (cursor.created_at, cursor.id)
-            entries = [cp for cp in entries if (cp.created_at, cp.id) < cutoff]
-        # Newest first: (created_at DESC, id DESC), matching SqliteSaver.
-        ordered = sorted(entries, key=lambda cp: (cp.created_at, cp.id), reverse=True)
-        return [_copy_checkpoint(cp) for cp in ordered[:limit]]
+            entries = entries[: entries.index(cursor)]
+        # Newest first by insertion, matching SqliteSaver's rowid order. Wall-clock
+        # ``created_at`` is not used: it can step backwards, and ties would fall
+        # back to a random id.
+        return [_copy_checkpoint(cp) for cp in reversed(entries[-limit:])]
 
     def delete(self, thread_id: str) -> None:
-        thread_id = _validate_non_empty_str("thread_id", thread_id)
+        thread_id = _validate_key("thread_id", thread_id)
         with self._lock:
             self._threads.pop(thread_id, None)
             self._steps.pop(thread_id, None)
@@ -335,8 +354,8 @@ class InMemorySaver:
     def put_step(
         self, thread_id: str, step_key: str, state: Mapping[str, Any]
     ) -> StepRecord:
-        thread_id = _validate_non_empty_str("thread_id", thread_id)
-        step_key = _validate_non_empty_str("step_key", step_key)
+        thread_id = _validate_key("thread_id", thread_id)
+        step_key = _validate_key("step_key", step_key)
         record = StepRecord(
             thread_id=thread_id,
             step_key=step_key,
@@ -344,19 +363,20 @@ class InMemorySaver:
             state=_normalize_json_mapping("state", state),
         )
         with self._lock:
-            self._steps.setdefault(thread_id, {})[step_key] = record
+            self._steps.setdefault(thread_id, {})[step_key] = _copy_step(record)
         return record
 
     def get_step(self, thread_id: str, step_key: str) -> StepRecord | None:
-        thread_id = _validate_non_empty_str("thread_id", thread_id)
-        step_key = _validate_non_empty_str("step_key", step_key)
+        thread_id = _validate_key("thread_id", thread_id)
+        step_key = _validate_key("step_key", step_key)
         with self._lock:
-            return self._steps.get(thread_id, {}).get(step_key)
+            record = self._steps.get(thread_id, {}).get(step_key)
+            return None if record is None else _copy_step(record)
 
     def list_steps(self, thread_id: str) -> builtins.list[StepRecord]:
-        thread_id = _validate_non_empty_str("thread_id", thread_id)
+        thread_id = _validate_key("thread_id", thread_id)
         with self._lock:
-            records = list(self._steps.get(thread_id, {}).values())
+            records = [_copy_step(r) for r in self._steps.get(thread_id, {}).values()]
         # Match SqliteSaver's (created_at, step_key) ordering so the two savers
         # stay interchangeable.
         return sorted(records, key=lambda r: (r.created_at, r.step_key))
@@ -373,6 +393,8 @@ CREATE TABLE IF NOT EXISTS checkpoints (
 );
 CREATE INDEX IF NOT EXISTS idx_checkpoints_thread_created
     ON checkpoints(thread_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_checkpoints_thread_rowid
+    ON checkpoints(thread_id);
 CREATE TABLE IF NOT EXISTS checkpoint_steps (
     thread_id   TEXT NOT NULL,
     step_key    TEXT NOT NULL,
@@ -383,19 +405,6 @@ CREATE TABLE IF NOT EXISTS checkpoint_steps (
 CREATE INDEX IF NOT EXISTS idx_checkpoint_steps_thread_created
     ON checkpoint_steps(thread_id, created_at);
 """
-
-
-def _open_wal(path: str | Path) -> sqlite3.Connection:
-    """Open a sqlite connection in WAL mode before any schema mutations."""
-    conn = sqlite3.connect(str(path), check_same_thread=False)
-    try:
-        # WAL is a no-op for ":memory:"; harmless to request.
-        conn.execute("PRAGMA journal_mode=WAL")
-    except Exception:
-        with suppress(Exception):
-            conn.close()
-        raise
-    return conn
 
 
 class SqliteSaver:
@@ -452,14 +461,14 @@ class SqliteSaver:
     def get(
         self, thread_id: str, checkpoint_id: str | None = None
     ) -> Checkpoint | None:
-        thread_id = _validate_non_empty_str("thread_id", thread_id)
-        checkpoint_id = _validate_optional_non_empty_str("checkpoint_id", checkpoint_id)
+        thread_id = _validate_key("thread_id", thread_id)
+        checkpoint_id = _validate_optional_key("checkpoint_id", checkpoint_id)
         with self._lock:
             if checkpoint_id is None:
                 row = self._conn.execute(
                     "SELECT id, thread_id, created_at, state_json, parent_id,"
                     " metadata_json FROM checkpoints WHERE thread_id = ?"
-                    " ORDER BY created_at DESC, id DESC LIMIT 1",
+                    " ORDER BY rowid DESC LIMIT 1",
                     (thread_id,),
                 ).fetchone()
             else:
@@ -481,37 +490,37 @@ class SqliteSaver:
         parent_id: str | None = None,
         metadata: Mapping[str, Any] | None = None,
     ) -> Checkpoint:
-        thread_id = _validate_non_empty_str("thread_id", thread_id)
+        thread_id = _validate_key("thread_id", thread_id)
         cp = Checkpoint(
             id=_new_id(),
             thread_id=thread_id,
             created_at=_now_iso(),
             state=_normalize_json_mapping("state", state),
-            parent_id=parent_id,
+            parent_id=_validate_optional_key("parent_id", parent_id),
             metadata=_normalize_json_mapping("metadata", metadata or {}),
         )
         with self._lock:
-            self._conn.execute(
-                "INSERT INTO checkpoints"
-                " (id, thread_id, created_at, state_json, parent_id, metadata_json)"
-                " VALUES (?, ?, ?, ?, ?, ?)",
-                (
-                    cp.id,
-                    cp.thread_id,
-                    cp.created_at,
-                    json.dumps(cp.state, ensure_ascii=False),
-                    cp.parent_id,
-                    json.dumps(cp.metadata, ensure_ascii=False),
-                ),
-            )
-            self._conn.commit()
+            with self._conn:
+                self._conn.execute(
+                    "INSERT INTO checkpoints"
+                    " (id, thread_id, created_at, state_json, parent_id, metadata_json)"
+                    " VALUES (?, ?, ?, ?, ?, ?)",
+                    (
+                        cp.id,
+                        cp.thread_id,
+                        cp.created_at,
+                        json.dumps(cp.state),
+                        cp.parent_id,
+                        json.dumps(cp.metadata),
+                    ),
+                )
         return cp
 
     def list(
         self, thread_id: str, *, before: str | None = None, limit: int = 10
     ) -> list[Checkpoint]:
-        thread_id = _validate_non_empty_str("thread_id", thread_id)
-        before = _validate_optional_non_empty_str("before", before)
+        thread_id = _validate_key("thread_id", thread_id)
+        before = _validate_optional_key("before", before)
         limit = _validate_limit(limit)
         if limit <= 0:
             return []
@@ -520,45 +529,42 @@ class SqliteSaver:
                 rows = self._conn.execute(
                     "SELECT id, thread_id, created_at, state_json, parent_id,"
                     " metadata_json FROM checkpoints WHERE thread_id = ?"
-                    " ORDER BY created_at DESC, id DESC LIMIT ?",
+                    " ORDER BY rowid DESC LIMIT ?",
                     (thread_id, limit),
                 ).fetchall()
             else:
-                # Resolve ``before`` to its created_at so we can compare
-                # without depending on UUID ordering.
-                ts_row = self._conn.execute(
-                    "SELECT created_at, id FROM checkpoints"
+                cursor_row = self._conn.execute(
+                    "SELECT rowid FROM checkpoints"
                     " WHERE thread_id = ? AND id = ? LIMIT 1",
                     (thread_id, before),
                 ).fetchone()
-                if ts_row is None:
+                if cursor_row is None:
                     return []
                 rows = self._conn.execute(
                     "SELECT id, thread_id, created_at, state_json, parent_id,"
                     " metadata_json FROM checkpoints"
-                    " WHERE thread_id = ?"
-                    " AND (created_at < ? OR (created_at = ? AND id < ?))"
-                    " ORDER BY created_at DESC, id DESC LIMIT ?",
-                    (thread_id, ts_row[0], ts_row[0], ts_row[1], limit),
+                    " WHERE thread_id = ? AND rowid < ?"
+                    " ORDER BY rowid DESC LIMIT ?",
+                    (thread_id, cursor_row[0], limit),
                 ).fetchall()
         return [self._row_to_checkpoint(r) for r in rows]
 
     def delete(self, thread_id: str) -> None:
-        thread_id = _validate_non_empty_str("thread_id", thread_id)
+        thread_id = _validate_key("thread_id", thread_id)
         with self._lock:
-            self._conn.execute(
-                "DELETE FROM checkpoints WHERE thread_id = ?", (thread_id,)
-            )
-            self._conn.execute(
-                "DELETE FROM checkpoint_steps WHERE thread_id = ?", (thread_id,)
-            )
-            self._conn.commit()
+            with self._conn:
+                self._conn.execute(
+                    "DELETE FROM checkpoints WHERE thread_id = ?", (thread_id,)
+                )
+                self._conn.execute(
+                    "DELETE FROM checkpoint_steps WHERE thread_id = ?", (thread_id,)
+                )
 
     def put_step(
         self, thread_id: str, step_key: str, state: Mapping[str, Any]
     ) -> StepRecord:
-        thread_id = _validate_non_empty_str("thread_id", thread_id)
-        step_key = _validate_non_empty_str("step_key", step_key)
+        thread_id = _validate_key("thread_id", thread_id)
+        step_key = _validate_key("step_key", step_key)
         record = StepRecord(
             thread_id=thread_id,
             step_key=step_key,
@@ -566,23 +572,23 @@ class SqliteSaver:
             state=_normalize_json_mapping("state", state),
         )
         with self._lock:
-            self._conn.execute(
-                "INSERT OR REPLACE INTO checkpoint_steps"
-                " (thread_id, step_key, created_at, state_json)"
-                " VALUES (?, ?, ?, ?)",
-                (
-                    record.thread_id,
-                    record.step_key,
-                    record.created_at,
-                    json.dumps(record.state, ensure_ascii=False),
-                ),
-            )
-            self._conn.commit()
+            with self._conn:
+                self._conn.execute(
+                    "INSERT OR REPLACE INTO checkpoint_steps"
+                    " (thread_id, step_key, created_at, state_json)"
+                    " VALUES (?, ?, ?, ?)",
+                    (
+                        record.thread_id,
+                        record.step_key,
+                        record.created_at,
+                        json.dumps(record.state),
+                    ),
+                )
         return record
 
     def get_step(self, thread_id: str, step_key: str) -> StepRecord | None:
-        thread_id = _validate_non_empty_str("thread_id", thread_id)
-        step_key = _validate_non_empty_str("step_key", step_key)
+        thread_id = _validate_key("thread_id", thread_id)
+        step_key = _validate_key("step_key", step_key)
         with self._lock:
             row = self._conn.execute(
                 "SELECT thread_id, step_key, created_at, state_json"
@@ -599,7 +605,7 @@ class SqliteSaver:
         )
 
     def list_steps(self, thread_id: str) -> builtins.list[StepRecord]:
-        thread_id = _validate_non_empty_str("thread_id", thread_id)
+        thread_id = _validate_key("thread_id", thread_id)
         with self._lock:
             rows = self._conn.execute(
                 "SELECT thread_id, step_key, created_at, state_json"
