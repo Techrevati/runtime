@@ -200,6 +200,9 @@ class PermissionPolicy:
     could grant access its caller was not given, and treating it as unknown could
     escape that role's deny list.
 
+    A role with no config at all is denied unless ``default_allow_unknown_roles`` is
+    set, so a typo in a role name cannot silently grant every tool.
+
     Tool names match regardless of those spellings, so a deny list cannot be escaped
     by respelling. Keys that collide after folding are rejected at construction.
     """
@@ -209,7 +212,7 @@ class PermissionPolicy:
         role_configs: dict[str, RolePermissionConfig] | None = None,
         tool_requirements: dict[str, PermissionMode] | None = None,
         *,
-        default_allow_unknown_roles: bool = True,
+        default_allow_unknown_roles: bool = False,
     ) -> None:
         self._default_allow_unknown_roles = _validate_bool(
             "default_allow_unknown_roles",

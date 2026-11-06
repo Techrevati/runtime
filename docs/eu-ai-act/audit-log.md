@@ -81,6 +81,20 @@ sink.verify_chain(signing_key=hsm_key).valid
 - `export(fmt="jsonl")` / `export(fmt="csv")` stream the chain for an auditor. CSV
   cells are quoted, and cells a spreadsheet would run as a formula are neutralized.
 
+## Refusing actions that cannot be recorded
+
+By default a failed audit write is reported and the session carries on, so a logging
+outage cannot take an agent down. `AgentSession(audit_fail_closed=True)` makes the
+opposite trade: once a write to the session's audit log fails, every later tool call
+and model turn raises `AuditWriteError`.
+
+A tool's record is written before the tool runs, so a failing write stops that call.
+A model turn is recorded when it finishes, so a write failing at that point raises
+after the call was made and paid for. Starting a session writes a record too, so a log
+that is already broken is caught before the first action. The session stays refused
+until it ends. Writes wait up to `busy_timeout_seconds` for a lock before they count as
+failed.
+
 ## Tail truncation
 
 Deleting the *newest* rows leaves a shorter chain that is still internally valid,

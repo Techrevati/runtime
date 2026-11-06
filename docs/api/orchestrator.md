@@ -7,6 +7,7 @@
         - AsyncOrchestrationSession
         - AgentSession
         - PermissionDeniedError
+        - AuditWriteError
         - ToolTimeoutError
         - TurnTimeoutError
         - DEFAULT_FAILOVER_SCENARIOS

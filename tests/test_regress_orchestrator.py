@@ -1055,3 +1055,181 @@ def test_unstorable_thread_id_is_rejected_before_any_turn_is_paid() -> None:
     with pytest.raises(ValueError, match="valid Unicode"):
         with agent.session(thread_id="bad\ud800"):
             pass
+
+
+# -- maintainer decisions for 0.5.0 -------------------------------------------
+
+
+def test_unknown_role_is_denied_by_default() -> None:
+    from techrevati.runtime.permissions import PermissionPolicy
+
+    assert PermissionPolicy().authorize("nobody", "tool").allowed is False
+    allowed = PermissionPolicy(default_allow_unknown_roles=True)
+    assert allowed.authorize("nobody", "tool").allowed is True
+
+
+def test_sync_timeout_counts_as_a_breaker_failure() -> None:
+    import threading
+
+    from techrevati.runtime import CircuitBreaker, CircuitOpenError
+
+    release = threading.Event()
+    breaker = CircuitBreaker("svc", failure_threshold=1, recovery_timeout_seconds=60)
+    with _agent(circuit_breaker=breaker).session() as s:
+        with pytest.raises(TurnTimeoutError):
+            s.run_turn(lambda: release.wait(5), timeout=0.01)
+        with pytest.raises(CircuitOpenError):
+            s.run_turn(lambda: "x")
+        s.complete()
+    release.set()
+
+
+@pytest.mark.asyncio
+async def test_async_timeout_counts_as_a_breaker_failure() -> None:
+    from techrevati.runtime import AsyncCircuitBreaker, CircuitOpenError
+
+    async def hangs() -> str:
+        await asyncio.sleep(10)
+        return "x"
+
+    breaker = AsyncCircuitBreaker(
+        "svc", failure_threshold=1, recovery_timeout_seconds=60
+    )
+    async with _agent(async_circuit_breaker=breaker).asession() as s:
+        with pytest.raises(TurnTimeoutError):
+            await s.arun_turn(hangs, timeout=0.01)
+        with pytest.raises(CircuitOpenError):
+            await s.arun_turn(hangs)
+        s.complete()
+
+
+def test_hung_probe_gives_its_permit_back_at_the_deadline() -> None:
+    import threading
+
+    from techrevati.runtime import CircuitBreaker, ManualClock
+
+    clock = ManualClock()
+    release = threading.Event()
+    breaker = CircuitBreaker(
+        "svc", failure_threshold=1, recovery_timeout_seconds=10, clock=clock.monotonic
+    )
+    breaker.record_failure()
+    clock.advance(11)
+    with _agent(circuit_breaker=breaker).session() as s:
+        with pytest.raises(TurnTimeoutError):
+            s.run_turn(lambda: release.wait(5), timeout=0.01)
+        clock.advance(11)
+        assert s.run_turn(lambda: "ok")[0] == "ok"
+    release.set()
+
+
+class _FailingAudit:
+    """An audit log whose writes fail once ``broken`` is set."""
+
+    def __new__(cls, broken: bool = False):  # type: ignore[no-untyped-def]
+        from techrevati.runtime.compliance import AuditLogSink, InMemoryAuditBackend
+
+        class Sink(AuditLogSink):
+            is_broken = broken
+
+            def emit(self, event: object) -> None:  # type: ignore[override]
+                if self.is_broken:
+                    raise OSError("disk full")
+                super().emit(event)  # type: ignore[arg-type]
+
+        return Sink(InMemoryAuditBackend())
+
+
+def test_fail_closed_needs_an_audit_log() -> None:
+    with pytest.raises(ValueError, match="audit_fail_closed requires"):
+        _agent(audit_fail_closed=True)
+
+
+def test_broken_log_blocks_the_first_action_when_failing_closed() -> None:
+    from techrevati.runtime import AuditWriteError
+
+    ran: list[int] = []
+    agent = _agent(audit_log=_FailingAudit(broken=True), audit_fail_closed=True)
+    with pytest.raises(AuditWriteError), agent.session() as s:
+        s.run_tool("t", lambda: ran.append(1))
+    assert ran == []
+
+
+def test_failed_write_stops_the_tool_it_should_have_recorded() -> None:
+    from techrevati.runtime import AuditWriteError
+
+    log = _FailingAudit()
+    ran: list[int] = []
+
+    class BreakLog:
+        def before_tool(self, ctx: object) -> None:
+            log.is_broken = True
+
+    agent = _agent(audit_log=log, audit_fail_closed=True, hooks=[BreakLog()])
+    with pytest.raises(AuditWriteError), agent.session() as s:
+        s.run_tool("t", lambda: ran.append(1))
+    assert ran == []
+
+
+def test_failure_on_turn_record_raises_after_booking_and_blocks_later_actions() -> None:
+    from techrevati.runtime import AuditWriteError
+
+    log = _FailingAudit()
+    calls: list[int] = []
+
+    def breaks_log() -> str:
+        calls.append(1)
+        log.is_broken = True
+        return "x"
+
+    agent = _agent(audit_log=log, audit_fail_closed=True)
+    with agent.session() as s:
+        with pytest.raises(AuditWriteError):
+            s.run_turn(breaks_log, model=MODEL, usage=ONE_DOLLAR)
+        assert s.tracker.total_cost() == pytest.approx(1.0)
+        with pytest.raises(AuditWriteError):
+            s.run_turn(breaks_log, model=MODEL, usage=ONE_DOLLAR)
+        with pytest.raises(AuditWriteError):
+            s.run_tool("t", lambda: 1)
+        log.is_broken = False
+    assert calls == [1]
+
+
+def test_compliance_kit_log_is_guarded_too() -> None:
+    from techrevati.runtime import AuditWriteError
+    from techrevati.runtime.compliance import EUAIActComplianceKit
+
+    kit = EUAIActComplianceKit.standard(audit_log=_FailingAudit(broken=True))
+    agent = _agent(compliance=kit, audit_fail_closed=True)
+    with pytest.raises(AuditWriteError), agent.session() as s:
+        s.run_tool("t", lambda: 1)
+
+
+def test_broken_log_keeps_the_session_running_by_default() -> None:
+    agent = _agent(audit_log=_FailingAudit(broken=True))
+    with agent.session() as s:
+        assert s.run_tool("t", lambda: 1) == 1
+
+
+def test_broken_caller_sink_does_not_trigger_fail_closed() -> None:
+    from techrevati.runtime.compliance import AuditLogSink, InMemoryAuditBackend
+
+    class Broken:
+        def emit(self, event: object) -> None:
+            raise OSError("metrics down")
+
+    agent = _agent(
+        event_sink=Broken(),
+        audit_log=AuditLogSink(InMemoryAuditBackend()),
+        audit_fail_closed=True,
+    )
+    with agent.session() as s:
+        assert s.run_tool("t", lambda: 1) == 1
+
+
+def test_audit_write_error_survives_copying() -> None:
+    from techrevati.runtime import AuditWriteError
+
+    clone = copy.copy(AuditWriteError("OSError"))
+    assert clone.error_type == "OSError"
+    assert "OSError" in str(clone)

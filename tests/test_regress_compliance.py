@@ -1114,8 +1114,8 @@ def test_tool_variants_cannot_escape_the_deny_list(tool: str) -> None:
     assert not _policy().authorize("writer", tool).allowed
 
 
-def test_unknown_role_default_is_unchanged() -> None:
-    assert _policy().authorize("stranger", "deploy").allowed
+def test_unknown_role_is_denied_by_default() -> None:
+    assert not _policy().authorize("stranger", "deploy").allowed
 
 
 def test_role_configs_differing_only_by_case_stay_distinct() -> None:

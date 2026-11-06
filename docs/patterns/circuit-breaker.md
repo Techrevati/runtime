@@ -25,6 +25,13 @@ In `HALF_OPEN` at most `half_open_max_probes` probes are issued per cycle, and t
 
 A success from an abandoned probe closes the circuit, because no failure has been seen since it started; this lets a downstream slower than `recovery_timeout_seconds` recover under load. Its failure is ignored. Any result from a call admitted before the latest trip is ignored too.
 
+## Timeouts count as failures
+
+`run_turn(timeout=...)` and `arun_turn(timeout=...)` enforce their deadline inside the
+breaker, so a provider that hangs opens the circuit like one that returns errors. A
+sync call that overruns gives its probe permit back at the deadline, even though its
+worker thread keeps running in the background.
+
 ## API
 
 ```python

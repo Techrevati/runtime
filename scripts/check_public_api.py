@@ -26,6 +26,7 @@ EXPECTED_RUNTIME_EXPORTS = (
     "AsyncOrchestrationSession",
     "AsyncRateLimiter",
     "AsyncTokenBucket",
+    "AuditWriteError",
     "BudgetExceededError",
     "Checkpoint",
     "CheckpointSaver",
