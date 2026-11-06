@@ -184,9 +184,9 @@ def test_policy_copies_role_configs_at_construction():
     assert policy.authorize("writer", "new_tool").allowed is False
 
 
-def test_unknown_role_defaults_to_allow():
+def test_unknown_role_defaults_to_deny():
     policy = PermissionPolicy(role_configs={})
-    assert policy.authorize("UNKNOWN", "any_tool").allowed is True
+    assert policy.authorize("UNKNOWN", "any_tool").allowed is False
 
 
 def test_unknown_role_can_fail_closed():

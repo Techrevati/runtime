@@ -3,14 +3,6 @@
 Known limitations and pending decisions, so they are not rediscovered. Items leave
 this page when they are fixed or rejected, with the reason recorded in the changelog.
 
-## Decisions for the maintainer
-
-| Item | Current behaviour | Recommendation |
-|---|---|---|
-| Unknown roles | `default_allow_unknown_roles=True`: a role with no config is allowed. | Default to `False` in the next minor. It is a breaking change; the pilot profile already does this. |
-| Timeouts and the circuit breaker | A turn timeout does not count as a breaker failure, so a provider that hangs never opens it. | Count timeouts as failures, as most breaker implementations do. |
-| Fail-closed audit | A failed audit write is reported and the tool still runs. | Add an opt-in session mode that refuses the action when it cannot be recorded. |
-
 ## Known limitations
 
 | Priority | Item | Detail |

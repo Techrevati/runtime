@@ -57,8 +57,9 @@ lists when tool names come from untrusted input. `tool_requirements` keys that
 collide after folding, tool names that are empty after folding, and two role configs
 whose names differ only by surrounding whitespace are rejected at construction.
 
-A role with no config at all is still **allowed** by default. Pass
-`default_allow_unknown_roles=False` to deny it, which the pilot profile already does.
+A role with no config at all is **denied** by default, so a typo in a role name cannot
+silently grant every tool. Pass `default_allow_unknown_roles=True` only where a role is
+deliberately allowed everything it is not explicitly denied.
 
 ## API
 

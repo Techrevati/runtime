@@ -24,6 +24,8 @@ Added:
 - Audit log `tip()`, `ChainTip`, and `verify_chain(expected_tip=...)`.
 - `AgentRegistry.evict_terminal()`, `TokenBucket.debit()`.
 - Audit purge markers, signed under the sink's key.
+- `AgentSession(audit_fail_closed=True)` refuses further actions with
+  `AuditWriteError` once the audit log cannot be written.
 - Python 3.14 support.
 
 Fixed, security and audit integrity:
@@ -90,6 +92,10 @@ Fixed, runtime behaviour:
 
 Changed:
 
+- **Breaking:** `default_allow_unknown_roles` now defaults to `False`, so a role with no
+  config is denied.
+- A turn timeout now counts as a circuit-breaker failure, so a provider that hangs
+  opens the circuit.
 - Toolchain updated (ruff 0.17, mypy 2.4, pytest 9.2, hypothesis, OpenTelemetry 1.45,
   and pinned actions for checkout, setup-python, and the release publisher).
 

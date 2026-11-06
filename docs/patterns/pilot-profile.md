@@ -30,10 +30,8 @@ The profile enables:
 - hard-stop governance limits for turns, cost, consecutive failures, and tool
   calls.
 
-The base `PermissionPolicy` keeps its compatibility default for unknown roles
-unless callers opt into `default_allow_unknown_roles=False`. The pilot helper
-sets that option for you, so only the configured role can reach the allowed
-tools.
+Unknown roles are denied, as in the base `PermissionPolicy`, so only the
+configured role can reach the allowed tools.
 
 Use `tool_deny_patterns=` for temporary pre-call tool-name blocks during a
 pilot. Keep the allowed-tool list small and review every tool body separately;

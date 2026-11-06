@@ -191,6 +191,21 @@ class ToolTimeoutError(TurnTimeoutError):
         return (type(self), (self.tool_name, self.timeout_seconds))
 
 
+class AuditWriteError(Exception):
+    """Raised by ``audit_fail_closed`` sessions once the audit log cannot be written.
+
+    The session refuses further actions, because they could not be recorded. It
+    is permanent for that session: open a new one once the log is healthy again.
+    """
+
+    def __init__(self, error_type: str) -> None:
+        self.error_type = error_type
+        super().__init__(f"audit log write failed ({error_type}); action refused")
+
+    def __reduce__(self) -> tuple[Any, ...]:
+        return (type(self), (self.error_type,))
+
+
 class MaxIterationsExceededError(Exception):
     """Raised when a session attempts more turns than ``max_iterations`` allows.
 
@@ -217,6 +232,35 @@ _STREAM_CLOSE_GRACE_SECONDS = 5.0
 DEFAULT_FAILOVER_SCENARIOS: frozenset[FailureScenario] = frozenset(
     (FailureScenario.PROVIDER_FAILURE, FailureScenario.LLM_TIMEOUT)
 )
+
+
+@dataclass
+class _AuditHealth:
+    """Remembers a failed audit write until the next action is about to run."""
+
+    error_type: str | None = None
+
+
+@dataclass
+class _GuardedAuditSink:
+    """Note a failed audit write for the session, then let the error carry on."""
+
+    inner: AuditLogSink
+    health: _AuditHealth
+
+    def emit(self, event: AgentEvent) -> None:
+        try:
+            self.inner.emit(event)
+        except Exception as exc:
+            self.health.error_type = type(exc).__name__
+            raise
+
+    def record(self, model: str, usage: UsageSnapshot, cost_usd: float) -> None:
+        try:
+            self.inner.record(model, usage, cost_usd)
+        except Exception as exc:
+            self.health.error_type = type(exc).__name__
+            raise
 
 
 class _ReplayedTurn(NamedTuple):
@@ -401,6 +445,7 @@ class AgentSession:
     hooks: list[HookLike] = field(default_factory=list)
     audit_log: AuditLogSink | None = None
     compliance: EUAIActComplianceKit | None = None
+    audit_fail_closed: bool = False
 
     def __post_init__(self) -> None:
         self.role = _validate_non_empty_str("role", self.role)
@@ -409,6 +454,24 @@ class AgentSession:
         self.budget_usd = _validate_budget_usd(self.budget_usd)
         self.enforce_budget = _validate_bool("enforce_budget", self.enforce_budget)
         self.max_iterations = _validate_max_iterations(self.max_iterations)
+        self.audit_fail_closed = _validate_bool(
+            "audit_fail_closed", self.audit_fail_closed
+        )
+        if (
+            self.audit_fail_closed
+            and self.audit_log is None
+            and self.compliance is None
+        ):
+            raise ValueError("audit_fail_closed requires audit_log or compliance")
+
+    def _guard_audit(self, sink: Any, health: _AuditHealth) -> Any:
+        """Wrap this session's audit log so a failed write is noticed."""
+        audit_logs = [self.audit_log]
+        if self.compliance is not None:
+            audit_logs.append(self.compliance.audit_log)
+        if self.audit_fail_closed and any(sink is log for log in audit_logs):
+            return _GuardedAuditSink(sink, health)
+        return sink
 
     def _governance_for_session(self) -> GovernancePlane | None:
         if self.governance is None:
@@ -450,14 +513,14 @@ class AgentSession:
                 extra.append(sink)
         return extra
 
-    def _event_sink_for_session(self) -> EventSink:
-        extra = self._extra_event_sinks()
+    def _event_sink_for_session(self, health: _AuditHealth) -> EventSink:
+        extra = [self._guard_audit(s, health) for s in self._extra_event_sinks()]
         if not extra:
             return self.event_sink
         return FanoutEventSink([self.event_sink, *extra])
 
-    def _usage_sink_for_session(self) -> UsageSink:
-        extra = self._extra_usage_sinks()
+    def _usage_sink_for_session(self, health: _AuditHealth) -> UsageSink:
+        extra = [self._guard_audit(s, health) for s in self._extra_usage_sinks()]
         if not extra:
             return self.usage_sink
         return FanoutUsageSink([self.usage_sink, *extra])
@@ -496,6 +559,7 @@ class AgentSession:
         thread_id = _validate_thread_id(thread_id)
         self._assert_compliance_deployable()
         worker = self._start_worker(handoff)
+        audit_health = _AuditHealth()
         session = OrchestrationSession(
             worker=worker,
             tracker=UsageTracker(),
@@ -509,8 +573,9 @@ class AgentSession:
             enforce_budget=self.enforce_budget,
             max_iterations=self.max_iterations,
             guardrails=self._guardrails_for_session(),
-            event_sink=self._event_sink_for_session(),
-            usage_sink=self._usage_sink_for_session(),
+            event_sink=self._event_sink_for_session(audit_health),
+            usage_sink=self._usage_sink_for_session(audit_health),
+            audit_health=audit_health,
             phase=self.phase,
             role=self.role,
             project_id=self.project_id,
@@ -561,6 +626,7 @@ class AgentSession:
         thread_id = _validate_thread_id(thread_id)
         self._assert_compliance_deployable()
         worker = self._start_worker(handoff)
+        audit_health = _AuditHealth()
         session = AsyncOrchestrationSession(
             worker=worker,
             tracker=UsageTracker(),
@@ -574,8 +640,9 @@ class AgentSession:
             enforce_budget=self.enforce_budget,
             max_iterations=self.max_iterations,
             guardrails=self._guardrails_for_session(),
-            event_sink=self._event_sink_for_session(),
-            usage_sink=self._usage_sink_for_session(),
+            event_sink=self._event_sink_for_session(audit_health),
+            usage_sink=self._usage_sink_for_session(audit_health),
+            audit_health=audit_health,
             phase=self.phase,
             role=self.role,
             project_id=self.project_id,
@@ -668,6 +735,7 @@ class _SessionBase:
     usage_limits: UsageLimits | None = None
     governance: GovernancePlane | None = None
     hooks: list[HookLike] = field(default_factory=list)
+    audit_health: _AuditHealth = field(default_factory=_AuditHealth, repr=False)
     _started_at: float = field(default_factory=time.monotonic, init=False, repr=False)
     _iteration_count: int = field(default=0, init=False, repr=False)
     _last_stream_cancelled: bool = field(default=False, init=False, repr=False)
@@ -1149,6 +1217,11 @@ class _SessionBase:
                 },
             )
 
+    def _require_audit(self) -> None:
+        """Refuse the next action if an ``audit_fail_closed`` write has failed."""
+        if self.audit_health.error_type is not None:
+            raise AuditWriteError(self.audit_health.error_type)
+
     def _check_iteration_cap(self) -> None:
         """Raise MaxIterationsExceededError if this turn would exceed the cap.
 
@@ -1287,6 +1360,7 @@ class _SessionBase:
         args: dict[str, Any] | None,
     ) -> HookContext:
         """Authorize and count a tool call, then resolve its hook context."""
+        self._require_audit()
         outcome = self.authorize(tool_name)
         if not outcome.allowed:
             self._emit_tool_blocked(tool_name, kind="permission")
@@ -1535,6 +1609,7 @@ class _SessionBase:
         A turn that ended early books its spend without raising, so this is what
         stops the next one before it pays.
         """
+        self._require_audit()
         if self.enforce_budget:
             self._enforce_budget()
         self._enforce_usage_limits()
@@ -1543,8 +1618,11 @@ class _SessionBase:
         """Raise if the booked usage crossed a limit.
 
         Governance goes first: its breach is terminal, while a budget error is
-        recoverable and would otherwise hide the breach until the next turn.
+        recoverable and would otherwise hide the breach until the next turn. A
+        failed audit write goes before both: nothing else can be relied on being
+        recorded once it has happened.
         """
+        self._require_audit()
         self._enforce_governance()
         self._enforce_budget()
         self._enforce_usage_limits()
@@ -1657,6 +1735,8 @@ class OrchestrationSession(_SessionBase):
             self._emit_guardrail_blocked(exc)
             raise
         self._emit_event(AgentEvent.tool_called(self.role, self.phase, tool_name))
+        # The record of this call must exist before the call has any effect.
+        self._require_audit()
         started = time.monotonic()
         try:
             result_raw: T = (
@@ -1829,19 +1909,17 @@ class OrchestrationSession(_SessionBase):
             return result, snapshot, answered
 
     def _invoke_fn(self, fn: Callable[[], T], *, timeout: float | None) -> T:
-        if timeout is None:
-            return self._wrapped_call(fn)
-        # The breaker wraps the call inside the worker thread, so it counts a
-        # downstream exception but not the deadline itself: a hard timeout is
-        # a session-level TurnTimeoutError, not a downstream signal.
-        return _call_with_deadline(
-            lambda: self._wrapped_call(fn), timeout, lambda: TurnTimeoutError(timeout)
-        )
+        # The deadline sits inside the breaker, so a provider that hangs counts as
+        # a failure and opens the circuit, and a call that overruns gives its probe
+        # permit back at the deadline rather than when the abandoned thread returns.
+        def attempt() -> T:
+            if timeout is None:
+                return fn()
+            return _call_with_deadline(fn, timeout, lambda: TurnTimeoutError(timeout))
 
-    def _wrapped_call(self, fn: Callable[[], T]) -> T:
         if self.circuit_breaker is not None:
-            return self.circuit_breaker.call(fn)
-        return fn()
+            return self.circuit_breaker.call(attempt)
+        return attempt()
 
 
 @dataclass
@@ -1907,6 +1985,8 @@ class AsyncOrchestrationSession(_SessionBase):
             self._emit_guardrail_blocked(exc)
             raise
         self._emit_event(AgentEvent.tool_called(self.role, self.phase, tool_name))
+        # The record of this call must exist before the call has any effect.
+        self._require_audit()
         started = time.monotonic()
         try:
             if timeout is None:
@@ -2314,27 +2394,28 @@ class AsyncOrchestrationSession(_SessionBase):
         *,
         timeout: float | None,
     ) -> T:
-        if timeout is None:
-            return await self._wrapped_acall(coro_factory)
+        # The deadline sits inside the breaker, so a provider that hangs counts as
+        # a failure and opens the circuit.
+        async def attempt() -> T:
+            if timeout is None:
+                return await coro_factory()
+            # asyncio.timeout (Python 3.11+) gives proper structured-concurrency
+            # cancellation semantics — the inner task is cancelled exactly
+            # once and the context manager re-raises a clean TimeoutError.
+            # asyncio.wait_for has a long-standing bug where the inner task
+            # can be resurrected after the timeout fires; PEP 789 explains.
+            scope = asyncio.timeout(timeout)
+            try:
+                async with scope:
+                    return await coro_factory()
+            except TimeoutError as exc:
+                if scope.expired():
+                    raise TurnTimeoutError(timeout) from exc
+                raise
 
-        # asyncio.timeout (Python 3.11+) gives proper structured-concurrency
-        # cancellation semantics — the inner task is cancelled exactly
-        # once and the context manager re-raises a clean TimeoutError.
-        # asyncio.wait_for has a long-standing bug where the inner task
-        # can be resurrected after the timeout fires; PEP 789 explains.
-        scope = asyncio.timeout(timeout)
-        try:
-            async with scope:
-                return await self._wrapped_acall(coro_factory)
-        except TimeoutError as exc:
-            if scope.expired():
-                raise TurnTimeoutError(timeout) from exc
-            raise
-
-    async def _wrapped_acall(self, coro_factory: Callable[[], Awaitable[T]]) -> T:
         if self.circuit_breaker is not None:
-            return await self.circuit_breaker.call(coro_factory)
-        return await coro_factory()
+            return await self.circuit_breaker.call(attempt)
+        return await attempt()
 
     async def arun_parallel_tools(
         self,
@@ -2459,6 +2540,7 @@ _NO_FAILOVER_ERRORS = (
     RateLimitExceededError,
     PermissionDeniedError,
     CircuitOpenError,
+    AuditWriteError,
 )
 
 
@@ -2472,6 +2554,8 @@ def _failure_class_for_exception(exc: Exception) -> AgentFailureClass:
         return AgentFailureClass.GOVERNANCE_BREACH
     if isinstance(exc, PermissionDeniedError):
         return AgentFailureClass.PERMISSION_DENIED
+    if isinstance(exc, AuditWriteError):
+        return AgentFailureClass.DEPENDENCY_FAILED
     if isinstance(exc, GuardrailViolatedError):
         return AgentFailureClass.GUARDRAIL_VIOLATION
     # ToolTimeoutError and MCPToolError name the tool that failed. Duck-typed so
@@ -2492,6 +2576,7 @@ def _failure_class_for_exception(exc: Exception) -> AgentFailureClass:
 __all__ = [
     "AgentSession",
     "AsyncOrchestrationSession",
+    "AuditWriteError",
     "DEFAULT_FAILOVER_SCENARIOS",
     "MaxIterationsExceededError",
     "OrchestrationSession",

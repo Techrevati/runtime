@@ -5,6 +5,17 @@ tool replay, loop detection, provider fallback, and support for the MCP Python S
 2.x. New API is additive, but several fixes change behaviour you may have relied
 on. Read this list before upgrading.
 
+## Three defaults to check first
+
+- **Unknown roles are denied.** `default_allow_unknown_roles` now defaults to `False`,
+  so a role with no config can no longer use any tool. Add a config for each role, or
+  pass `default_allow_unknown_roles=True` to keep the old behaviour.
+- **Timeouts count as circuit-breaker failures.** A turn that hits its `timeout` now
+  moves the breaker towards opening. Review `failure_threshold` if your timeouts are
+  tight enough to fire in normal operation.
+- **New `audit_fail_closed` option, off by default.** With it on, a failed audit write
+  makes the session refuse further actions with `AuditWriteError`.
+
 ## Sessions
 
 - **Usage without a `model` now counts.** `run_turn(fn, usage=...)` used to discard
