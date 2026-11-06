@@ -848,7 +848,7 @@ own RolePermissionConfig and tool_requirements.</p>
     role_configs=None,
     tool_requirements=None,
     *,
-    default_allow_unknown_roles=True,
+    default_allow_unknown_roles=False,
 )</code></pre>
 
     <div class="doc doc-contents ">
@@ -861,6 +861,8 @@ configured role after folding case, Unicode form, or invisible characters is
 denied, whatever <code>default_allow_unknown_roles</code> says: treating it as that role
 could grant access its caller was not given, and treating it as unknown could
 escape that role's deny list.</p>
+<p>A role with no config at all is denied unless <code>default_allow_unknown_roles</code> is
+set, so a typo in a role name cannot silently grant every tool.</p>
 <p>Tool names match regardless of those spellings, so a deny list cannot be escaped
 by respelling. Keys that collide after folding are rejected at construction.</p>
 

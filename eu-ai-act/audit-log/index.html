@@ -710,6 +710,17 @@ sink.verify_chain(signing_key=hsm_key).valid
 <li><code>export(fmt="jsonl")</code> / <code>export(fmt="csv")</code> stream the chain for an auditor. CSV
   cells are quoted, and cells a spreadsheet would run as a formula are neutralized.</li>
 </ul>
+<h2 id="refusing-actions-that-cannot-be-recorded">Refusing actions that cannot be recorded<a class="headerlink" href="#refusing-actions-that-cannot-be-recorded" title="Permanent link">&para;</a></h2>
+<p>By default a failed audit write is reported and the session carries on, so a logging
+outage cannot take an agent down. <code>AgentSession(audit_fail_closed=True)</code> makes the
+opposite trade: once a write to the session's audit log fails, every later tool call
+and model turn raises <code>AuditWriteError</code>.</p>
+<p>A tool's record is written before the tool runs, so a failing write stops that call.
+A model turn is recorded when it finishes, so a write failing at that point raises
+after the call was made and paid for. Starting a session writes a record too, so a log
+that is already broken is caught before the first action. The session stays refused
+until it ends. Writes wait up to <code>busy_timeout_seconds</code> for a lock before they count as
+failed.</p>
 <h2 id="tail-truncation">Tail truncation<a class="headerlink" href="#tail-truncation" title="Permanent link">&para;</a></h2>
 <p>Deleting the <em>newest</em> rows leaves a shorter chain that is still internally valid,
 so hashes alone cannot reveal it. What detects it depends on what survives:</p>

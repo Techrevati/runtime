@@ -670,10 +670,8 @@ agent = AgentSession(
 <li>hard-stop governance limits for turns, cost, consecutive failures, and tool
   calls.</li>
 </ul>
-<p>The base <code>PermissionPolicy</code> keeps its compatibility default for unknown roles
-unless callers opt into <code>default_allow_unknown_roles=False</code>. The pilot helper
-sets that option for you, so only the configured role can reach the allowed
-tools.</p>
+<p>Unknown roles are denied, as in the base <code>PermissionPolicy</code>, so only the
+configured role can reach the allowed tools.</p>
 <p>Use <code>tool_deny_patterns=</code> for temporary pre-call tool-name blocks during a
 pilot. Keep the allowed-tool list small and review every tool body separately;
 the runtime authorizes tool names, but it does not sandbox tool code.</p>

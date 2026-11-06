@@ -647,6 +647,17 @@
 tool replay, loop detection, provider fallback, and support for the MCP Python SDK
 2.x. New API is additive, but several fixes change behaviour you may have relied
 on. Read this list before upgrading.</p>
+<h2 id="three-defaults-to-check-first">Three defaults to check first<a class="headerlink" href="#three-defaults-to-check-first" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Unknown roles are denied.</strong> <code>default_allow_unknown_roles</code> now defaults to <code>False</code>,
+  so a role with no config can no longer use any tool. Add a config for each role, or
+  pass <code>default_allow_unknown_roles=True</code> to keep the old behaviour.</li>
+<li><strong>Timeouts count as circuit-breaker failures.</strong> A turn that hits its <code>timeout</code> now
+  moves the breaker towards opening. Review <code>failure_threshold</code> if your timeouts are
+  tight enough to fire in normal operation.</li>
+<li><strong>New <code>audit_fail_closed</code> option, off by default.</strong> With it on, a failed audit write
+  makes the session refuse further actions with <code>AuditWriteError</code>.</li>
+</ul>
 <h2 id="sessions">Sessions<a class="headerlink" href="#sessions" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Usage without a <code>model</code> now counts.</strong> <code>run_turn(fn, usage=...)</code> used to discard

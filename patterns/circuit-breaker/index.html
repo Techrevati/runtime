@@ -661,6 +661,11 @@ except CircuitOpenError:
 <p>Each consecutive failure increments an internal counter. At <code>failure_threshold</code> failures, the breaker opens and immediately raises <code>CircuitOpenError</code> without calling <code>fn</code>. After <code>recovery_timeout_seconds</code>, the next call moves the breaker to <code>HALF_OPEN</code>; a successful call closes it again, a failure re-opens it.</p>
 <p>In <code>HALF_OPEN</code> at most <code>half_open_max_probes</code> probes are issued per cycle, and the circuit closes once every admitted probe has succeeded. A cycle whose probes have not reported after another <code>recovery_timeout_seconds</code> is abandoned and a new probe is admitted, so a hung call cannot block recovery forever (with <code>recovery_timeout_seconds=0</code> there is no such window). A downstream that never answers therefore gets at most one new probe per window, and those calls can pile up until they return.</p>
 <p>A success from an abandoned probe closes the circuit, because no failure has been seen since it started; this lets a downstream slower than <code>recovery_timeout_seconds</code> recover under load. Its failure is ignored. Any result from a call admitted before the latest trip is ignored too.</p>
+<h2 id="timeouts-count-as-failures">Timeouts count as failures<a class="headerlink" href="#timeouts-count-as-failures" title="Permanent link">&para;</a></h2>
+<p><code>run_turn(timeout=...)</code> and <code>arun_turn(timeout=...)</code> enforce their deadline inside the
+breaker, so a provider that hangs opens the circuit like one that returns errors. A
+sync call that overruns gives its probe permit back at the deadline, even though its
+worker thread keeps running in the background.</p>
 <h2 id="api">API<a class="headerlink" href="#api" title="Permanent link">&para;</a></h2>
 <pre><code class="language-python">CircuitBreaker(
     name: str,

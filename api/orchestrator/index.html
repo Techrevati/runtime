@@ -765,6 +765,7 @@ print(session.summary())
     usage_limits=None,
     governance=None,
     hooks=list(),
+    audit_health=_AuditHealth(),
     circuit_breaker=None,
     rate_limiter=None,
 )</code></pre>
@@ -968,6 +969,7 @@ guard something they have in common, such as a gateway.</p>
     usage_limits=None,
     governance=None,
     hooks=list(),
+    audit_health=_AuditHealth(),
     circuit_breaker=None,
     async_rate_limiter=None,
 )</code></pre>
@@ -1322,6 +1324,7 @@ without leaving the session machinery.</p>
     hooks=list(),
     audit_log=None,
     compliance=None,
+    audit_fail_closed=False,
 )</code></pre>
 
     <div class="doc doc-contents ">
@@ -1441,6 +1444,56 @@ replay-safe async turns, and pass <code>handoff</code> to run on the worker a
 
 
         <p>Raised when a tool is blocked by the configured PermissionEnforcer.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="techrevati.runtime.orchestrator.AuditWriteError" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">AuditWriteError</span>
+
+
+<a href="#techrevati.runtime.orchestrator.AuditWriteError" class="headerlink" title="Permanent link">&para;</a></h3>
+<pre class="highlight"><code class="language-python doc-signature">AuditWriteError(error_type)</code></pre>
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="Exception">Exception</span></code></p>
+
+
+
+        <p>Raised by <code>audit_fail_closed</code> sessions once the audit log cannot be written.</p>
+<p>The session refuses further actions, because they could not be recorded. It
+is permanent for that session: open a new one once the log is healthy again.</p>
 
 
 

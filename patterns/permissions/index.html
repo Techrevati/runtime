@@ -693,8 +693,9 @@ scripts, such as a Cyrillic <code>е</code>, stay distinct, so prefer <code>allo
 lists when tool names come from untrusted input. <code>tool_requirements</code> keys that
 collide after folding, tool names that are empty after folding, and two role configs
 whose names differ only by surrounding whitespace are rejected at construction.</p>
-<p>A role with no config at all is still <strong>allowed</strong> by default. Pass
-<code>default_allow_unknown_roles=False</code> to deny it, which the pilot profile already does.</p>
+<p>A role with no config at all is <strong>denied</strong> by default, so a typo in a role name cannot
+silently grant every tool. Pass <code>default_allow_unknown_roles=True</code> only where a role is
+deliberately allowed everything it is not explicitly denied.</p>
 <h2 id="api">API<a class="headerlink" href="#api" title="Permanent link">&para;</a></h2>
 <pre><code class="language-python">class PermissionMode(IntEnum): READ_ONLY=1, WORKSPACE_WRITE=2, FULL_ACCESS=3
 

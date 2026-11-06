@@ -645,33 +645,6 @@
           <h1 id="open-items">Open items<a class="headerlink" href="#open-items" title="Permanent link">&para;</a></h1>
 <p>Known limitations and pending decisions, so they are not rediscovered. Items leave
 this page when they are fixed or rejected, with the reason recorded in the changelog.</p>
-<h2 id="decisions-for-the-maintainer">Decisions for the maintainer<a class="headerlink" href="#decisions-for-the-maintainer" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Item</th>
-<th>Current behaviour</th>
-<th>Recommendation</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Unknown roles</td>
-<td><code>default_allow_unknown_roles=True</code>: a role with no config is allowed.</td>
-<td>Default to <code>False</code> in the next minor. It is a breaking change; the pilot profile already does this.</td>
-</tr>
-<tr>
-<td>Timeouts and the circuit breaker</td>
-<td>A turn timeout does not count as a breaker failure, so a provider that hangs never opens it.</td>
-<td>Count timeouts as failures, as most breaker implementations do.</td>
-</tr>
-<tr>
-<td>Fail-closed audit</td>
-<td>A failed audit write is reported and the tool still runs.</td>
-<td>Add an opt-in session mode that refuses the action when it cannot be recorded.</td>
-</tr>
-</tbody>
-</table>
 <h2 id="known-limitations">Known limitations<a class="headerlink" href="#known-limitations" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
