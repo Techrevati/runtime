@@ -33,6 +33,7 @@ from __future__ import annotations
 import asyncio
 import concurrent.futures
 import contextvars
+import copy
 import functools
 import json
 import logging
@@ -71,7 +72,7 @@ from techrevati.runtime.compliance.kit import EUAIActComplianceKit
 from techrevati.runtime.governance import (
     GovernanceBreachError,
     GovernancePlane,
-    tool_call_signature,
+    safe_tool_call_signature,
 )
 from techrevati.runtime.guardrails import (
     AsyncGuardrail,
@@ -208,6 +209,9 @@ class MaxIterationsExceededError(Exception):
         return (type(self), (self.max_iterations,))
 
 
+# How long a timed-out stream's upstream gets to close before it is abandoned.
+_STREAM_CLOSE_GRACE_SECONDS = 5.0
+
 # Failures worth retrying on another provider. Anything else, such as a context
 # overflow, would fail the same way on the next provider too.
 DEFAULT_FAILOVER_SCENARIOS: frozenset[FailureScenario] = frozenset(
@@ -223,6 +227,11 @@ class _ReplayedTurn(NamedTuple):
 
 class _ReplayedTool(NamedTuple):
     result: Any
+
+
+def _tool_step_key(tool_name: str, idempotency_key: str) -> str:
+    """Encode the pair unambiguously, so ("a", "b:c") and ("a:b", "c") differ."""
+    return "tool:" + json.dumps([tool_name, idempotency_key], ensure_ascii=True)
 
 
 def _call_with_deadline(
@@ -651,7 +660,12 @@ class _SessionBase:
     _started_at: float = field(default_factory=time.monotonic, init=False, repr=False)
     _iteration_count: int = field(default=0, init=False, repr=False)
     _last_stream_cancelled: bool = field(default=False, init=False, repr=False)
-    _last_turn_model: str = field(default="", init=False, repr=False)
+    # Model that booked each idempotency key in this session. Guards against a
+    # retry counting the same spend twice, and tells fallback who answered.
+    _booked_turns: dict[str, str] = field(default_factory=dict, init=False, repr=False)
+    _last_model_call_error: Exception | None = field(
+        default=None, init=False, repr=False
+    )
 
     def __post_init__(self) -> None:
         self.role = _validate_non_empty_str("role", self.role)
@@ -694,7 +708,9 @@ class _SessionBase:
             ctx.prompt = prompt
         if tool:
             ctx.tool = tool
-        if args is not None and not ctx.args:
+        # The current call's arguments always win: a reused context must not show
+        # guard hooks the arguments of an earlier call.
+        if args is not None:
             ctx.args = args
         return ctx
 
@@ -810,17 +826,22 @@ class _SessionBase:
                 )
         return None
 
-    def _replay_turn(self, replayed: _ReplayedTurn) -> tuple[Any, UsageSnapshot]:
+    def _replay_turn(
+        self, replayed: _ReplayedTurn, idempotency_key: str | None
+    ) -> tuple[Any, UsageSnapshot]:
         """Count a recorded turn against this session and return its result.
 
         The money was spent, so a resumed session has to see it, or a restart
         would reset the budget. Sinks are skipped because they saw the original
-        turn; re-recording there would double-count it.
+        turn; re-recording there would double-count it. A key this session has
+        already booked is not counted again.
         """
-        self.tracker.record_turn(replayed.model, replayed.usage)
-        cost = self.tracker.cost_for_turn(replayed.model, replayed.usage)
-        self._last_turn_model = replayed.model
-        self._record_governance_outcome(success=True, cost_usd=cost)
+        if idempotency_key not in self._booked_turns:
+            self.tracker.record_turn(replayed.model, replayed.usage)
+            cost = self.tracker.cost_for_turn(replayed.model, replayed.usage)
+            self._record_governance_outcome(success=True, cost_usd=cost)
+            if idempotency_key:
+                self._booked_turns[idempotency_key] = replayed.model
         logger.info(
             "turn_replayed",
             extra={
@@ -853,7 +874,9 @@ class _SessionBase:
         saver = self._step_saver()
         if saver is None or self.thread_id is None:
             return None
-        record = saver.get_step(self.thread_id, f"tool:{tool_name}:{idempotency_key}")
+        record = saver.get_step(
+            self.thread_id, _tool_step_key(tool_name, idempotency_key)
+        )
         if record is None:
             return None
         logger.info(
@@ -882,7 +905,7 @@ class _SessionBase:
             return
         saver.put_step(
             self.thread_id,
-            f"tool:{tool_name}:{idempotency_key}",
+            _tool_step_key(tool_name, idempotency_key),
             {"result": payload},
         )
 
@@ -1167,8 +1190,11 @@ class _SessionBase:
         kind: str,
         stage: str | None = None,
         guardrails: list[str] | None = None,
+        started: float | None = None,
     ) -> None:
         data: dict[str, Any] = {"tool": tool_name, "kind": kind}
+        if started is not None:
+            data["duration_seconds"] = time.monotonic() - started
         if stage is not None:
             data["stage"] = stage
         if guardrails:
@@ -1182,12 +1208,15 @@ class _SessionBase:
             )
         )
 
-    def _emit_guardrail_blocked(self, err: GuardrailViolatedError) -> None:
+    def _emit_guardrail_blocked(
+        self, err: GuardrailViolatedError, *, started: float | None = None
+    ) -> None:
         self._emit_tool_blocked(
             err.tool,
             kind="guardrail",
             stage=err.stage,
             guardrails=[violation.guardrail for violation in err.violations],
+            started=started,
         )
 
     def _emit_tool_failed(
@@ -1232,7 +1261,11 @@ class _SessionBase:
                 self.phase,
                 model=model,
                 duration_seconds=time.monotonic() - started,
-                error_type=type(exc).__name__,
+                error_type=(
+                    "cancelled"
+                    if isinstance(exc, asyncio.CancelledError | GeneratorExit)
+                    else type(exc).__name__
+                ),
             )
         )
 
@@ -1247,12 +1280,15 @@ class _SessionBase:
         if not outcome.allowed:
             self._emit_tool_blocked(tool_name, kind="permission")
             raise PermissionDeniedError(outcome)
-        known_args = args
-        if known_args is None and hook_ctx is not None and hook_ctx.args:
-            known_args = hook_ctx.args
-        self._check_governance_pre_tool(
-            None if known_args is None else tool_call_signature(tool_name, known_args)
-        )
+        if self.governance is not None:
+            known_args = args
+            if known_args is None and hook_ctx is not None and hook_ctx.args:
+                known_args = hook_ctx.args
+            self._check_governance_pre_tool(
+                None
+                if known_args is None
+                else safe_tool_call_signature(tool_name, known_args)
+            )
         return self._resolve_hook_ctx(hook_ctx, tool=tool_name, args=args)
 
     def _next_fallback_model(
@@ -1264,7 +1300,13 @@ class _SessionBase:
         failover_on: frozenset[FailureScenario],
     ) -> str | None:
         """Return the provider to try next, or None if ``exc`` must propagate."""
-        if self.provider_router is None or isinstance(exc, _NO_FAILOVER_ERRORS):
+        # Identity, not type: an exception from a hook or the saver can look just
+        # like a provider failure, but the provider has already answered and been
+        # paid. Only what the model call itself raised may switch provider.
+        if self.provider_router is None or exc is not self._last_model_call_error:
+            return None
+        self._last_model_call_error = None
+        if isinstance(exc, _NO_FAILOVER_ERRORS):
             return None
         scenario = classify_exception(exc)
         if scenario not in failover_on:
@@ -1299,6 +1341,9 @@ class _SessionBase:
             return
         self.governance.state.record_tool_call(signature)
         self._enforce_governance()
+        # Survived this check, so a later turn must not re-alert on this call. A
+        # terminate breach raised above and stays visible to every later check.
+        self.governance.state.mark_tool_call_evaluated()
 
     def _record_governance_outcome(
         self, *, success: bool, cost_usd: float | None = None
@@ -1384,18 +1429,15 @@ class _SessionBase:
     ) -> None:
         """Book a finished model call, before any limit may reject it.
 
-        The call has already been paid for. Accounting and the checkpoint come
-        first so that a limit raising afterwards can neither hide the spend from
-        later checks nor make a retry of the same idempotency key pay twice.
+        The call has already been paid for, so this runs before any limit: a limit
+        raising afterwards can neither hide the spend from later checks nor make a
+        retry of the same idempotency key pay twice. The checkpoint goes last
+        because it is the one step that can fail on outside trouble, and a saver
+        outage must not hide the spend either.
         """
         cost = self._record_turn_usage(model, snapshot)
-        self._last_turn_model = model
-        self._persist_turn_checkpoint(
-            result=result,
-            usage=snapshot,
-            model=model,
-            idempotency_key=idempotency_key,
-        )
+        if idempotency_key:
+            self._booked_turns[idempotency_key] = model
         self._record_governance_outcome(success=True, cost_usd=cost)
         self._emit_event(
             AgentEvent.turn_completed(
@@ -1410,6 +1452,12 @@ class _SessionBase:
                 },
             )
         )
+        self._persist_turn_checkpoint(
+            result=result,
+            usage=snapshot,
+            model=model,
+            idempotency_key=idempotency_key,
+        )
 
     def _account_unfinished_turn(
         self,
@@ -1417,12 +1465,16 @@ class _SessionBase:
         output: Any,
         usage: UsageSnapshot | None,
         estimate_usage: Callable[[Any], UsageSnapshot] | None,
+        *,
+        failed: bool = True,
     ) -> None:
         """Book a call that was paid for but will not return a result.
 
-        Covers a failing ``after_model`` hook and a stream that ended early. It
-        runs while another exception is on its way out, so it never raises:
-        limits see the spend on the next pre-turn check.
+        Covers a failing or cancelled ``after_model`` hook and a stream that ended
+        early. It runs while another exception is on its way out, so it never
+        raises: limits see the spend on the next pre-turn check. ``failed=False``
+        is for cancellation, which is the caller's choice rather than a failure
+        and must not feed a failure streak.
         """
         cost: float | None = None
         try:
@@ -1439,7 +1491,42 @@ class _SessionBase:
                     "error_type": type(exc).__name__,
                 },
             )
-        self._record_governance_outcome(success=False, cost_usd=cost)
+        if failed:
+            self._record_governance_outcome(success=False, cost_usd=cost)
+        elif cost is not None and self.governance is not None:
+            self.governance.state.record_cost(cost)
+
+    def _account_unfinished_stream(
+        self,
+        model: str,
+        chunks: list[str],
+        usage: UsageSnapshot | None,
+        estimate_usage: Callable[[Any], UsageSnapshot] | None,
+        *,
+        failed: bool = True,
+    ) -> None:
+        """Book a stream that ended early, charging only if text arrived.
+
+        A connection that fails before the first chunk was not charged, which
+        matches what ``arun_turn`` books for the same failure.
+        """
+        self._account_unfinished_turn(
+            model,
+            "".join(chunks),
+            usage if chunks else None,
+            estimate_usage if chunks else None,
+            failed=failed,
+        )
+
+    def _check_limits_pre_turn(self) -> None:
+        """Refuse a live turn once booked usage is already over a hard limit.
+
+        A turn that ended early books its spend without raising, so this is what
+        stops the next one before it pays.
+        """
+        if self.enforce_budget:
+            self._enforce_budget()
+        self._enforce_usage_limits()
 
     def _enforce_turn_limits(self) -> None:
         """Raise if the booked usage crossed a limit.
@@ -1448,6 +1535,10 @@ class _SessionBase:
         recoverable and would otherwise hide the breach until the next turn.
         """
         self._enforce_governance()
+        self._enforce_budget()
+        self._enforce_usage_limits()
+
+    def _enforce_budget(self) -> None:
         budget = self.budget_usd
         if budget is not None and self.tracker.is_over_budget(budget):
             self._emit_event(
@@ -1475,6 +1566,7 @@ class _SessionBase:
                     current_cost_usd=self.tracker.total_cost(),
                 )
 
+    def _enforce_usage_limits(self) -> None:
         if self.usage_limits is not None:
             # ``check_limits`` raises ``UsageLimitExceededError`` on the
             # first overrun. We let it propagate so callers can react
@@ -1569,9 +1661,13 @@ class OrchestrationSession(_SessionBase):
         try:
             run_post_checks(self.guardrails, result_raw, role=self.role, tool=tool_name)
         except GuardrailViolatedError as exc:
-            self._emit_guardrail_blocked(exc)
+            self._emit_guardrail_blocked(exc, started=started)
             raise
-        result: T = run_after_tool(self.hooks, ctx, result_raw)
+        try:
+            result: T = run_after_tool(self.hooks, ctx, result_raw)
+        except Exception as exc:
+            self._emit_tool_failed(tool_name, started=started, exc=exc)
+            raise
         self._persist_tool_step(tool_name, idempotency_key, result)
         self._emit_tool_completed(tool_name, started=started)
         return result
@@ -1613,8 +1709,9 @@ class OrchestrationSession(_SessionBase):
         self._check_iteration_cap()
         self._check_governance_pre_turn()
         if replayed is not None:
-            return self._replay_turn(replayed)
+            return self._replay_turn(replayed, idempotency_key)
 
+        self._check_limits_pre_turn()
         ctx = self._resolve_hook_ctx(hook_ctx, model=model)
         # Hooks run BEFORE the model call so they can mutate ctx.prompt
         # in place. Caller's fn() must close over ctx.prompt to see the
@@ -1630,6 +1727,7 @@ class OrchestrationSession(_SessionBase):
             self._record_governance_turn_outcome(success=False)
             raise
         except Exception as exc:
+            self._last_model_call_error = exc
             self._emit_turn_failed(model, started=started, exc=exc)
             _record_recovery_event(self, exc)
             self._record_governance_turn_outcome(success=False)
@@ -1638,7 +1736,8 @@ class OrchestrationSession(_SessionBase):
         try:
             result = run_after_model(self.hooks, ctx, raw)
             snapshot = self._resolve_usage(result, usage, estimate_usage)
-        except Exception:
+        except Exception as exc:
+            self._emit_turn_failed(model, started=started, exc=exc)
             self._account_unfinished_turn(model, raw, usage, estimate_usage)
             raise
         self._settle_turn(
@@ -1684,6 +1783,10 @@ class OrchestrationSession(_SessionBase):
             raise ValueError("run_turn_with_fallback requires a provider_router")
         current = model
         tried = [current]
+        initial_prompt = (
+            copy.deepcopy(hook_ctx.prompt) if hook_ctx is not None else None
+        )
+        initial_args = copy.deepcopy(hook_ctx.args) if hook_ctx is not None else {}
         while True:
             candidate = current
             try:
@@ -1704,8 +1807,15 @@ class OrchestrationSession(_SessionBase):
                     raise
                 tried.append(following)
                 current = following
+                if hook_ctx is not None:
+                    # Hooks rewrite the context, and each attempt runs them anew.
+                    hook_ctx.prompt = copy.deepcopy(initial_prompt)
+                    hook_ctx.args = copy.deepcopy(initial_args)
                 continue
-            return result, snapshot, self._last_turn_model
+            answered = current
+            if idempotency_key:
+                answered = self._booked_turns.get(idempotency_key, current)
+            return result, snapshot, answered
 
     def _invoke_fn(self, fn: Callable[[], T], *, timeout: float | None) -> T:
         if timeout is None:
@@ -1815,9 +1925,13 @@ class AsyncOrchestrationSession(_SessionBase):
                 self.guardrails, result_raw, role=self.role, tool=tool_name
             )
         except GuardrailViolatedError as exc:
-            self._emit_guardrail_blocked(exc)
+            self._emit_guardrail_blocked(exc, started=started)
             raise
-        result: T = await arun_after_tool(self.hooks, ctx, result_raw)
+        try:
+            result: T = await arun_after_tool(self.hooks, ctx, result_raw)
+        except Exception as exc:
+            self._emit_tool_failed(tool_name, started=started, exc=exc)
+            raise
         self._persist_tool_step(tool_name, idempotency_key, result)
         self._emit_tool_completed(tool_name, started=started)
         return result
@@ -1847,8 +1961,9 @@ class AsyncOrchestrationSession(_SessionBase):
         self._check_iteration_cap()
         self._check_governance_pre_turn()
         if replayed is not None:
-            return self._replay_turn(replayed)
+            return self._replay_turn(replayed, idempotency_key)
 
+        self._check_limits_pre_turn()
         ctx = self._resolve_hook_ctx(hook_ctx, model=model)
         await arun_before_model(self.hooks, ctx)
         if self.async_rate_limiter is not None:
@@ -1864,6 +1979,7 @@ class AsyncOrchestrationSession(_SessionBase):
             self._emit_turn_failed(model, started=started, exc=exc)
             raise
         except Exception as exc:
+            self._last_model_call_error = exc
             self._emit_turn_failed(model, started=started, exc=exc)
             await _arecord_recovery_event(self, exc)
             self._record_governance_turn_outcome(success=False)
@@ -1872,8 +1988,15 @@ class AsyncOrchestrationSession(_SessionBase):
         try:
             result = await arun_after_model(self.hooks, ctx, raw)
             snapshot = self._resolve_usage(result, usage, estimate_usage)
-        except Exception:
-            self._account_unfinished_turn(model, raw, usage, estimate_usage)
+        except (Exception, asyncio.CancelledError) as exc:
+            self._emit_turn_failed(model, started=started, exc=exc)
+            self._account_unfinished_turn(
+                model,
+                raw,
+                usage,
+                estimate_usage,
+                failed=not isinstance(exc, asyncio.CancelledError),
+            )
             raise
         self._settle_turn(
             result=result,
@@ -1907,6 +2030,10 @@ class AsyncOrchestrationSession(_SessionBase):
             raise ValueError("arun_turn_with_fallback requires a provider_router")
         current = model
         tried = [current]
+        initial_prompt = (
+            copy.deepcopy(hook_ctx.prompt) if hook_ctx is not None else None
+        )
+        initial_args = copy.deepcopy(hook_ctx.args) if hook_ctx is not None else {}
         while True:
             candidate = current
             try:
@@ -1927,8 +2054,15 @@ class AsyncOrchestrationSession(_SessionBase):
                     raise
                 tried.append(following)
                 current = following
+                if hook_ctx is not None:
+                    # Hooks rewrite the context, and each attempt runs them anew.
+                    hook_ctx.prompt = copy.deepcopy(initial_prompt)
+                    hook_ctx.args = copy.deepcopy(initial_args)
                 continue
-            return result, snapshot, self._last_turn_model
+            answered = current
+            if idempotency_key:
+                answered = self._booked_turns.get(idempotency_key, current)
+            return result, snapshot, answered
 
     async def arun_turn_stream(
         self,
@@ -1976,22 +2110,32 @@ class AsyncOrchestrationSession(_SessionBase):
         ``error`` + ``final("failed")`` events are yielded and the exception is
         re-raised so callers see it.
         """
+        self._last_stream_cancelled = False
         replayed = self._restore_idempotent_turn(idempotency_key)
         self._check_iteration_cap()
         self._check_governance_pre_turn()
         if replayed is not None:
-            replay_result, replay_usage = self._replay_turn(replayed)
-            yield StreamEvent.text(str(replay_result))
+            try:
+                replay_result, replay_usage = self._replay_turn(
+                    replayed, idempotency_key
+                )
+            except Exception as exc:
+                safe_detail = _safe_exception_detail(exc)
+                yield StreamEvent.error(type(exc).__name__, safe_detail)
+                yield StreamEvent.final("failed", detail=safe_detail)
+                raise
+            if replay_result is not None:
+                yield StreamEvent.text(str(replay_result))
             yield StreamEvent.final("completed", usage=replay_usage.to_dict())
             return
 
+        self._check_limits_pre_turn()
         ctx = self._resolve_hook_ctx(hook_ctx, model=model)
         await arun_before_model(self.hooks, ctx)
 
         if self.async_rate_limiter is not None:
             await self.async_rate_limiter.acquire_pre_call()
 
-        self._last_stream_cancelled = False
         started = time.monotonic()
         aggregated: list[str] = []
         upstream: AsyncIterator[str] | None = None
@@ -2009,6 +2153,10 @@ class AsyncOrchestrationSession(_SessionBase):
                         chunk = await self._next_chunk(upstream, deadline, timeout)
                     except StopAsyncIteration:
                         break
+                    if not isinstance(chunk, str):
+                        raise TypeError(
+                            f"stream chunk must be str, got {type(chunk).__name__}"
+                        )
                     aggregated.append(chunk)
                     yield StreamEvent.text(chunk)
             except TurnTimeoutError as exc:
@@ -2018,8 +2166,8 @@ class AsyncOrchestrationSession(_SessionBase):
                 # yield and skip the recovery/governance recording entirely.
                 self._emit_turn_failed(model, started=started, exc=exc)
                 await _arecord_recovery_event(self, exc)
-                self._account_unfinished_turn(
-                    model, "".join(aggregated), usage, estimate_usage
+                self._account_unfinished_stream(
+                    model, aggregated, usage, estimate_usage
                 )
                 yield StreamEvent.error("timeout", f"stream exceeded {timeout}s")
                 yield StreamEvent.final("failed", detail="timeout")
@@ -2031,8 +2179,8 @@ class AsyncOrchestrationSession(_SessionBase):
                 # next pre-turn check reports it instead.
                 self._last_stream_cancelled = True
                 self._emit_turn_failed(model, started=started, exc=exc)
-                self._account_unfinished_turn(
-                    model, "".join(aggregated), usage, estimate_usage
+                self._account_unfinished_stream(
+                    model, aggregated, usage, estimate_usage, failed=False
                 )
                 logger.info(
                     "stream_cancelled",
@@ -2049,8 +2197,8 @@ class AsyncOrchestrationSession(_SessionBase):
                 # Record before the terminal yield (see the timeout branch).
                 self._emit_turn_failed(model, started=started, exc=exc)
                 await _arecord_recovery_event(self, exc)
-                self._account_unfinished_turn(
-                    model, "".join(aggregated), usage, estimate_usage
+                self._account_unfinished_stream(
+                    model, aggregated, usage, estimate_usage
                 )
                 yield StreamEvent.error(type(exc).__name__, safe_detail)
                 yield StreamEvent.final("failed", detail=safe_detail)
@@ -2061,20 +2209,26 @@ class AsyncOrchestrationSession(_SessionBase):
             try:
                 transformed = await arun_after_model(self.hooks, ctx, full_text)
                 snapshot = self._resolve_usage(transformed, usage, estimate_usage)
-            except Exception as exc:
-                self._account_unfinished_turn(model, full_text, usage, estimate_usage)
+            except (Exception, asyncio.CancelledError) as exc:
+                cancelled = isinstance(exc, asyncio.CancelledError)
+                self._emit_turn_failed(model, started=started, exc=exc)
+                self._account_unfinished_turn(
+                    model, full_text, usage, estimate_usage, failed=not cancelled
+                )
+                if isinstance(exc, asyncio.CancelledError):
+                    raise
                 safe_detail = _safe_exception_detail(exc)
                 yield StreamEvent.error(type(exc).__name__, safe_detail)
                 yield StreamEvent.final("failed", detail=safe_detail)
                 raise
-            self._settle_turn(
-                result=transformed,
-                snapshot=snapshot,
-                model=model,
-                idempotency_key=idempotency_key,
-                started=started,
-            )
             try:
+                self._settle_turn(
+                    result=transformed,
+                    snapshot=snapshot,
+                    model=model,
+                    idempotency_key=idempotency_key,
+                    started=started,
+                )
                 if self.async_rate_limiter is not None:
                     await self.async_rate_limiter.acquire_usage(
                         input_tokens=snapshot.input_tokens,
@@ -2100,7 +2254,13 @@ class AsyncOrchestrationSession(_SessionBase):
                 aclose = getattr(upstream, "aclose", None)
                 if aclose is not None:
                     try:
-                        await aclose()
+                        if timeout is None:
+                            await aclose()
+                        else:
+                            # The caller asked for a bounded stream, so an upstream
+                            # that hangs while closing must not outlive it for good.
+                            async with asyncio.timeout(_STREAM_CLOSE_GRACE_SECONDS):
+                                await aclose()
                     except Exception as exc:
                         self._append_local_diagnostic_event(
                             self._sink_failure_event("stream_upstream", exc)

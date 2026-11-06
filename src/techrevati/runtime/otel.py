@@ -513,7 +513,11 @@ class OpenTelemetrySink:
         if isinstance(model, str) and model:
             span.set_attribute("gen_ai.request.model", model)
         error_type = data.get("error_type")
-        if event.event.value == AgentEventName.AGENT_TURN_FAILED.value:
+        # A cancellation is the caller's choice, not an error (see the module header).
+        if (
+            event.event.value == AgentEventName.AGENT_TURN_FAILED.value
+            and error_type != "cancelled"
+        ):
             error = error_type if isinstance(error_type, str) else "unknown"
             span.set_attribute("error.type", error)
             span.set_status(Status(StatusCode.ERROR, error))
@@ -804,6 +808,7 @@ class OpenTelemetryMetricsSink:
         if tool is not None and event.event.value in (
             AgentEventName.AGENT_TOOL_COMPLETED.value,
             AgentEventName.AGENT_FAILED.value,
+            AgentEventName.AGENT_BLOCKED.value,
         ):
             self._record_tool(event, tool, duration)
 
@@ -817,8 +822,11 @@ class OpenTelemetryMetricsSink:
         model = data.get("model")
         if isinstance(model, str) and model:
             attrs["gen_ai.request.model"] = model
-        if event.event.value == AgentEventName.AGENT_TURN_FAILED.value:
-            error_type = data.get("error_type")
+        error_type = data.get("error_type")
+        if (
+            event.event.value == AgentEventName.AGENT_TURN_FAILED.value
+            and error_type != "cancelled"
+        ):
             attrs["error.type"] = (
                 error_type if isinstance(error_type, str) else "unknown"
             )
@@ -834,6 +842,8 @@ class OpenTelemetryMetricsSink:
             attrs["gen_ai.agent.name"] = event.role
         if event.failure_class and _is_error_failure_class(event.failure_class):
             attrs["error.type"] = event.failure_class.value
+        if event.event.value == AgentEventName.AGENT_BLOCKED.value:
+            attrs["error.type"] = "guardrail_blocked"
         self._tool_duration.record(duration, attributes=attrs)
 
 

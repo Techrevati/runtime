@@ -48,6 +48,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any, Literal, cast
 
+from techrevati.runtime.usage_tracking import _exceeds
+
 # Upper bound on repeated-call history kept per session.
 MAX_TOOL_SIGNATURE_WINDOW = 1024
 
@@ -156,6 +158,9 @@ class GovernanceState:
         repr=False,
         compare=False,
     )
+    _tool_call_evaluated: bool = field(
+        default=False, init=False, repr=False, compare=False
+    )
 
     def __post_init__(self) -> None:
         self.turns = _validate_non_negative_int("turns", self.turns)
@@ -177,13 +182,22 @@ class GovernanceState:
         """
         self.tool_calls += 1
         self._recent_tool_signatures.append(signature)
+        self._tool_call_evaluated = False
 
     def repeats_of_latest_tool_call(self, window: int) -> int:
-        """Return how often the latest signature occurs in the last ``window``."""
+        """Return how often the latest signature occurs in the last ``window``.
+
+        Zero once that call has passed its check, so an alert fires per repeated
+        call rather than on every later turn.
+        """
         recent = list(self._recent_tool_signatures)[-window:]
-        if not recent or recent[-1] is None:
+        if self._tool_call_evaluated or not recent or recent[-1] is None:
             return 0
         return recent.count(recent[-1])
+
+    def mark_tool_call_evaluated(self) -> None:
+        """Record that the latest tool call has passed its limit checks."""
+        self._tool_call_evaluated = True
 
     def record_failure(self) -> None:
         self.consecutive_failures += 1
@@ -321,6 +335,18 @@ def tool_call_signature(tool: str, args: Mapping[str, Any]) -> str:
     return hashlib.sha256(canonical.encode("utf-8", "backslashreplace")).hexdigest()
 
 
+def safe_tool_call_signature(tool: str, args: Mapping[str, Any]) -> str | None:
+    """Like :func:`tool_call_signature`, but ``None`` if the arguments defeat it.
+
+    Telemetry about a call must never be the reason the call fails, for example
+    when an argument's ``__repr__`` raises or its nesting is too deep to walk.
+    """
+    try:
+        return tool_call_signature(tool, args)
+    except Exception:
+        return None
+
+
 @dataclass(frozen=True)
 class LimitOutcome:
     """Result of evaluating one limit against current state."""
@@ -356,7 +382,11 @@ def _evaluate_one(limit: Limit, state: GovernanceState) -> LimitOutcome:
     if isinstance(limit, MaxIterationsLimit):
         observed: float = float(state.turns)
     elif isinstance(limit, MaxBudgetLimit):
+        # Float summation noise must not trip a terminal limit: three $0.10 turns
+        # are not over a $0.30 ceiling.
         observed = state.cost_usd
+        if not _exceeds(observed, limit.value):
+            observed = min(observed, limit.value)
     elif isinstance(limit, MaxConsecutiveFailuresLimit):
         observed = float(state.consecutive_failures)
     elif isinstance(limit, MaxRepeatedToolCallsLimit):
@@ -450,5 +480,6 @@ __all__ = [
     "MaxIterationsLimit",
     "MaxRepeatedToolCallsLimit",
     "MaxToolCallsLimit",
+    "safe_tool_call_signature",
     "tool_call_signature",
 ]
