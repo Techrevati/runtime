@@ -33,7 +33,6 @@ from __future__ import annotations
 
 import logging
 import math
-import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
@@ -42,6 +41,7 @@ from techrevati.runtime._internal import (
     _validate_bool,
     _validate_positive_int,
 )
+from techrevati.runtime.guardrails import _compile_patterns
 
 logger = logging.getLogger("techrevati.runtime.hooks")
 logger.addHandler(logging.NullHandler())
@@ -371,14 +371,23 @@ async def arun_before_handoff(hooks: Sequence[HookLike], ctx: HookContext) -> No
 _DEFAULT_PII_PATTERNS: tuple[str, ...] = (
     # US SSN
     r"\b\d{3}-\d{2}-\d{4}\b",
-    # Email
-    r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b",
+    # Email. Bounded local part and domain (the RFC 5321 limits): unbounded runs
+    # rescan quadratically on text like "a.a.a.a." without an "@".
+    r"\b[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,255}\.[A-Za-z]{2,}\b",
     # Credit card (loose: 13–19 digits with optional separators)
     r"\b(?:\d[ -]*?){13,19}\b",
     # IPv4
     r"\b(?:\d{1,3}\.){3}\d{1,3}\b",
     # Bearer / API key heuristic (40+ char hex/base64-ish blobs)
     r"\b[A-Za-z0-9_\-]{40,}\b",
+    # JWT (the dots otherwise split it, leaving header and payload readable)
+    r"\beyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}",
+    # Standard base64 key. Mixed case plus a digit, and not embedded in a longer
+    # path-like or URL-like token, so ordinary file paths and URLs stay readable.
+    r"(?<![A-Za-z0-9+/_.-])"
+    r"(?=[A-Za-z0-9+/]*[0-9])(?=[A-Za-z0-9+/]*[a-z])(?=[A-Za-z0-9+/]*[A-Z])"
+    r"[A-Za-z0-9+][A-Za-z0-9+/]{39,}={0,2}"
+    r"(?![A-Za-z0-9+/=_.:-])",
 )
 
 
@@ -389,9 +398,10 @@ class RedactPIIHook:
 
     - ``ctx.prompt`` when it is a ``str`` — replaces matches with
       ``replacement`` (default ``"[REDACTED]"``).
-    - ``ctx.prompt`` when it is a ``dict`` — walks string leaves.
-    - ``ctx.prompt`` when it is a list of message dictionaries — walks each
-      message's ``content`` field.
+    - ``ctx.prompt`` when it is a ``dict``, ``list``, ``tuple``, ``set`` or
+      ``frozenset`` — walks string leaves and string dict keys, at any depth.
+    - ``bytes`` that decode as UTF-8 are scrubbed and re-encoded; other bytes
+      are opaque binary and pass through unchanged.
 
     Other shapes are skipped silently — caller can supply a custom hook
     when the schema is exotic. The hook is **best-effort**: it is a
@@ -413,15 +423,33 @@ class RedactPIIHook:
         raw = _normalize_patterns(patterns)
         self.name = _validate_name("name", name)
         self._replacement = _validate_string("replacement", replacement)
-        self._compiled = re.compile("|".join(f"(?:{p})" for p in raw))
+        self._compiled = _compile_patterns(raw)
+
+    def _scrub_text(self, text: str) -> str:
+        for regex in self._compiled:
+            text = regex.sub(self._replacement, text)
+        return text
 
     def _scrub(self, value: Any) -> Any:
         if isinstance(value, str):
-            return self._compiled.sub(self._replacement, value)
+            return self._scrub_text(value)
+        if isinstance(value, (bytes, bytearray)):
+            try:
+                return type(value)(self._scrub_text(value.decode("utf-8")).encode())
+            except UnicodeDecodeError:
+                return value
         if isinstance(value, dict):
-            return {k: self._scrub(v) for k, v in value.items()}
+            return {
+                (self._scrub_text(k) if isinstance(k, str) else k): self._scrub(v)
+                for k, v in value.items()
+            }
         if isinstance(value, list):
             return [self._scrub(item) for item in value]
+        if isinstance(value, tuple):
+            items = [self._scrub(item) for item in value]
+            return type(value)(*items) if hasattr(value, "_fields") else tuple(items)
+        if isinstance(value, (set, frozenset)):
+            return type(value)(self._scrub(item) for item in value)
         return value
 
     def before_model(self, ctx: HookContext) -> None:

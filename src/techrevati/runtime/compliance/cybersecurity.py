@@ -36,15 +36,14 @@ __all__ = [
     "OutputIntegrityGuardrail",
 ]
 
-# NUL byte, or C0 control chars except tab/newline/carriage-return, including the
-# ESC (0x1b) that starts ANSI terminal escape sequences.
-_CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
+# NUL byte, C0 controls except tab/newline/carriage-return (including the ESC that
+# starts ANSI sequences), DEL, and C1 controls such as the 8-bit CSI (0x9b). NEL
+# (0x85) is kept: it is a line break, like newline, not an escape.
+_CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x84\x86-\x9f]")
 
 
-def _scan_text(text: str, *, max_chars: int | None) -> str | None:
+def _scan_text(text: str) -> str | None:
     """Return a reason string if ``text`` looks tampered, else ``None``."""
-    if max_chars is not None and len(text) > max_chars:
-        return f"payload exceeds max_chars ({len(text)} > {max_chars})"
     m = _CONTROL_CHARS.search(text)
     if m is not None:
         return f"control/escape byte {m.group(0)!r} at position {m.start()}"
@@ -52,24 +51,43 @@ def _scan_text(text: str, *, max_chars: int | None) -> str | None:
 
 
 def _walk(value: Any, *, max_chars: int | None) -> str | None:
-    """Depth-first scan of strings inside str / dict / list / tuple structures."""
-    if isinstance(value, str):
-        return _scan_text(value, max_chars=max_chars)
-    if isinstance(value, dict):
-        for key, item in value.items():
-            if isinstance(key, str):
-                reason = _scan_text(key, max_chars=max_chars)
-                if reason is not None:
-                    return reason
-            reason = _walk(item, max_chars=max_chars)
+    """Scan strings and bytes inside str / bytes / dict / list / tuple / set values.
+
+    ``max_chars`` caps the payload's *total* size across all leaves. Bytes that
+    decode as UTF-8 are scanned as text. Other bytes are treated as opaque binary
+    (images, archives legitimately contain control bytes) and only count towards
+    the size cap. Other object types are not inspected.
+    """
+    total = 0
+    stack: list[Any] = [value]
+    seen: set[int] = set()
+    while stack:
+        item = stack.pop()
+        if isinstance(item, (bytes, bytearray, memoryview)):
+            raw = bytes(item)
+            total += len(raw)
+            try:
+                item = raw.decode("utf-8")
+            except UnicodeDecodeError:
+                item = ""
+            else:
+                total -= len(item)
+        if isinstance(item, str):
+            total += len(item)
+            reason = _scan_text(item)
             if reason is not None:
                 return reason
-        return None
-    if isinstance(value, (list, tuple)):
-        for item in value:
-            reason = _walk(item, max_chars=max_chars)
-            if reason is not None:
-                return reason
+        elif isinstance(item, (dict, list, tuple, set, frozenset)):
+            if id(item) in seen:
+                continue
+            seen.add(id(item))
+            if isinstance(item, dict):
+                stack.extend(item.values())
+                stack.extend(item.keys())
+            else:
+                stack.extend(item)
+        if max_chars is not None and total > max_chars:
+            return f"payload exceeds max_chars ({total} > {max_chars})"
     return None
 
 
@@ -108,6 +126,9 @@ class InputSanitizationHook:
     A ``Hook`` (not a Guardrail) because only hooks see ``ctx.prompt`` /
     ``ctx.args``. Scans before the model call (``before_model``) and before tool
     execution (``before_tool``); raises :class:`InputSanitizationError` on a hit.
+
+    Hooks only see what the session is given: tool arguments are scanned only when
+    they are supplied to the session, so a closure-captured argument is invisible.
     """
 
     def __init__(

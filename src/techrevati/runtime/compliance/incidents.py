@@ -37,7 +37,11 @@ from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any
 
-from techrevati.runtime.agent_events import AgentEvent, AgentEventName
+from techrevati.runtime.agent_events import (
+    AgentEvent,
+    AgentEventName,
+    AgentFailureClass,
+)
 from techrevati.runtime.compliance.audit_log import AuditLogSink
 from techrevati.runtime.compliance.human_oversight import ReviewerIdentity
 
@@ -90,6 +94,9 @@ class IncidentReport:
         return self.detected_at + REPORTING_WINDOW
 
     def overdue(self, *, now: datetime | None = None) -> bool:
+        """Whether the Article 73 clock has run out (only ``SERIOUS`` starts it)."""
+        if self.severity is not IncidentSeverity.SERIOUS:
+            return False
         return (now or _now()) > self.reporting_deadline
 
     def to_dict(self) -> dict[str, Any]:
@@ -158,6 +165,9 @@ class IncidentReportingSink:
         default_factory=list, init=False, repr=False
     )
     _counter: int = field(default=0, init=False, repr=False)
+    _open_breach: tuple[tuple[str | None, str | None], IncidentSeverity] | None = field(
+        default=None, init=False, repr=False
+    )
 
     @property
     def incidents(self) -> list[IncidentReport]:
@@ -168,6 +178,8 @@ class IncidentReportingSink:
             raise TypeError("event must be an AgentEvent")
         severity = self.detector.check(event)
         if severity is None:
+            return
+        if self._is_breach_followup(event, severity):
             return
         self._counter += 1
         report = IncidentReport(
@@ -182,16 +194,42 @@ class IncidentReportingSink:
             reporter=self.reporter,
         )
         self._incidents.append(report)
-        if self.audit_log is not None:
-            self.audit_log.emit(
-                AgentEvent(
-                    event=AgentEventName.AGENT_BLOCKED,
-                    status=event.status,
-                    role=event.role,
-                    phase=event.phase,
-                    detail=f"incident {report.id} ({severity.value})",
-                    data={"incident": report.to_dict()},
+        # The notification must not depend on the audit mirror succeeding: finally
+        # runs the callback, and the audit failure still propagates afterwards.
+        try:
+            if self.audit_log is not None:
+                self.audit_log.emit(
+                    AgentEvent(
+                        event=AgentEventName.AGENT_BLOCKED,
+                        status=event.status,
+                        role=event.role,
+                        phase=event.phase,
+                        detail=f"incident {report.id} ({severity.value})",
+                        data={"incident": report.to_dict()},
+                    )
                 )
-            )
-        if self.on_incident is not None:
-            self.on_incident(report)
+        finally:
+            if self.on_incident is not None:
+                self.on_incident(report)
+
+    def _is_breach_followup(
+        self, event: AgentEvent, severity: IncidentSeverity
+    ) -> bool:
+        """One governance breach emits ``governance.breach`` then ``agent.failed``.
+
+        That pair is one incident. Remember the breach, and absorb the failure that
+        follows it for the same role and phase unless it raises the severity.
+        """
+        key = (event.role, event.phase)
+        if event.event is AgentEventName.GOVERNANCE_BREACH:
+            self._open_breach = (key, severity)
+            return False
+        opened = self._open_breach
+        self._open_breach = None
+        return (
+            opened is not None
+            and opened[0] == key
+            and event.event is AgentEventName.AGENT_FAILED
+            and event.failure_class is AgentFailureClass.GOVERNANCE_BREACH
+            and _SEVERITY_RANK[severity] <= _SEVERITY_RANK[opened[1]]
+        )

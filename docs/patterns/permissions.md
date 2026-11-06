@@ -44,6 +44,14 @@ if not outcome.allowed:
 3. **Allowed list.** If `allowed_tools` is set, the tool must be in it.
 4. **Default-allow.** If none of the above triggers a denial, allow.
 
+Role and tool names match regardless of case, Unicode compatibility form (NFKC),
+and invisible control or format characters, so `WRITER` and `writer` followed by a
+zero-width space are both the role `writer`. Two role configs that differ only in
+those ways are rejected at construction.
+
+A role with no config is still **allowed** by default. Pass
+`default_allow_unknown_roles=False` to deny it, which the pilot profile already does.
+
 ## API
 
 ```python

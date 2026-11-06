@@ -25,6 +25,16 @@ assert result.valid                  # False + first_bad_sequence on tampering
 so a session writes lifecycle events *and* per-turn usage into one chain. On
 construction it resumes from the persisted tip, so the chain survives restarts.
 
+Several sinks — threads or processes — can share one `SqliteAuditBackend`. Each
+write reads the tip and inserts inside one `BEGIN IMMEDIATE` transaction, so
+writers serialize into a single chain, and a failed write rolls back instead of
+holding the write lock. A third-party backend gets the same guarantee by adding
+`append_chained(build)`; one that only has `append` is single-writer.
+
+Event content never prevents a record: values JSON cannot represent are stored
+via `repr`, and lone surrogates are escaped. `emitted_at` is validated before it
+becomes the record's timestamp (the raw value stays in the payload).
+
 ## Optional HMAC envelope
 
 Pass `signing_key=...` to attach a detached HMAC over each `record_hash`. The key
@@ -47,7 +57,35 @@ sink.verify_chain(signing_key=hsm_key).valid
   `verify_chain(require_genesis=True)` to additionally assert the chain starts at
   the genuine genesis (`prev_hash == "0" * 64`). To detect front-truncation *while*
   still purging, publish the chain tip to a write-once external anchor (below).
-- `export(fmt="jsonl")` / `export(fmt="csv")` stream the chain for an auditor.
+- `purge_expired` removes only the contiguous oldest prefix, comparing timestamps
+  as instants, so a backdated record cannot punch a hole in the chain. The prefix
+  stops at the first record that is not expired, so such a record can delay later
+  purges.
+- `export(fmt="jsonl")` / `export(fmt="csv")` stream the chain for an auditor. CSV
+  cells are quoted, and cells a spreadsheet would run as a formula are neutralized.
+
+## Tail truncation
+
+Deleting the *newest* rows leaves a shorter chain that is still internally valid,
+so hashes alone cannot reveal it. What detects it depends on what survives:
+
+| Situation | Detected by |
+|---|---|
+| The same sink that wrote the rows is still alive | `verify_chain()`, against the tip the sink remembers |
+| The process restarted | only `verify_chain(expected_tip=...)` |
+| No tip was published outside the log | **not detected** |
+
+A sink resumes from whatever tip it finds at construction, so after a restart a
+truncated log looks complete. To close that gap, publish `sink.tip()` to a
+write-once store periodically and pass it back:
+
+```python
+tip = sink.tip()                      # ChainTip(sequence, record_hash) — publish it
+sink.verify_chain(expected_tip=tip)   # invalid if the log no longer reaches that tip
+```
+
+A sink whose log was emptied by *another* process's `purge_expired` reports
+truncation until it is reopened; that false alarm is the safe direction.
 
 ## Threat model — tamper-evident, **not** tamper-proof
 

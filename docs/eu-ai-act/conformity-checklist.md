@@ -21,6 +21,11 @@ Example output:
 > ⚠️ Not legal advice. A self-check of technical controls, not a conformity
 > assessment. ⬜ items require the deployer's attestation.
 
+The Article 12 line is derived from configuration. It shows ❌ for a log that dies
+with the process (in-memory or SQLite `:memory:`) or a policy that purges before
+183 days, and ⬜ for a third-party backend, whose durability the kit cannot know.
+The example below assumes a file-backed SQLite log.
+
 - ✅ Article 9 — Risk management system with acceptable residual risk
 - ✅ Article 12 — Tamper-evident, retained record-keeping (audit log)
 - ✅ Article 14 — Human oversight (pause / review / override) configured

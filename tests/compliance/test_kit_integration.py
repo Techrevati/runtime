@@ -97,7 +97,7 @@ def test_conformity_checklist_reflects_config() -> None:
     kit = _kit()
     checklist = kit.conformity_assessment_checklist()
     by_article = {i.article: i.satisfied for i in checklist.items}
-    assert by_article["Article 12"] is True  # audit always on
+    assert by_article["Article 12"] is False  # in-memory log is not "retained"
     assert by_article["Article 14"] is True  # oversight configured
     assert by_article["Article 15"] is True  # sanitize + integrity on
     assert by_article["Article 9"] is True  # no unacceptable risk

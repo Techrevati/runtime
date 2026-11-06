@@ -30,6 +30,11 @@ detector.add(fundamental_rights)
 
 ## Reporting sink
 
+`overdue()` only returns true for `SERIOUS` incidents, since only those start the
+reporting clock. A governance breach and the `agent.failed` that follows it count
+as one incident, unless a caller rule rates the failure higher. `on_incident` fires
+even if mirroring to the audit log fails; the audit error still propagates.
+
 `IncidentReportingSink` is an `EventSink` — incidents derive from `AgentEvent`s
 (including `governance.breach` and `agent.failed`), which flow through the event
 sink, not the hook chain. It materializes an `IncidentReport` per detected event

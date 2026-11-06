@@ -59,6 +59,11 @@ Wrap in `PolicyActionData(action, params=dict)` to attach parameters.
 
 ## Engine semantics
 
+Async conditions work at any depth, including inside `And` / `Or`, under
+`evaluate_async()`. `evaluate()` raises `TypeError` for a condition that needs
+awaiting, because an unawaited coroutine is truthy and would always match. That
+includes `session.evaluate_policy()`, which is synchronous.
+
 - Rules are sorted by `priority` (lower fires first).
 - *All* matching rules fire — there's no short-circuit on first match.
 - The engine returns a flat list of action data; it does not dispatch.

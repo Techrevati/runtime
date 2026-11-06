@@ -11,6 +11,7 @@ own RolePermissionConfig and tool_requirements.
 
 from __future__ import annotations
 
+import unicodedata
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import IntEnum
@@ -37,8 +38,27 @@ def _normalize_name(value: str, *, field_name: str) -> str:
     return value.strip()
 
 
+def _match_key(value: str, *, field_name: str) -> str:
+    """Comparison key for a role or tool name.
+
+    Case, Unicode compatibility forms, and invisible control/format characters must
+    not create a name that a deny list fails to recognize: ``WRITER``, ``ｗｒｉｔｅｒ``,
+    and ``writer`` followed by a zero-width space are all the role ``writer``.
+    """
+    name = _normalize_name(value, field_name=field_name)
+    folded = "".join(
+        ch
+        for ch in unicodedata.normalize("NFKC", name)
+        if unicodedata.category(ch)[0] != "C"
+    )
+    key = folded.strip().casefold()
+    if not key:
+        raise ValueError(f"{field_name} must be a non-empty string")
+    return key
+
+
 def _normalize_tool_name(value: str) -> str:
-    return _normalize_name(value, field_name="tool_name").lower()
+    return _match_key(value, field_name="tool_name")
 
 
 def _normalize_mode(value: PermissionMode | int) -> PermissionMode:
@@ -123,7 +143,12 @@ class RolePermissionConfig:
 
 
 class PermissionPolicy:
-    """Evaluates tool access based on role configs and tool requirements."""
+    """Evaluates tool access based on role configs and tool requirements.
+
+    Role and tool names match regardless of case, Unicode compatibility form, and
+    invisible characters. Two role configs that differ only in those ways are
+    rejected at construction.
+    """
 
     def __init__(
         self,
@@ -138,11 +163,13 @@ class PermissionPolicy:
         )
         self._role_configs: dict[str, RolePermissionConfig] = {}
         for role, config in (role_configs or {}).items():
-            normalized_role = _normalize_name(role, field_name="role")
+            role_key = _match_key(role, field_name="role")
             copied = _copy_role_config(config)
-            if copied.role != normalized_role:
+            if _match_key(copied.role, field_name="role") != role_key:
                 raise ValueError("role_configs keys must match config.role")
-            self._role_configs[normalized_role] = copied
+            if role_key in self._role_configs:
+                raise ValueError(f"duplicate role config for {role!r}")
+            self._role_configs[role_key] = copied
         self._tool_requirements = {
             _normalize_tool_name(tool): _normalize_mode(mode)
             for tool, mode in (tool_requirements or {}).items()
@@ -151,7 +178,7 @@ class PermissionPolicy:
     def authorize(self, role: str, tool_name: str) -> PermissionOutcome:
         role = _normalize_name(role, field_name="role")
         tool_name = _normalize_name(tool_name, field_name="tool_name")
-        config = self._role_configs.get(role)
+        config = self._role_configs.get(_match_key(role, field_name="role"))
         if config is None:
             if not self._default_allow_unknown_roles:
                 return PermissionOutcome(
@@ -168,7 +195,7 @@ class PermissionPolicy:
         # 1. Deny list first (highest precedence)
         tool_lower = _normalize_tool_name(tool_name)
         for denied in config.denied_tools:
-            if tool_lower == denied.lower():
+            if tool_lower == _normalize_tool_name(denied):
                 return PermissionOutcome(
                     allowed=False,
                     reason=f"tool '{tool_name}' is explicitly denied for role '{role}'",
@@ -191,7 +218,7 @@ class PermissionPolicy:
 
         # 3. Allowed list (if specified, tool must be in it)
         if config.allowed_tools is not None:
-            allowed_lower = [t.lower() for t in config.allowed_tools]
+            allowed_lower = [_normalize_tool_name(t) for t in config.allowed_tools]
             if tool_lower not in allowed_lower:
                 return PermissionOutcome(
                     allowed=False,
