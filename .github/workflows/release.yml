@@ -294,7 +294,7 @@ jobs:
         if: ${{ !contains(github.ref_name, 'rc') && !contains(github.ref_name, 'dev') }}
         # pypa/gh-action-pypi-publish release/v1 — OIDC trusted publishing, no
         # stored token; the index attaches a provenance attestation per upload.
-        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086
         with:
           packages-dir: pypi-dist
 
@@ -321,7 +321,7 @@ jobs:
       - name: Publish private package
         if: steps.private_registry.outputs.configured == 'true'
         # pypa/gh-action-pypi-publish release/v1
-        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086
         with:
           packages-dir: private-package-dist
           repository-url: ${{ secrets.PRIVATE_PACKAGE_REPOSITORY_URL }}
