@@ -43,7 +43,7 @@ dev = [
     "mcp==1.30.0",
 ]
 build = [
-    "build==1.5.0",
+    "build==1.6.1",
     "twine==6.2.0",
 ]
 docs = [
@@ -53,7 +53,7 @@ docs = [
     "ruff==0.17.4",
 ]
 release = [
-    "build==1.5.0",
+    "build==1.6.1",
     "cyclonedx-bom==7.3.0",
     "twine==6.2.0",
 ]
